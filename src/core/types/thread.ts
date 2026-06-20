@@ -13,6 +13,8 @@ export interface Thread {
   status: ThreadStatus;
   created_by: string;
   agent_api_key_id: string | null;
+  metadata: Record<string, unknown>;
+  summary: string | null;
   created_at: string;
   updated_at: string;
 }

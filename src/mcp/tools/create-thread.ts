@@ -7,6 +7,7 @@ import type { CompanyId, ThreadId } from "../../core/types";
 export interface CreateThreadInput {
   title: string;
   message_body: string;
+  tags?: string[];
 }
 
 export async function createThread(
@@ -32,5 +33,16 @@ export async function createThread(
     body: input.message_body.trim(),
   });
 
-  return { thread, message };
+  // Add tags if provided
+  let tags: string[] = [];
+  if (input.tags && input.tags.length > 0) {
+    const normalizedTags = input.tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
+    if (normalizedTags.length > 0) {
+      const rows = normalizedTags.map((tag) => ({ thread_id: thread.id, tag }));
+      await db.from("thread_tags").upsert(rows, { onConflict: "thread_id,tag" });
+      tags = normalizedTags;
+    }
+  }
+
+  return { thread: { ...thread, tags }, message };
 }

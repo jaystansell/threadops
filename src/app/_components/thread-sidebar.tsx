@@ -228,22 +228,52 @@ export function ThreadSidebar({
     return () => observer.disconnect();
   }, [loadMore]);
 
+  const [searchResults, setSearchResults] = useState<Array<{ type: string; thread_id: string; thread_title?: string; highlight: string; message_id?: string }> | null>(null);
+
   const fetchThreads = useCallback(
     async (newStatus: string, newSearch: string) => {
       setLoading(true);
+      setSearchResults(null);
       try {
-        const params = new URLSearchParams();
-        params.set("company_id", companyId);
-        params.set("limit", String(BATCH_SIZE));
-        if (newStatus !== "all") params.set("status", newStatus);
-        if (newSearch) params.set("q", newSearch);
+        if (newSearch) {
+          // Use full-text search API
+          const params = new URLSearchParams();
+          params.set("q", newSearch);
+          params.set("scope", "all");
+          params.set("per_page", "50");
+          if (newStatus !== "all") params.set("status", newStatus);
 
-        const res = await fetch(`/api/threads?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to load threads");
-        const data = (await res.json()) as ThreadWithLastMessage[];
-        setOverrideThreads(data);
-        setExtraThreads([]);
-        setHasMore(data.length >= BATCH_SIZE);
+          const res = await fetch(`/api/search?${params.toString()}`);
+          if (res.ok) {
+            const data = await res.json();
+            setSearchResults(data.results ?? []);
+          }
+          // Also fetch threads with title search as fallback
+          const threadParams = new URLSearchParams();
+          threadParams.set("company_id", companyId);
+          threadParams.set("limit", String(BATCH_SIZE));
+          if (newStatus !== "all") threadParams.set("status", newStatus);
+          threadParams.set("q", newSearch);
+
+          const threadRes = await fetch(`/api/threads?${threadParams.toString()}`);
+          if (!threadRes.ok) throw new Error("Failed to load threads");
+          const threadData = (await threadRes.json()) as ThreadWithLastMessage[];
+          setOverrideThreads(threadData);
+          setExtraThreads([]);
+          setHasMore(threadData.length >= BATCH_SIZE);
+        } else {
+          const params = new URLSearchParams();
+          params.set("company_id", companyId);
+          params.set("limit", String(BATCH_SIZE));
+          if (newStatus !== "all") params.set("status", newStatus);
+
+          const res = await fetch(`/api/threads?${params.toString()}`);
+          if (!res.ok) throw new Error("Failed to load threads");
+          const data = (await res.json()) as ThreadWithLastMessage[];
+          setOverrideThreads(data);
+          setExtraThreads([]);
+          setHasMore(data.length >= BATCH_SIZE);
+        }
       } catch {
         // Silently handle
       } finally {
@@ -364,6 +394,24 @@ export function ThreadSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto">
+        {searchResults && searchResults.length > 0 && (
+          <div className="border-b border-[var(--border)]">
+            <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] bg-[var(--muted)]">
+              Message matches
+            </div>
+            {searchResults.filter((r) => r.type === "message").slice(0, 5).map((result) => (
+              <Link
+                key={result.message_id ?? result.thread_id}
+                href={`/threads/${result.thread_id}`}
+                className="block px-3 py-2 border-b border-[var(--border)] hover:bg-[var(--muted)] transition-colors"
+              >
+                <p className="text-xs text-[var(--muted-foreground)] line-clamp-2">
+                  {result.highlight.replace(/\*\*/g, "")}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
         {filtered.length === 0 && !loading ? (
           <p className="text-xs text-[var(--muted-foreground)] p-3">
             No threads found.
@@ -480,7 +528,12 @@ export function ThreadSidebar({
                                 </svg>
                               </button>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
+                            {thread.summary && (
+                              <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 line-clamp-1">
+                                {thread.summary}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {thread.last_author_kind === "agent" ? (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
                                   Needs reply
@@ -490,6 +543,16 @@ export function ThreadSidebar({
                                   Replied
                                 </span>
                               ) : null}
+                              {thread.tags && thread.tags.length > 0 && thread.tags.slice(0, 3).map((tag) => (
+                                <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                  {tag}
+                                </span>
+                              ))}
+                              {thread.tags && thread.tags.length > 3 && (
+                                <span className="text-[10px] text-[var(--muted-foreground)]">
+                                  +{thread.tags.length - 3}
+                                </span>
+                              )}
                               <span className="text-[10px] text-[var(--muted-foreground)]">
                                 <FormattedDate
                                   date={thread.last_message_at ?? thread.created_at}
