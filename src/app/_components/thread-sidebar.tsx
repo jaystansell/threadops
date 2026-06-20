@@ -345,7 +345,7 @@ export function ThreadSidebar({
                 ? []
                 : group.threads;
             const hasOverflow = isAccordion && group.threads.length > DEFAULT_VISIBLE_THREADS;
-            const missingWebhook = isAccordion && group.label !== "You" && agentsWithoutWebhooks.includes(group.label);
+            const missingWebhook = isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
 
             return (
               <div key={group.label}>
