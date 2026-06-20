@@ -1,10 +1,10 @@
-import type { SupabaseClient } from "./client";
 import type { Thread, ThreadId, ThreadStatus, CompanyId } from "@/core/types";
 import type {
   ThreadRepo,
   ThreadFilters,
   ThreadCreateInput,
 } from "@/core/ports";
+import type { SupabaseClient } from "./client";
 
 export function createThreadRepo(db: SupabaseClient): ThreadRepo {
   return {

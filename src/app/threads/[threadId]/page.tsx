@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
@@ -6,8 +8,6 @@ import type { ThreadId, Theme } from "@/core/types";
 import { ThreadTimeline } from "@/app/_components/thread-timeline";
 import { MessageComposer } from "@/app/_components/message-composer";
 import { ThreadStatusActions } from "@/app/_components/thread-status-actions";
-import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
