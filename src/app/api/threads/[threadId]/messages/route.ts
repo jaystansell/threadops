@@ -42,6 +42,14 @@ export async function GET(
         { status: 403 },
       );
     }
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const messageRepo = createMessageRepo(db);
