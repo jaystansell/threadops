@@ -102,7 +102,7 @@ const SECTIONS: Section[] = [
         summary: "Change thread status",
         description:
           "Transitions a thread between statuses (open → closed → archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             status: "'open' | 'closed' | 'archived' (required)",
@@ -883,7 +883,7 @@ export function ApiDocsClient() {
                   <tbody className="divide-y divide-[var(--border)]">
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_threads</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">create_thread</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2 font-mono text-xs">update_thread_status</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_status</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">get_messages</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">post_message</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhooks/inbound</td><td className="px-3 py-2">No</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">-</td></tr>
