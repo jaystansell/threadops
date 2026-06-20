@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
+  { href: "/docs/api", label: "API Docs" },
 ];
 
 export function MobileNav() {
