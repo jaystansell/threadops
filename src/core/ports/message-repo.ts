@@ -11,5 +11,6 @@ export interface MessageCreateInput {
   thread_id: ThreadId;
   author_id: string;
   author_kind: MessageAuthorKind;
+  author_name?: string | null;
   body: string;
 }

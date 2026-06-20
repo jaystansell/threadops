@@ -174,9 +174,9 @@
       "post": {
         "operationId": "createMessage",
         "summary": "Create a message",
-        "description": "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook.",
+        "description": "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook. Supports both cookie auth (user messages) and API key auth via X-API-Key header (agent messages). When using an API key, `author_kind` is automatically set to `agent` and `author_name` is set to the key's label.",
         "tags": ["Messages"],
-        "security": [{ "cookieAuth": [] }],
+        "security": [{ "cookieAuth": [] }, { "apiKeyAuth": [] }],
         "parameters": [
           {
             "name": "threadId",
@@ -199,7 +199,7 @@
                     "type": "string",
                     "enum": ["user", "agent"],
                     "default": "user",
-                    "description": "Whether the author is a human user or an agent."
+                    "description": "Whether the author is a human user or an agent. Automatically set to 'agent' when using API key auth."
                   }
                 }
               },
@@ -828,7 +828,7 @@
         "type": "apiKey",
         "in": "header",
         "name": "X-API-Key",
-        "description": "API key created via the API Keys management endpoints. Used for the inbound webhook endpoint."
+        "description": "API key created via the API Keys management endpoints. Used for the inbound webhook endpoint and for posting agent messages to threads."
       }
     },
     "schemas": {
@@ -852,6 +852,7 @@
           "thread_id": { "type": "string" },
           "author_id": { "type": "string" },
           "author_kind": { "type": "string", "enum": ["user", "agent"] },
+          "author_name": { "type": "string", "nullable": true, "description": "Display name of the author. For agent messages, this is the API key's label. Null for user messages unless explicitly set." },
           "body": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }

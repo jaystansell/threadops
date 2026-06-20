@@ -49,6 +49,9 @@ export default async function ApiKeysPage() {
                       </span>
                     )}
                   </div>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Posts as: <span className="font-medium">{key.label}</span>
+                  </p>
                   <p className="text-sm font-mono text-[var(--muted-foreground)]">
                     {key.key_prefix}...
                   </p>

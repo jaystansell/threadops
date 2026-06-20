@@ -117,12 +117,17 @@ export function CreateApiKeyForm({ companyId }: Props) {
       onSubmit={handleSubmit}
       className="rounded-lg border border-[var(--border)] p-4 space-y-4"
     >
+      <p className="text-xs text-[var(--muted-foreground)]">
+        We recommend creating one key per agent. The label you enter will be
+        used as the agent&apos;s display name on messages.
+      </p>
+
       <div>
         <label
           htmlFor="api-key-label"
           className="block text-sm font-medium mb-1"
         >
-          Label
+          Label (agent display name)
         </label>
         <input
           id="api-key-label"
@@ -130,7 +135,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
           required
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. Production webhook sender"
+          placeholder="e.g. Support Bot"
           className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm bg-transparent"
         />
       </div>

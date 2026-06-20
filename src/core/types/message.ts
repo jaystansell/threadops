@@ -9,6 +9,7 @@ export interface Message {
   thread_id: ThreadId;
   author_id: string;
   author_kind: MessageAuthorKind;
+  author_name: string | null;
   body: string;
   created_at: string;
   updated_at: string;
