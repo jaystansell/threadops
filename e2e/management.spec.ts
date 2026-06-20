@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 import { signUp, uniqueEmail } from "./helpers/auth";
 
 test.describe("Webhook & API Key management", () => {
-  const testEmail = uniqueEmail();
-
   test.beforeEach(async ({ page }) => {
+    const testEmail = uniqueEmail();
     await signUp(page, testEmail);
   });
 

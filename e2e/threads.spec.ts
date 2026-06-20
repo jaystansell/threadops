@@ -2,12 +2,12 @@ import { test, expect } from "@playwright/test";
 import { signUp, uniqueEmail } from "./helpers/auth";
 
 test.describe("Thread flows", () => {
-  const testEmail = uniqueEmail();
   const threadTitle = `Test Thread ${Date.now()}`;
   const threadMessage = "This is the first message in the test thread.";
   const replyMessage = "This is a reply to the test thread.";
 
   test.beforeEach(async ({ page }) => {
+    const testEmail = uniqueEmail();
     await signUp(page, testEmail);
   });
 
