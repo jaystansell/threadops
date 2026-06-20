@@ -6,7 +6,7 @@ const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
   { value: "closed", label: "Closed" },
   { value: "archived", label: "Archived" },
-  { value: "", label: "All" },
+  { value: "all", label: "All" },
 ] as const;
 
 export function StatusFilter() {
@@ -16,11 +16,7 @@ export function StatusFilter() {
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set("status", value);
-    } else {
-      params.delete("status");
-    }
+    params.set("status", value);
     params.delete("page");
     router.push(`/threads?${params.toString()}`);
   }

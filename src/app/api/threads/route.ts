@@ -73,7 +73,8 @@ export async function GET(req: NextRequest) {
     query = query.eq("theme_id", themeFilter);
   }
   if (searchQuery) {
-    query = query.ilike("title", `%${searchQuery}%`);
+    const escaped = searchQuery.replace(/[%_\\]/g, "\\$&");
+    query = query.ilike("title", `%${escaped}%`);
   }
 
   query = query.range(offset, offset + PAGE_SIZE - 1);
