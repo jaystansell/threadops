@@ -91,7 +91,7 @@ export function ThreadSidebar({
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
-  const threads = overrideThreads ?? [...initialThreads, ...extraThreads];
+  const threads = [...(overrideThreads ?? initialThreads), ...extraThreads];
   const [status, setStatus] = useState("open");
   const [groupBy, setGroupBy] = useState("agent");
   const [search, setSearch] = useState("");
