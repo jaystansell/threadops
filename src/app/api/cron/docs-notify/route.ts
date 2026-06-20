@@ -36,7 +36,7 @@ async function signPayload(
     .join("");
 }
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
 

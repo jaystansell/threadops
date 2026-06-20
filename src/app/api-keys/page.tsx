@@ -18,7 +18,7 @@ export default async function ApiKeysPage() {
   const apiKeyRepo = createApiKeyRepo(db);
   const keys: ApiKey[] = await apiKeyRepo.listByCompany(userCompany.companyId);
 
-  const hasKeys = keys.some((k) => k.status === "active");
+  const hasKeys = keys.some((k) => !k.revoked_at);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">

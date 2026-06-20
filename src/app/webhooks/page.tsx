@@ -17,7 +17,7 @@ export default async function WebhooksPage(props: {
 
   const searchParams = await props.searchParams;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const limit = 10;
+  const limit = 50;
   const offset = (page - 1) * limit;
 
   const db = createServerClient();
@@ -39,76 +39,80 @@ export default async function WebhooksPage(props: {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-xl font-bold">Webhook Deliveries</h2>
+    <div className="max-w-5xl mx-auto px-4 py-6 w-full space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold font-mono">webhook.log</h2>
+          <span className="text-xs text-[var(--muted-foreground)] font-mono">
+            {total} {total === 1 ? "entry" : "entries"}
+          </span>
+        </div>
         <Link
           href="/webhooks/endpoints"
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity w-fit"
+          className="px-3 py-1.5 text-xs font-medium rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors font-mono"
         >
-          Manage Endpoints
+          endpoints
         </Link>
       </div>
 
       {deliveries.length === 0 ? (
-        <p className="text-[var(--muted-foreground)] text-sm">
-          No webhook deliveries yet.
-        </p>
+        <div className="rounded border border-[var(--border)] bg-[var(--muted)]/30 p-6 text-center">
+          <p className="text-sm text-[var(--muted-foreground)] font-mono">
+            No deliveries logged yet.
+          </p>
+        </div>
       ) : (
         <>
-          <ul className="space-y-2">
-            {deliveries.map((d) => (
-              <li key={d.id}>
+          <div className="rounded-lg border border-[var(--border)] bg-[#0a0e14] overflow-hidden">
+            <div className="px-3 py-2 border-b border-[var(--border)] flex items-center gap-3 text-[10px] font-mono text-[var(--muted-foreground)] uppercase tracking-wider">
+              <span className="w-[140px] shrink-0">timestamp</span>
+              <span className="w-[60px] shrink-0 text-center">status</span>
+              <span className="w-[150px] shrink-0">event</span>
+              <span className="flex-1">payload</span>
+            </div>
+            <div className="divide-y divide-[var(--border)]/30">
+              {deliveries.map((d) => (
                 <Link
+                  key={d.id}
                   href={`/webhooks/${d.id}`}
-                  className="block rounded-lg border border-[var(--border)] p-3 sm:p-4 hover:border-[var(--primary)] transition-colors"
+                  className="flex items-start gap-3 px-3 py-1.5 hover:bg-white/[0.03] transition-colors text-xs font-mono group"
                 >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="font-mono text-sm truncate max-w-full sm:max-w-[200px]">
-                      {d.idempotency_key}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={d.status} />
-                      <span className="text-xs text-[var(--muted-foreground)]">
-                        {d.attempts} attempt{d.attempts !== 1 ? "s" : ""}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
-                      {d.event_type}
-                    </span>
-                    <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
-                      {truncatePayload(d.payload)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  <span className="w-[140px] shrink-0 text-[var(--muted-foreground)] tabular-nums">
                     <FormattedDate date={d.created_at} includeTime />
-                  </p>
+                  </span>
+                  <span className="w-[60px] shrink-0 text-center">
+                    <LogStatus status={d.status} />
+                  </span>
+                  <span className="w-[150px] shrink-0 text-blue-400">
+                    {d.event_type}
+                  </span>
+                  <span className="flex-1 text-[var(--muted-foreground)] truncate group-hover:text-[var(--foreground)] transition-colors">
+                    {compactPayload(d.payload)}
+                  </span>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
+            <div className="flex items-center justify-center gap-2 pt-1 font-mono text-xs">
               {page > 1 && (
                 <Link
                   href={`/webhooks?page=${page - 1}`}
-                  className="px-3 py-1 text-sm rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+                  className="px-2 py-1 rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
                 >
-                  Previous
+                  prev
                 </Link>
               )}
-              <span className="text-sm text-[var(--muted-foreground)]">
-                Page {page} of {totalPages}
+              <span className="text-[var(--muted-foreground)]">
+                {page}/{totalPages}
               </span>
               {page < totalPages && (
                 <Link
                   href={`/webhooks?page=${page + 1}`}
-                  className="px-3 py-1 text-sm rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+                  className="px-2 py-1 rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
                 >
-                  Next
+                  next
                 </Link>
               )}
             </div>
@@ -119,23 +123,27 @@ export default async function WebhooksPage(props: {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    succeeded: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-    failed: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-    pending: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
-    processing: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+function LogStatus({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    succeeded: "text-green-400",
+    failed: "text-red-400",
+    pending: "text-yellow-400",
+    processing: "text-blue-400",
+  };
+  const icons: Record<string, string> = {
+    succeeded: "\u2713",
+    failed: "\u2717",
+    pending: "\u25CB",
+    processing: "\u25CF",
   };
   return (
-    <span
-      className={`text-xs px-2 py-0.5 rounded-full ${colors[status] ?? "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}
-    >
-      {status}
+    <span className={styles[status] ?? "text-[var(--muted-foreground)]"}>
+      {icons[status] ?? "\u25CB"} {status === "succeeded" ? "ok" : status}
     </span>
   );
 }
 
-function truncatePayload(payload: Record<string, unknown>): string {
+function compactPayload(payload: Record<string, unknown>): string {
   const str = JSON.stringify(payload);
-  return str.length > 80 ? str.slice(0, 80) + "…" : str;
+  return str.length > 120 ? str.slice(0, 120) + "\u2026" : str;
 }
