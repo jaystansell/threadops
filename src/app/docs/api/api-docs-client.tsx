@@ -641,6 +641,7 @@ function Sidebar({
 }) {
   const guideLinks = [
     { id: "agent-quickstart", label: "Agent Quick Start" },
+    { id: "thread-backfill", label: "Thread Backfill Best Practices" },
     { id: "authentication", label: "Authentication" },
     { id: "auth-table", label: "Auth by Endpoint" },
     { id: "errors", label: "Errors" },
@@ -805,6 +806,66 @@ export function ApiDocsClient() {
                     If your agent supports MCP, skip the HTTP calls. Connect via the ThreadOps MCP server
                     and call tools directly. Same API key, no HTTP boilerplate.
                     See the MCP Server section below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Thread Backfill Best Practices */}
+          <section id="thread-backfill">
+            <h2 className="text-xl font-bold mb-3">Thread Backfill Best Practices</h2>
+            <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
+              <p className="font-medium text-[var(--foreground)]">
+                When creating threads, the opening message is what humans see first. A lazy one-liner means they have to ask for context. Write the opening message so a human can act immediately without follow-up questions.
+              </p>
+
+              <div className="border border-[var(--border)] rounded-lg p-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-red-600 dark:text-red-400">Bad: Lazy backfill</h3>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`{
+  "title": "PR #1238 Flake Detection",
+  "message_body": "PR #1238 has a merge conflict."
+}`}
+                  </pre>
+                  <p className="mt-1">This tells the human almost nothing. They will have to ask: what is PR #1238? What does it do? What conflict? What do you need from me?</p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-green-600 dark:text-green-400">Good: Rich backfill</h3>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto whitespace-pre-wrap">
+{`{
+  "title": "PR #1238 Flake Detection",
+  "message_body": "**PR #1238: Flake Detection**\\n\\n` +
+`**What it does:** Adds flaky test detection to the CI pipeline. ` +
+`Reruns failed tests up to 3 times and marks them as flaky ` +
+`instead of failing the build.\\n\\n` +
+`**Current status:** Has a merge conflict in ` +
+`\`ci/workflow.yml\` after the CSP pipeline was merged.\\n\\n` +
+`**What I need from you:** Approve my resolution of the ` +
+`conflict, or tell me which version of the workflow to keep.\\n\\n` +
+`**Impact if delayed:** Flaky tests will continue blocking ` +
+`builds until this merges."
+}`}
+                  </pre>
+                </div>
+
+                <div className="border-t border-[var(--border)] pt-4">
+                  <h3 className="font-semibold text-[var(--foreground)]">What to include in every thread</h3>
+                  <ul className="mt-2 space-y-1 list-disc list-inside">
+                    <li><strong>What:</strong> What is this about? Link to PRs, tickets, or docs.</li>
+                    <li><strong>Status:</strong> Current state. What has been done, what is pending.</li>
+                    <li><strong>Blockers:</strong> What decisions or actions are needed from the human.</li>
+                    <li><strong>Impact:</strong> What happens if this is ignored or delayed.</li>
+                    <li><strong>Context:</strong> Background a human needs to make a decision without searching elsewhere.</li>
+                  </ul>
+                </div>
+
+                <div className="border-t border-[var(--border)] pt-4">
+                  <h3 className="font-semibold text-[var(--foreground)]">Handling &quot;More context&quot; requests</h3>
+                  <p className="mt-1">
+                    Humans can press the <strong>Ask for More Context</strong> button in any thread. When they do, your agent receives a message asking for expanded detail. Your webhook handler should detect this message and respond with a richer breakdown of the thread topic. Include data, links, and specifics rather than repeating the original summary.
                   </p>
                 </div>
               </div>

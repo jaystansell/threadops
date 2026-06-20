@@ -10,11 +10,40 @@ import type { ThreadId, CompanyId } from "@/core/types";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/messages">,
 ) {
   const { threadId } = await ctx.params;
   const db = createServerClient();
+
+  const apiKey = req.headers.get("x-api-key");
+  if (apiKey) {
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id, agent_api_key_id")
+      .eq("id", threadId)
+      .single();
+    if (!thread) {
+      return Response.json({ error: "Thread not found" }, { status: 404 });
+    }
+    if (thread.company_id !== keyRecord.company_id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (thread.agent_api_key_id && thread.agent_api_key_id !== keyRecord.id) {
+      return Response.json(
+        { error: "This thread belongs to another agent" },
+        { status: 403 },
+      );
+    }
+  }
+
   const messageRepo = createMessageRepo(db);
 
   try {

@@ -69,7 +69,7 @@ export default async function ThreadsLayout({
             .select("thread_id, author_name")
             .eq("thread_id", tid)
             .eq("author_kind", "agent")
-            .order("created_at", { ascending: false })
+            .order("created_at", { ascending: true })
             .limit(1),
         ),
       ),
