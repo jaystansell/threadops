@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
+import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import type { ThreadId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,15 @@ export async function POST(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/messages">,
 ) {
+  const supabase = await createAuthServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { threadId } = await ctx.params;
   const body = await req.json();
 
@@ -44,7 +54,7 @@ export async function POST(
   try {
     const message = await messageRepo.create({
       thread_id: threadId as ThreadId,
-      author_id: body.author_id ?? crypto.randomUUID(),
+      author_id: user.id,
       author_kind: body.author_kind ?? "user",
       body: body.body,
     });

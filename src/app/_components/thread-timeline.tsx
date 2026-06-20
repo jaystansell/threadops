@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Message } from "@/core/types";
-import { createBrowserClient } from "@/adapters/supabase/client";
+import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 
@@ -18,7 +18,7 @@ export function ThreadTimeline({
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
   useEffect(() => {
-    const db = createBrowserClient();
+    const db = createAuthBrowserClient();
     const realtime = createRealtimeAdapter(db);
     const sub = realtime.subscribeToThread(
       threadId as ThreadId,
