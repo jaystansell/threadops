@@ -1,6 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const supabase = await createAuthServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/threads");
+
   return (
     <div className="w-full">
       {/* Hero */}
