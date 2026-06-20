@@ -39,7 +39,8 @@ export async function createThread(
     const normalizedTags = input.tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
     if (normalizedTags.length > 0) {
       const rows = normalizedTags.map((tag) => ({ thread_id: thread.id, tag }));
-      await db.from("thread_tags").upsert(rows, { onConflict: "thread_id,tag" });
+      const { error: tagError } = await db.from("thread_tags").upsert(rows, { onConflict: "thread_id,tag" });
+      if (tagError) throw new Error(`Failed to add tags: ${tagError.message}`);
       tags = normalizedTags;
     }
   }

@@ -58,9 +58,12 @@ export async function PATCH(
     threadQuery = threadQuery.eq("agent_api_key_id", agentKeyId);
   }
 
-  const { data: thread } = await threadQuery.single();
-  if (!thread) {
+  const { data: thread, error: threadError } = await threadQuery.single();
+  if (threadError && threadError.code === "PGRST116") {
     return Response.json({ error: "Thread not found" }, { status: 404 });
+  }
+  if (threadError) {
+    return Response.json({ error: threadError.message }, { status: 500 });
   }
 
   const body = await req.json();
