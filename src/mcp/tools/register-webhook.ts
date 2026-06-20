@@ -3,6 +3,7 @@ import { createWebhookEndpointRepo } from "../../adapters/supabase/webhook-endpo
 import type { SupabaseClient } from "../../adapters/supabase/client";
 import type { AuthContext } from "../auth";
 import type { CompanyId } from "../../core/types";
+import { ALWAYS_ON_EVENTS } from "../../core/types";
 
 export interface RegisterWebhookInput {
   url: string;
@@ -15,10 +16,13 @@ export async function registerWebhook(
   input: RegisterWebhookInput,
 ) {
   const repo = createWebhookEndpointRepo(db);
+  const mergedEvents = Array.from(
+    new Set([...input.events, ...ALWAYS_ON_EVENTS]),
+  );
   return repo.create({
     company_id: auth.companyId as CompanyId,
     url: input.url,
-    events: input.events,
+    events: mergedEvents,
     secret: uuidv4(),
   });
 }

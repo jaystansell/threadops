@@ -120,9 +120,9 @@ export function registerTools(
     {
       url: z.string().url().describe("Webhook endpoint URL"),
       events: z
-        .array(z.enum(["message.created", "thread.created", "thread.status_changed"]))
+        .array(z.enum(["message.created", "thread.created", "thread.status_changed", "docs.updated"]))
         .min(1)
-        .describe("Events to subscribe to"),
+        .describe("Events to subscribe to. Note: docs.updated is always included automatically."),
     },
     async (args) => {
       try {

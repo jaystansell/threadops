@@ -4,7 +4,7 @@ import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
-import { WEBHOOK_EVENT_TYPES } from "@/core/types";
+import { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "@/core/types";
 import type { CompanyId, WebhookEventType } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -101,6 +101,11 @@ export async function POST(req: NextRequest) {
 
   const secret = generateSecret();
 
+  // Merge user-selected events with always-on events
+  const mergedEvents = Array.from(
+    new Set([...body.events, ...ALWAYS_ON_EVENTS]),
+  );
+
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
 
@@ -108,7 +113,7 @@ export async function POST(req: NextRequest) {
     const endpoint = await repo.create({
       company_id: companyId as CompanyId,
       url: body.url.trim(),
-      events: body.events,
+      events: mergedEvents,
       secret,
     });
     return Response.json(endpoint, { status: 201 });
