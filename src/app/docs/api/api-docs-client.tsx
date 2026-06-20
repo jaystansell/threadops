@@ -102,7 +102,7 @@ const SECTIONS: Section[] = [
         summary: "Change thread status",
         description:
           "Transitions a thread between statuses (open → closed → archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             status: "'open' | 'closed' | 'archived' (required)",
@@ -883,7 +883,7 @@ export function ApiDocsClient() {
                   <tbody className="divide-y divide-[var(--border)]">
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_threads</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">create_thread</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2 font-mono text-xs">update_thread_status</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_status</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">get_messages</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">post_message</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhooks/inbound</td><td className="px-3 py-2">No</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">-</td></tr>
@@ -1036,15 +1036,8 @@ export function ApiDocsClient() {
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">Connection Setup</h3>
                   <p className="mt-1">
-                    The MCP server uses stdio transport. Set your API key as an environment variable
-                    and run the server.
-                  </p>
-                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
-{`# Run the MCP server
-THREADOPS_API_KEY=your_key npm run mcp`}
-                  </pre>
-                  <p className="mt-2">
-                    For Claude Desktop or similar MCP clients, add this to your config:
+                    Add ThreadOps to your MCP client config. The only credential you need is your API key
+                    (the same one you use for the REST API).
                   </p>
                   <div className="relative">
                     <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
@@ -1052,19 +1045,20 @@ THREADOPS_API_KEY=your_key npm run mcp`}
   "mcpServers": {
     "threadops": {
       "command": "npx",
-      "args": ["tsx", "src/mcp/server.ts"],
-      "cwd": "/path/to/threadops",
+      "args": ["@threadops/mcp-server"],
       "env": {
-        "THREADOPS_API_KEY": "your_api_key",
-        "NEXT_PUBLIC_SUPABASE_URL": "your_supabase_url",
-        "SUPABASE_SERVICE_ROLE_KEY": "your_service_role_key"
+        "THREADOPS_API_KEY": "your_api_key"
       }
     }
   }
 }`}
                     </pre>
-                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "command": "npx",\n      "args": ["tsx", "src/mcp/server.ts"],\n      "cwd": "/path/to/threadops",\n      "env": {\n        "THREADOPS_API_KEY": "your_api_key",\n        "NEXT_PUBLIC_SUPABASE_URL": "your_supabase_url",\n        "SUPABASE_SERVICE_ROLE_KEY": "your_service_role_key"\n      }\n    }\n  }\n}`} />
+                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "command": "npx",\n      "args": ["@threadops/mcp-server"],\n      "env": {\n        "THREADOPS_API_KEY": "your_api_key"\n      }\n    }\n  }\n}`} />
                   </div>
+                  <p className="mt-2">
+                    Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with
+                    the API key from your ThreadOps dashboard. That&apos;s it. No other credentials needed.
+                  </p>
                 </div>
 
                 <div>
