@@ -25,11 +25,12 @@ export default async function ThreadsPage(props: {
 
   const db = createServerClient();
 
-  const { data: themes } = await db
+  const { data: themes, error: themesError } = await db
     .from("themes")
     .select("*")
     .eq("company_id", userCompany.companyId)
     .order("name", { ascending: true });
+  if (themesError) throw themesError;
 
   const themeList = (themes ?? []) as Theme[];
   const themeMap = new Map(themeList.map((t) => [t.id, t]));
@@ -44,12 +45,14 @@ export default async function ThreadsPage(props: {
     query = query.eq("theme_id", searchParams.theme as ThemeId);
   }
   if (searchQuery) {
-    query = query.ilike("title", `%${searchQuery}%`);
+    const escaped = searchQuery.replace(/[%_\\]/g, "\\$&");
+    query = query.ilike("title", `%${escaped}%`);
   }
 
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
-  const { data, count } = await query;
+  const { data, count, error } = await query;
+  if (error) throw error;
   const threads = (data ?? []) as Thread[];
   const total = count ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
