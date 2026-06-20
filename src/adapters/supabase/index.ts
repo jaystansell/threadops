@@ -4,6 +4,7 @@ export { createThreadRepo } from "./thread-repo";
 export { createMessageRepo } from "./message-repo";
 export { createApiKeyRepo } from "./api-key-repo";
 export { createWebhookRepo } from "./webhook-repo";
+export { createWebhookEndpointRepo } from "./webhook-endpoint-repo";
 export { createRealtimeAdapter } from "./realtime";
 export { createAuthBrowserClient } from "./auth/browser";
 export { createAuthServerClient } from "./auth/server";

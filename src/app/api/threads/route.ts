@@ -3,6 +3,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import type { CompanyId, ThemeId, ThreadId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,19 @@ export async function POST(req: NextRequest) {
       author_kind: "user",
       body: body.message_body.trim(),
     });
+
+    dispatchOutboundWebhooks(
+      body.company_id as CompanyId,
+      "thread.created",
+      {
+        thread_id: thread.id,
+        title: thread.title,
+        status: thread.status,
+        company_id: thread.company_id,
+        created_by: thread.created_by,
+        created_at: thread.created_at,
+      },
+    );
 
     return Response.json(thread, { status: 201 });
   } catch (err) {

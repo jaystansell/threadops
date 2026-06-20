@@ -21,12 +21,15 @@ export default function HomePage() {
           </p>
         </Link>
 
-        <div className="rounded-lg border border-[var(--border)] p-4 opacity-60">
+        <Link
+          href="/webhooks"
+          className="block rounded-lg border border-[var(--border)] p-4 hover:border-[var(--primary)] transition-colors"
+        >
           <h3 className="font-semibold">Webhooks</h3>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            View inbound webhook delivery logs.
+            View delivery logs and manage outbound endpoints.
           </p>
-        </div>
+        </Link>
       </div>
     </div>
   );

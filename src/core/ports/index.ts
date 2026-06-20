@@ -6,3 +6,8 @@ export type {
   WebhookDeliveryCreateInput,
 } from "./webhook-repo";
 export type { RealtimeAdapter, Subscription } from "./realtime";
+export type {
+  WebhookEndpointRepo,
+  WebhookEndpointCreateInput,
+  WebhookEndpointUpdateInput,
+} from "./webhook-endpoint-repo";

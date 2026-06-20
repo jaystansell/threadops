@@ -9,3 +9,9 @@ export type {
   WebhookDeliveryId,
   DeliveryStatus,
 } from "./webhook";
+export type {
+  WebhookEndpoint,
+  WebhookEndpointId,
+  WebhookEventType,
+} from "./webhook-endpoint";
+export { WEBHOOK_EVENT_TYPES } from "./webhook-endpoint";
