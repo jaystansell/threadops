@@ -171,9 +171,45 @@ curl -s -X POST http://localhost:3000/api/webhooks/inbound \
   -d '{"source": "test", "event_type": "ping", "data": {}}'
 ```
 
+### API Key Auth on Thread Routes (curl)
+
+API key auth works on `/api/threads` and `/api/threads/[id]/messages` (and webhooks). It does NOT work on `/api/companies/*` routes (those require cookie auth).
+
+To create a test API key for curl testing, insert directly via Supabase REST API (the `/api/companies/*/api-keys` route requires cookie auth):
+```bash
+# Generate key + hash
+KEY_DATA=$(node -e "const c=require('crypto');const p='to_'+c.randomBytes(32).toString('hex');const h=c.createHash('sha256').update(p).digest('hex');console.log(JSON.stringify({plaintext:p,hash:h,prefix:p.substring(0,7)}))")
+echo "$KEY_DATA"
+
+# Insert via Supabase REST API (service role key bypasses RLS)
+source .env.local
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/api_keys" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d "{\"company_id\":\"a0000000-0000-0000-0000-000000000001\",\"label\":\"TestBot\",\"key_hash\":$(echo $KEY_DATA | python3 -c 'import sys,json;print(json.dumps(json.load(sys.stdin)["hash"]))'),\"key_prefix\":$(echo $KEY_DATA | python3 -c 'import sys,json;print(json.dumps(json.load(sys.stdin)["prefix"]))'),\"scopes\":[\"threads:read\",\"threads:write\",\"messages:read\",\"messages:write\"]}"
+```
+
+Test the key works:
+```bash
+# Should return 200 with threads JSON (NOT 307 redirect)
+curl -s -w "\n%{http_code}" -H "X-API-Key: <plaintext_key>" http://localhost:3000/api/threads
+
+# Should return 201 with author_kind:"agent", author_name matching key label
+curl -s -X POST -H "X-API-Key: <plaintext_key>" -H "Content-Type: application/json" \
+  -d '{"body":"Test message"}' http://localhost:3000/api/threads/d0000000-0000-0000-0000-000000000001/messages
+
+# Invalid key should return 401, NOT fallthrough to cookie auth
+curl -s -w "\n%{http_code}" -H "X-API-Key: to_invalid" http://localhost:3000/api/threads
+```
+
+**Important:** The proxy matches `/api/threads` (no trailing slash) via `.startsWith()`. If this is changed to include a trailing slash, requests to `GET /api/threads` and `POST /api/threads` will be redirected to `/login` even with a valid API key.
+
 ### Error Handling
-- Missing `x-api-key` header → 401 `"Missing x-api-key header"`
-- Invalid API key → 401 `"Invalid API key"`
+- Missing `x-api-key` header on protected route → 307 redirect to `/login`
+- Invalid API key on `/api/threads` → 401 `"Invalid API key"`
+- Invalid API key on `/api/webhooks/inbound` → 401 `"Invalid API key"`
 - Empty message body → 400 `"body is required and must be a string"`
 - Invalid scopes (e.g. `["admin:delete"]`) → 400 `"Invalid scopes provided"`
 - Cross-company API key → 403 `"Forbidden"`
