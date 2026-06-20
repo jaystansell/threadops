@@ -297,6 +297,7 @@ export async function POST(req: NextRequest) {
       company_id: thread.company_id,
       created_by: thread.created_by,
       created_at: thread.created_at,
+      current_summary: null,
     });
 
     return Response.json(thread, { status: 201 });

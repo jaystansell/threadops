@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
-  | { kind: "ok"; companyId: string; keyId: string };
+  | { kind: "ok"; companyId: string; keyId: string; keyLabel: string };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const apiKey = req.headers.get("x-api-key");
@@ -20,7 +20,7 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id };
+  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label };
 }
 
 export async function GET(
@@ -125,6 +125,18 @@ export async function PATCH(
       return Response.json({ error: "summary must be a string or null" }, { status: 400 });
     }
     updates.summary = body.summary;
+
+    // Append to summary log if setting a non-null summary
+    if (body.summary) {
+      const authorKind = agentKeyId ? "agent" : "user";
+      const authorName = apiKeyResult.kind === "ok" ? apiKeyResult.keyLabel : undefined;
+      await db.from("thread_summaries").insert({
+        thread_id: threadId,
+        summary: body.summary,
+        author_kind: authorKind,
+        author_name: authorName ?? null,
+      });
+    }
   }
 
   if ("title" in body) {

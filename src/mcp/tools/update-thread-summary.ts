@@ -31,5 +31,14 @@ export async function updateThreadSummary(
     .single();
 
   if (error) throw error;
+
+  // Append to summary log
+  await db.from("thread_summaries").insert({
+    thread_id: input.thread_id,
+    summary: input.summary,
+    author_kind: "agent",
+    author_name: auth.keyLabel ?? null,
+  });
+
   return data;
 }

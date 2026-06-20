@@ -608,7 +608,7 @@ const SECTIONS: Section[] = [
         path: "/api/threads/{threadId}",
         summary: "Update thread (summary, title)",
         description:
-          "Update a thread's summary and/or title. The summary field is designed for agent-written summaries of thread content.",
+          "Update a thread's summary and/or title. Each summary update is appended to a summary log so agents and users can query past summaries for better context.",
         auth: "apiKey",
         requestBody: {
           schema: {
@@ -626,6 +626,36 @@ const SECTIONS: Section[] = [
         },
         errorCodes: [
           { status: 400, description: "No valid fields to update or invalid values." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads/{threadId}/summaries",
+        summary: "List summary history",
+        description:
+          "Returns the full summary log for a thread, ordered newest first. Each entry records who wrote the summary (agent or user) and when. Agents can use past summaries to build better context when generating new ones.",
+        auth: "apiKey",
+        responseExample: {
+          thread_id: "t_abc123",
+          summaries: [
+            {
+              id: "s_xyz789",
+              summary: "Apology sent Jun 18. Waiting for briefing call booking.",
+              author_kind: "agent",
+              author_name: "Tasklet ProdCo",
+              created_at: "2026-06-20T19:30:00Z",
+            },
+            {
+              id: "s_xyz788",
+              summary: "Initial outreach complete. Guest confirmed interest.",
+              author_kind: "agent",
+              author_name: "Tasklet ProdCo",
+              created_at: "2026-06-18T14:00:00Z",
+            },
+          ],
+        },
+        errorCodes: [
           { status: 404, description: "Thread not found." },
         ],
       },

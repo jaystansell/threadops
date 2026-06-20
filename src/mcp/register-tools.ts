@@ -13,6 +13,7 @@ import { search } from "./tools/search";
 import { updateThreadTags } from "./tools/update-thread-tags";
 import { updateThreadMetadata } from "./tools/update-thread-metadata";
 import { updateThreadSummary } from "./tools/update-thread-summary";
+import { listThreadSummaries } from "./tools/list-thread-summaries";
 
 function toolResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
@@ -221,7 +222,7 @@ export function registerTools(
 
   server.tool(
     "update_thread_summary",
-    "Set or update the summary for a thread.",
+    "Set or update the summary for a thread. Each update is appended to the summary log for history.",
     {
       thread_id: z.string().describe("Thread ID"),
       summary: z.string().describe("Summary text for the thread"),
@@ -230,6 +231,24 @@ export function registerTools(
       try {
         const auth = await getAuth();
         const data = await updateThreadSummary(db, auth, args);
+        return toolResult(data);
+      } catch (err) {
+        return toolError(err instanceof Error ? err.message : String(err));
+      }
+    },
+  );
+
+  server.tool(
+    "list_thread_summaries",
+    "List the summary history log for a thread. Returns all past summaries ordered newest first.",
+    {
+      thread_id: z.string().describe("Thread ID"),
+      limit: z.number().int().min(1).max(200).optional().describe("Max results (default 50)"),
+    },
+    async (args) => {
+      try {
+        const auth = await getAuth();
+        const data = await listThreadSummaries(db, auth, args);
         return toolResult(data);
       } catch (err) {
         return toolError(err instanceof Error ? err.message : String(err));
