@@ -263,7 +263,7 @@ const SECTIONS: Section[] = [
         summary: "List webhook endpoints",
         description:
           "Returns all outbound webhook endpoints configured for the authenticated user's company.",
-        auth: "cookie",
+        auth: "apiKey",
         responseExample: [
           {
             id: "we_001",
@@ -283,7 +283,7 @@ const SECTIONS: Section[] = [
         summary: "Create a webhook endpoint",
         description:
           "Registers a new outbound webhook endpoint. A signing secret is generated automatically.",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (required, valid URL)",
@@ -313,7 +313,7 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Update a webhook endpoint",
         description: "Partially updates a webhook endpoint (url, events, or active status).",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (optional)",
@@ -341,7 +341,7 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Delete a webhook endpoint",
         description: "Permanently removes a webhook endpoint.",
-        auth: "cookie",
+        auth: "apiKey",
         responseExample: { message: "Deleted" },
       },
       {
@@ -608,7 +608,7 @@ const SECTIONS: Section[] = [
         path: "/api/threads/{threadId}",
         summary: "Update thread (summary, title)",
         description:
-          "Update a thread's summary and/or title. The summary field is designed for agent-written summaries of thread content.",
+          "Update a thread's summary and/or title. Each summary update is appended to a summary log so agents and users can query past summaries for better context.",
         auth: "apiKey",
         requestBody: {
           schema: {
@@ -626,6 +626,36 @@ const SECTIONS: Section[] = [
         },
         errorCodes: [
           { status: 400, description: "No valid fields to update or invalid values." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads/{threadId}/summaries",
+        summary: "List summary history",
+        description:
+          "Returns the full summary log for a thread, ordered newest first. Each entry records who wrote the summary (agent or user) and when. Agents can use past summaries to build better context when generating new ones.",
+        auth: "apiKey",
+        responseExample: {
+          thread_id: "t_abc123",
+          summaries: [
+            {
+              id: "s_xyz789",
+              summary: "Apology sent Jun 18. Waiting for briefing call booking.",
+              author_kind: "agent",
+              author_name: "Tasklet ProdCo",
+              created_at: "2026-06-20T19:30:00Z",
+            },
+            {
+              id: "s_xyz788",
+              summary: "Initial outreach complete. Guest confirmed interest.",
+              author_kind: "agent",
+              author_name: "Tasklet ProdCo",
+              created_at: "2026-06-18T14:00:00Z",
+            },
+          ],
+        },
+        errorCodes: [
           { status: 404, description: "Thread not found." },
         ],
       },
@@ -1127,6 +1157,8 @@ export function ApiDocsClient() {
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">PATCH /.../api-keys/:id/revoke</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_summary</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/summaries</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_thread_summaries</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_webhooks</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">register_webhook</td></tr>
                   </tbody>

@@ -143,7 +143,7 @@ export async function POST(
 
     const { data: thread } = await db
       .from("threads")
-      .select("company_id")
+      .select("company_id, summary")
       .eq("id", threadId)
       .single();
 
@@ -159,6 +159,7 @@ export async function POST(
           author_name: message.author_name,
           body: message.body,
           created_at: message.created_at,
+          current_summary: thread.summary ?? null,
         },
       );
     }

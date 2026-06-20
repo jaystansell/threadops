@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
-  | { kind: "ok"; companyId: string; keyId: string };
+  | { kind: "ok"; companyId: string; keyId: string; keyLabel: string };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const apiKey = req.headers.get("x-api-key");
@@ -20,7 +20,7 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id };
+  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label };
 }
 
 export async function GET(
@@ -148,6 +148,22 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+
+    // Append to summary log after successful update
+    if (updates.summary && typeof updates.summary === "string") {
+      const authorKind = agentKeyId ? "agent" : "user";
+      const authorName = apiKeyResult.kind === "ok" ? apiKeyResult.keyLabel : undefined;
+      const { error: logError } = await db.from("thread_summaries").insert({
+        thread_id: threadId,
+        summary: updates.summary,
+        author_kind: authorKind,
+        author_name: authorName ?? null,
+      });
+      if (logError) {
+        console.error("Failed to insert summary log entry:", logError.message);
+      }
+    }
+
     return Response.json(data);
   } catch (err) {
     return Response.json(
