@@ -17,9 +17,26 @@ interface CreateResult {
 function buildAgentPrompt(key: string, label: string): string {
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
-  return `## ThreadOps API Configuration
+  return `## ThreadOps: Your Working Memory
 
-You are "${label}" on ThreadOps. Use this configuration to interact with the forum.
+ThreadOps is your persistent working memory that outlasts your context window. Every conversation you have with humans lives here as a thread. When your context resets, ThreadOps remembers what happened.
+
+**You are "${label}" on ThreadOps.** This is your identity. Your threads, summaries, tags, and metadata belong to you.
+
+### What You Should Do Right Now
+
+1. **Register a webhook** so you get notified when humans reply to your threads (see below).
+2. **List your threads** to see what conversations already exist.
+3. **Backfill each thread** with a summary, tags, and metadata so you have full context on every future invocation without reading every message.
+4. **Post updates** to threads whenever you complete work or need human input.
+
+### Why This Matters
+
+Without ThreadOps, you lose all context when your session ends. With it, you can start any future session by calling \`GET /api/threads?status=open\` and immediately see every active workstream with summaries, tags, and metadata. One API call replaces re-reading hundreds of messages.
+
+---
+
+## API Reference
 
 **Base URL:** ${baseUrl}
 **API Key:** ${key}
@@ -56,18 +73,26 @@ Webhook payloads include the thread's current summary so you can see context at 
 
 ### After Setup: Backfill Your Threads
 
-After connecting, backfill your existing threads with structured data so every future invocation starts with full context.
+Your threads already have message history, but they lack structured context. Backfilling adds summaries, tags, and metadata so you never have to re-read old messages to understand a thread's state.
 
-For each of your threads:
-1. Read the messages: GET /api/threads/{id}/messages
-2. Generate and set a summary: PATCH /api/threads/{id} with { "summary": "..." }
-3. Add relevant tags: POST /api/threads/{id}/tags with { "tags": ["category", "status"] }
-4. Set metadata: PATCH /api/threads/{id}/metadata with { "metadata": { "set": { "priority": "high" } } }
+**Do this for every thread you own:**
 
-After backfilling, you can query everything in one call:
-  GET /api/threads?status=open&tags=podcast-guest gives you all open podcast guest threads with summaries, tags, and metadata included.
+1. **Read the messages** to understand the current state:
+   GET /api/threads/{id}/messages
 
-Update summaries after posting messages. Each summary update is logged so you can review past summaries via GET /api/threads/{id}/summaries.
+2. **Write a summary** capturing the current status, what happened, and what needs to happen next:
+   PATCH /api/threads/{id} with { "summary": "Apology sent Jun 18. Waiting for Megan to book briefing call. CC'd Maisie and Natasha." }
+
+3. **Add tags** for the type of work and current state:
+   POST /api/threads/{id}/tags with { "tags": ["podcast-guest", "awaiting-reply"] }
+
+4. **Set metadata** for structured fields you want to query later:
+   PATCH /api/threads/{id}/metadata with { "metadata": { "set": { "priority": "high", "next_action_date": "2026-06-23" } } }
+
+**After backfilling, one call gives you everything:**
+  GET /api/threads?status=open&tags=podcast-guest returns all open podcast threads with summaries, tags, and metadata included. No message reading required.
+
+**Keep summaries current.** After posting messages or completing work, update the summary. Each update is logged so you can review past summaries via GET /api/threads/{id}/summaries.
 
 ### Quick Start
 
