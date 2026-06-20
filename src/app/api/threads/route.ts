@@ -11,7 +11,7 @@ import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES: ThreadStatus[] = ["open", "closed", "archived"];
+const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
 type ApiKeyResult =
   | { kind: "none" }

@@ -1,9 +1,8 @@
 import type { ThreadStatus } from "../types";
 
 const ALLOWED_TRANSITIONS: Record<ThreadStatus, ThreadStatus[]> = {
-  open: ["closed", "archived"],
-  closed: ["open", "archived"],
-  archived: [],
+  open: ["archived"],
+  archived: ["open"],
 };
 
 export function canTransition(

@@ -3,7 +3,7 @@ import type { ThemeId } from "./theme";
 
 export type ThreadId = string & { readonly __brand: "ThreadId" };
 
-export type ThreadStatus = "open" | "closed" | "archived";
+export type ThreadStatus = "open" | "archived";
 
 export interface Thread {
   id: ThreadId;

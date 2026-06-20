@@ -229,7 +229,7 @@
       "patch": {
         "operationId": "updateThreadStatus",
         "summary": "Change thread status",
-        "description": "Transitions a thread between statuses (open → closed → archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
+        "description": "Transitions a thread between statuses (open ↔ archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
         "tags": ["Threads"],
         "security": [{ "cookieAuth": [] }],
         "parameters": [
@@ -251,14 +251,14 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": ["open", "closed", "archived"],
+                    "enum": ["open", "archived"],
                     "description": "Target status."
                   },
                   "company_id": { "type": "string", "description": "Company ID for authorization." }
                 }
               },
               "example": {
-                "status": "closed",
+                "status": "archived",
                 "company_id": "c_xyz789"
               }
             }
@@ -839,7 +839,7 @@
           "company_id": { "type": "string" },
           "theme_id": { "type": "string", "nullable": true },
           "title": { "type": "string" },
-          "status": { "type": "string", "enum": ["open", "closed", "archived"] },
+          "status": { "type": "string", "enum": ["open", "archived"] },
           "created_by": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }

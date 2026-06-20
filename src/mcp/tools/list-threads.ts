@@ -2,7 +2,7 @@ import type { SupabaseClient } from "../../adapters/supabase/client";
 import type { AuthContext } from "../auth";
 import type { CompanyId, ThreadStatus } from "../../core/types";
 
-const VALID_STATUSES: ThreadStatus[] = ["open", "closed", "archived"];
+const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
 export interface ListThreadsInput {
   status?: string;

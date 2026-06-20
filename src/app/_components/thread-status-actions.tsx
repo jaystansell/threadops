@@ -15,14 +15,11 @@ const STATUS_ACTIONS: Record<
   { label: string; target: ThreadStatus }[]
 > = {
   open: [
-    { label: "Close", target: "closed" },
     { label: "Archive", target: "archived" },
   ],
-  closed: [
+  archived: [
     { label: "Reopen", target: "open" },
-    { label: "Archive", target: "archived" },
   ],
-  archived: [],
 };
 
 export function ThreadStatusActions({

@@ -10,7 +10,7 @@ import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
-const VALID_STATUSES: ThreadStatus[] = ["open", "closed", "archived"];
+const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
 export async function PATCH(
   req: NextRequest,
@@ -46,7 +46,7 @@ export async function PATCH(
 
   if (!body.status || !VALID_STATUSES.includes(body.status)) {
     return Response.json(
-      { error: "status must be one of: open, closed, archived" },
+      { error: "status must be one of: open, archived" },
       { status: 400 },
     );
   }
