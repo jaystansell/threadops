@@ -455,6 +455,182 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    id: "search",
+    title: "Search",
+    endpoints: [
+      {
+        method: "GET",
+        path: "/api/search",
+        summary: "Full-text search",
+        description:
+          "Search across threads and messages using PostgreSQL full-text search. Returns results with highlighted matched text.",
+        auth: "apiKey",
+        params: [
+          { name: "q", description: "Search query (required).", required: true },
+          { name: "scope", description: "Search scope: messages, threads, or all (default: all)." },
+          { name: "status", description: "Filter by thread status." },
+          { name: "author_kind", description: "Filter messages by author kind (user or agent)." },
+          { name: "created_after", description: "ISO date — only results after this date." },
+          { name: "created_before", description: "ISO date — only results before this date." },
+          { name: "page", description: "Page number (default 1)." },
+          { name: "per_page", description: "Results per page (default 20, max 100)." },
+        ],
+        responseExample: {
+          results: [
+            {
+              type: "thread",
+              thread_id: "t_abc123",
+              thread_title: "How to integrate webhooks?",
+              highlight: "How to integrate **webhooks**?",
+              created_at: "2025-01-15T10:30:00Z",
+            },
+            {
+              type: "message",
+              thread_id: "t_abc123",
+              message_id: "m_001",
+              highlight: "...set up inbound **webhooks** from our CRM...",
+              author_kind: "user",
+              created_at: "2025-01-15T10:30:00Z",
+            },
+          ],
+          total: 2,
+          page: 1,
+          per_page: 20,
+        },
+        errorCodes: [
+          { status: 400, description: "Missing q parameter or invalid scope." },
+          { status: 401, description: "Not authenticated." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "tags",
+    title: "Thread Tags",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/threads/{threadId}/tags",
+        summary: "Add tags to a thread",
+        description: "Adds one or more tags to a thread. Tags are case-insensitive and deduplicated.",
+        auth: "apiKey",
+        requestBody: {
+          schema: { tags: "string[] (required, non-empty)" },
+          example: { tags: ["bug", "urgent"] },
+        },
+        responseExample: [
+          { id: "tt_001", thread_id: "t_abc123", tag: "bug", created_at: "2025-01-15T10:30:00Z" },
+          { id: "tt_002", thread_id: "t_abc123", tag: "urgent", created_at: "2025-01-15T10:30:00Z" },
+        ],
+        errorCodes: [
+          { status: 400, description: "Missing or empty tags array." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+      {
+        method: "DELETE",
+        path: "/api/threads/{threadId}/tags/{tag}",
+        summary: "Remove a tag",
+        description: "Removes a specific tag from a thread.",
+        auth: "apiKey",
+        responseExample: { message: "Tag removed" },
+        errorCodes: [
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads?tags=tag1,tag2",
+        summary: "Filter threads by tags",
+        description: "Pass a comma-separated list of tags in the `tags` query parameter. AND logic — threads must have ALL specified tags.",
+        auth: "apiKey",
+        responseExample: [
+          {
+            id: "t_abc123",
+            title: "How to integrate webhooks?",
+            status: "open",
+            tags: ["bug", "urgent"],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "metadata",
+    title: "Thread Metadata",
+    endpoints: [
+      {
+        method: "PATCH",
+        path: "/api/threads/{threadId}/metadata",
+        summary: "Update thread metadata",
+        description:
+          "Merge key-value pairs into thread metadata. Use the `unset` array to remove keys.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            metadata: "object (key-value pairs to set/merge)",
+            unset: "string[] (optional, keys to remove)",
+          },
+          example: { metadata: { priority: "high", customer_id: "cust_123" }, unset: ["old_key"] },
+        },
+        responseExample: {
+          id: "t_abc123",
+          metadata: { priority: "high", customer_id: "cust_123" },
+        },
+        errorCodes: [
+          { status: 400, description: "Neither metadata nor unset provided." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads?metadata.key=value",
+        summary: "Filter threads by metadata",
+        description: "Filter threads by metadata values using dot notation in query parameters. Example: ?metadata.priority=high",
+        auth: "apiKey",
+        responseExample: [
+          {
+            id: "t_abc123",
+            title: "How to integrate webhooks?",
+            metadata: { priority: "high" },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "summaries",
+    title: "Thread Summaries",
+    endpoints: [
+      {
+        method: "PATCH",
+        path: "/api/threads/{threadId}",
+        summary: "Update thread (summary, title)",
+        description:
+          "Update a thread's summary and/or title. The summary field is designed for agent-written summaries of thread content.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            summary: "string | null (optional)",
+            title: "string (optional)",
+          },
+          example: { summary: "Customer needs help with webhook integration for their CRM system." },
+        },
+        responseExample: {
+          id: "t_abc123",
+          title: "How to integrate webhooks?",
+          summary: "Customer needs help with webhook integration for their CRM system.",
+          status: "open",
+          metadata: {},
+        },
+        errorCodes: [
+          { status: 400, description: "No valid fields to update or invalid values." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<Method, string> = {

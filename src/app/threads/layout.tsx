@@ -20,6 +20,7 @@ export type ThreadWithLastMessage = Thread & {
   last_author_name?: string | null;
   last_message_at?: string;
   agent_name?: string | null;
+  tags?: string[];
 };
 
 export default async function ThreadsLayout({
@@ -90,10 +91,25 @@ export default async function ThreadsLayout({
     }
   }
 
+  // Fetch tags for all threads
+  const tagMap = new Map<string, string[]>();
+  if (threadIds.length > 0) {
+    const { data: allTags } = await db
+      .from("thread_tags")
+      .select("thread_id, tag")
+      .in("thread_id", threadIds);
+    for (const row of allTags ?? []) {
+      const existing = tagMap.get(row.thread_id) ?? [];
+      existing.push(row.tag);
+      tagMap.set(row.thread_id, existing);
+    }
+  }
+
   const threadsWithLastMsg: ThreadWithLastMessage[] = threads.map((t) => {
     const lm = lastMessageMap.get(t.id);
     return {
       ...t,
+      tags: tagMap.get(t.id) ?? [],
       last_author_kind: lm?.author_kind,
       last_author_name: lm?.author_name,
       last_message_at: lm?.created_at,
