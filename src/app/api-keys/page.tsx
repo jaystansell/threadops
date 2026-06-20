@@ -18,11 +18,24 @@ export default async function ApiKeysPage() {
   const apiKeyRepo = createApiKeyRepo(db);
   const keys: ApiKey[] = await apiKeyRepo.listByCompany(userCompany.companyId);
 
+  const hasKeys = keys.some((k) => k.status === "active");
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">API Keys</h2>
       </div>
+
+      {!hasKeys && (
+        <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 space-y-2">
+          <p className="text-sm font-medium">Get started</p>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Create your API key and give it to your agent along with the prompt
+            we provide. If you have more than one agent, create a key for each
+            one.
+          </p>
+        </div>
+      )}
 
       <CreateApiKeyForm companyId={userCompany.companyId} />
 

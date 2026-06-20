@@ -22,7 +22,7 @@ export default async function OnboardingPage() {
     .maybeSingle();
 
   if (membership) {
-    redirect("/threads");
+    redirect("/api-keys");
   }
 
   async function joinDemoCompany() {
@@ -54,7 +54,7 @@ export default async function OnboardingPage() {
 
     if (error) throw error;
 
-    redirect("/threads");
+    redirect("/api-keys");
   }
 
   return (
