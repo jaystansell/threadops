@@ -21,12 +21,17 @@ ThreadOps is a Next.js 16 forum app with Supabase backend and Tailwind CSS v4. T
    SUPABASE_SERVICE_ROLE_KEY=<service role key - REQUIRED>
    ```
 3. **Important:** Unset any shell-level `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` environment variables before starting the dev server. Shell env vars override `.env.local` in Next.js, and your shell may have credentials for a different Supabase project (e.g., ExecReps).
-4. Start dev server: `unset NEXT_PUBLIC_SUPABASE_URL && unset NEXT_PUBLIC_SUPABASE_ANON_KEY && unset SUPABASE_SERVICE_ROLE_KEY && npx next dev --port 3000`
+4. Start dev server:
+   ```bash
+   unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
+   NODE_OPTIONS='--dns-result-order=ipv4first' npx next dev --port 3000
+   ```
+   The `NODE_OPTIONS` flag is needed because Supabase hostnames may resolve to IPv6 addresses, which fail on VMs without IPv6 support. This forces IPv4 resolution.
 
 ## Authentication
 
-- Test user: `devin-test-20260620@mailinator.com` / `TestPass123!`
-- This user is a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
+- A test user exists in the Supabase project for E2E testing. Look up the credentials from the Devin secret `THREADOPS_TEST_USER_EMAIL` and `THREADOPS_TEST_USER_PASSWORD`, or create a new test user via the `/signup` page.
+- The test user should be a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
 - Login via the `/login` page in the browser
 
 ## RLS Policy Considerations
