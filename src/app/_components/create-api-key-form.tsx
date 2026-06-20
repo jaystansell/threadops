@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { VALID_SCOPES } from "./api-key-scopes";
+import { VALID_SCOPES } from "@/core/rules/api-key";
 
 interface Props {
   companyId: string;
