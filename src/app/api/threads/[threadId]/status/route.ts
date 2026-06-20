@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { canTransition, InvalidStatusTransitionError } from "@/core/rules";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import { hashKey } from "@/core/rules/api-key";
 import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +16,31 @@ export async function PATCH(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/status">,
 ) {
-  const supabase = await createAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const apiKey = req.headers.get("x-api-key");
+  let authenticated = false;
 
-  if (!user) {
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+    authenticated = true;
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    authenticated = true;
+  }
+
+  if (!authenticated) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
