@@ -2,9 +2,10 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
-import type { ThreadId } from "@/core/types";
+import type { ThreadId, Theme } from "@/core/types";
 import { ThreadTimeline } from "@/app/_components/thread-timeline";
 import { MessageComposer } from "@/app/_components/message-composer";
+import { ThreadStatusActions } from "@/app/_components/thread-status-actions";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -29,6 +30,16 @@ export default async function ThreadDetailPage(
 
   const messages = await messageRepo.listByThread(threadId as ThreadId);
 
+  let themeName: string | null = null;
+  if (thread.theme_id) {
+    const { data: theme } = await db
+      .from("themes")
+      .select("name")
+      .eq("id", thread.theme_id)
+      .single();
+    themeName = (theme as Theme | null)?.name ?? null;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,13 +50,25 @@ export default async function ThreadDetailPage(
           &larr; All Threads
         </Link>
         <h2 className="text-xl font-bold mt-2">{thread.title}</h2>
-        <div className="flex gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1">
           <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
             {thread.status}
           </span>
+          {themeName && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
+              {themeName}
+            </span>
+          )}
           <span className="text-xs text-[var(--muted-foreground)]">
             {new Date(thread.created_at).toLocaleDateString()}
           </span>
+        </div>
+        <div className="mt-3">
+          <ThreadStatusActions
+            threadId={threadId}
+            companyId={userCompany.companyId}
+            currentStatus={thread.status}
+          />
         </div>
       </div>
 
