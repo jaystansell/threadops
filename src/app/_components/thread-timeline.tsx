@@ -75,7 +75,7 @@ export function ThreadTimeline({
               </span>
             ) : (
               <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
-                {msg.author_name ?? "You"}
+                {msg.author_name ?? "user"}
               </span>
             )}
             <span
