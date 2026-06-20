@@ -11,7 +11,7 @@ import { registerWebhook } from "./tools/register-webhook";
 import { listWebhooks } from "./tools/list-webhooks";
 
 function toolResult(data: unknown) {
-  return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
 }
 
 function toolError(message: string) {
