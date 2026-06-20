@@ -9,6 +9,8 @@ import { NewEndpointForm } from "@/app/_components/new-endpoint-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Webhook Endpoints" };
+
 export default async function EndpointsPage() {
   const userCompany = await getUserCompany();
   if (!userCompany) redirect("/onboarding");
