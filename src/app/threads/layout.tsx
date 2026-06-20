@@ -19,6 +19,7 @@ export type ThreadWithLastMessage = Thread & {
   last_author_kind?: "user" | "agent";
   last_author_name?: string | null;
   last_message_at?: string;
+  agent_name?: string | null;
 };
 
 export default async function ThreadsLayout({
@@ -47,21 +48,44 @@ export default async function ThreadsLayout({
   const threadIds = threads.map((t) => t.id);
   const lastMessageMap = new Map<string, LastMessageRow>();
 
+  const agentMap = new Map<string, string>();
+
   if (threadIds.length > 0) {
-    const results = await Promise.all(
-      threadIds.map((tid) =>
-        db
-          .from("messages")
-          .select("thread_id, author_kind, author_name, created_at")
-          .eq("thread_id", tid)
-          .order("created_at", { ascending: false })
-          .limit(1),
+    const [lastMsgResults, agentMsgResults] = await Promise.all([
+      Promise.all(
+        threadIds.map((tid) =>
+          db
+            .from("messages")
+            .select("thread_id, author_kind, author_name, created_at")
+            .eq("thread_id", tid)
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ),
       ),
-    );
-    for (const { data: msgs } of results) {
+      Promise.all(
+        threadIds.map((tid) =>
+          db
+            .from("messages")
+            .select("thread_id, author_name")
+            .eq("thread_id", tid)
+            .eq("author_kind", "agent")
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ),
+      ),
+    ]);
+    for (const { data: msgs } of lastMsgResults) {
       if (msgs && msgs.length > 0) {
         const row = msgs[0] as LastMessageRow;
         lastMessageMap.set(row.thread_id, row);
+      }
+    }
+    for (const { data: msgs } of agentMsgResults) {
+      if (msgs && msgs.length > 0) {
+        const row = msgs[0] as { thread_id: string; author_name: string | null };
+        if (row.author_name) {
+          agentMap.set(row.thread_id, row.author_name);
+        }
       }
     }
   }
@@ -73,14 +97,36 @@ export default async function ThreadsLayout({
       last_author_kind: lm?.author_kind,
       last_author_name: lm?.author_name,
       last_message_at: lm?.created_at,
+      agent_name: agentMap.get(t.id) ?? null,
     };
   });
+
+  // Detect agents without webhook endpoints
+  const [apiKeysResult, webhookEndpointsResult] = await Promise.all([
+    db
+      .from("api_keys")
+      .select("label")
+      .eq("company_id", userCompany.companyId)
+      .is("revoked_at", null),
+    db
+      .from("webhook_endpoints")
+      .select("id")
+      .eq("company_id", userCompany.companyId)
+      .eq("active", true),
+  ]);
+
+  const agentLabels = (apiKeysResult.data ?? []).map(
+    (k: { label: string }) => k.label,
+  );
+  const hasActiveWebhooks = (webhookEndpointsResult.data ?? []).length > 0;
+  const agentsWithoutWebhooks = hasActiveWebhooks ? [] : agentLabels;
 
   return (
     <div className="flex flex-1 overflow-hidden">
       <ThreadSidebar
         initialThreads={threadsWithLastMsg}
         companyId={userCompany.companyId}
+        agentsWithoutWebhooks={agentsWithoutWebhooks}
       />
       <main className="flex-1 overflow-y-auto p-4 sm:p-6">
         {children}

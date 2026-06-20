@@ -87,25 +87,55 @@ export async function GET(req: NextRequest) {
 
     const threads = data ?? [];
 
-    // Fetch last message for each thread
-    const enriched = await Promise.all(
-      threads.map(async (thread) => {
-        const { data: msgs } = await db
-          .from("messages")
-          .select("author_kind, author_name, created_at")
-          .eq("thread_id", thread.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+    // Fetch last message + last agent message for each thread
+    const [lastMsgResults, agentMsgResults] = await Promise.all([
+      Promise.all(
+        threads.map((thread) =>
+          db
+            .from("messages")
+            .select("thread_id, author_kind, author_name, created_at")
+            .eq("thread_id", thread.id)
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ),
+      ),
+      Promise.all(
+        threads.map((thread) =>
+          db
+            .from("messages")
+            .select("thread_id, author_name")
+            .eq("thread_id", thread.id)
+            .eq("author_kind", "agent")
+            .order("created_at", { ascending: false })
+            .limit(1),
+        ),
+      ),
+    ]);
 
-        const lm = msgs?.[0];
-        return {
-          ...thread,
-          last_author_kind: lm?.author_kind ?? null,
-          last_author_name: lm?.author_name ?? null,
-          last_message_at: lm?.created_at ?? null,
-        };
-      }),
-    );
+    const lastMsgMap = new Map<string, { author_kind: string; author_name: string | null; created_at: string }>();
+    for (const { data: msgs } of lastMsgResults) {
+      if (msgs && msgs.length > 0) {
+        lastMsgMap.set(msgs[0].thread_id, msgs[0]);
+      }
+    }
+
+    const agentMap = new Map<string, string>();
+    for (const { data: msgs } of agentMsgResults) {
+      if (msgs && msgs.length > 0 && msgs[0].author_name) {
+        agentMap.set(msgs[0].thread_id, msgs[0].author_name);
+      }
+    }
+
+    const enriched = threads.map((thread) => {
+      const lm = lastMsgMap.get(thread.id);
+      return {
+        ...thread,
+        last_author_kind: lm?.author_kind ?? null,
+        last_author_name: lm?.author_name ?? null,
+        last_message_at: lm?.created_at ?? null,
+        agent_name: agentMap.get(thread.id) ?? null,
+      };
+    });
 
     return Response.json(enriched);
   } catch (err) {
