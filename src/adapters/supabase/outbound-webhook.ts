@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createServerClient } from "./client";
 import { createWebhookEndpointRepo } from "./webhook-endpoint-repo";
 import { createWebhookRepo } from "./webhook-repo";
@@ -90,6 +91,6 @@ export function dispatchOutboundWebhooks(
     }
   };
 
-  // Fire and forget — don't block the API response
-  work();
+  // Use Next.js after() to keep the serverless function alive for background work
+  after(work);
 }

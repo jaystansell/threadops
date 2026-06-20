@@ -13,7 +13,7 @@ export default async function WebhooksPage(props: {
   if (!userCompany) redirect("/onboarding");
 
   const searchParams = await props.searchParams;
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10));
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const limit = 10;
   const offset = (page - 1) * limit;
 
