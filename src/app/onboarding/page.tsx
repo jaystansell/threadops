@@ -70,7 +70,7 @@ export default async function OnboardingPage() {
       <form action={joinDemoCompany}>
         <button
           type="submit"
-          className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+          className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
         >
           Join Demo Company
         </button>

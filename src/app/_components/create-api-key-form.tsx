@@ -187,7 +187,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
             <button
               type="button"
               onClick={handleCopy}
-              className="px-3 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity shrink-0"
+              className="px-3 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity shrink-0"
             >
               {copied ? "Copied!" : "Copy Key"}
             </button>
@@ -208,7 +208,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
             <button
               type="button"
               onClick={handleCopyPrompt}
-              className="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+              className="absolute top-2 right-2 px-2 py-1 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
             >
               {promptCopied ? "Copied!" : "Copy Prompt"}
             </button>
@@ -232,7 +232,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
         type="button"
         onClick={() => setIsOpen(true)}
         data-testid="create-api-key-button"
-        className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+        className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
       >
         Create API Key
       </button>
@@ -294,7 +294,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
           type="submit"
           disabled={loading || !label}
           data-testid="api-key-submit"
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {loading ? "Creating..." : "Create Key"}
         </button>

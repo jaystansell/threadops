@@ -44,7 +44,7 @@ export default async function WebhooksPage(props: {
         <h2 className="text-xl font-bold">Webhook Deliveries</h2>
         <Link
           href="/webhooks/endpoints"
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity w-fit"
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity w-fit"
         >
           Manage Endpoints
         </Link>

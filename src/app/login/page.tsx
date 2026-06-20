@@ -79,7 +79,7 @@ export default function LoginPage() {
           type="submit"
           disabled={loading}
           data-testid="login-submit"
-          className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loading ? "Logging in..." : "Log in"}
         </button>

@@ -211,11 +211,18 @@ export async function POST(req: NextRequest) {
   const messageRepo = createMessageRepo(db);
 
   try {
+    const agentKeyId =
+      authorKind === "agent"
+        ? authorId
+        : typeof body.agent_api_key_id === "string" && body.agent_api_key_id
+          ? body.agent_api_key_id
+          : undefined;
+
     const thread = await threadRepo.create({
       company_id: companyId as CompanyId,
       title: body.title.trim(),
       created_by: authorId,
-      agent_api_key_id: authorKind === "agent" ? authorId : undefined,
+      agent_api_key_id: agentKeyId,
     });
 
     await messageRepo.create({
