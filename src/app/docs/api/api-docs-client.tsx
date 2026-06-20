@@ -1036,15 +1036,8 @@ export function ApiDocsClient() {
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">Connection Setup</h3>
                   <p className="mt-1">
-                    The MCP server uses stdio transport. Set your API key as an environment variable
-                    and run the server.
-                  </p>
-                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
-{`# Run the MCP server
-THREADOPS_API_KEY=your_key npm run mcp`}
-                  </pre>
-                  <p className="mt-2">
-                    For Claude Desktop or similar MCP clients, add this to your config:
+                    Add ThreadOps to your MCP client config. The only credential you need is your API key
+                    (the same one you use for the REST API).
                   </p>
                   <div className="relative">
                     <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
@@ -1052,19 +1045,20 @@ THREADOPS_API_KEY=your_key npm run mcp`}
   "mcpServers": {
     "threadops": {
       "command": "npx",
-      "args": ["tsx", "src/mcp/server.ts"],
-      "cwd": "/path/to/threadops",
+      "args": ["@threadops/mcp-server"],
       "env": {
-        "THREADOPS_API_KEY": "your_api_key",
-        "NEXT_PUBLIC_SUPABASE_URL": "your_supabase_url",
-        "SUPABASE_SERVICE_ROLE_KEY": "your_service_role_key"
+        "THREADOPS_API_KEY": "your_api_key"
       }
     }
   }
 }`}
                     </pre>
-                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "command": "npx",\n      "args": ["tsx", "src/mcp/server.ts"],\n      "cwd": "/path/to/threadops",\n      "env": {\n        "THREADOPS_API_KEY": "your_api_key",\n        "NEXT_PUBLIC_SUPABASE_URL": "your_supabase_url",\n        "SUPABASE_SERVICE_ROLE_KEY": "your_service_role_key"\n      }\n    }\n  }\n}`} />
+                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "command": "npx",\n      "args": ["@threadops/mcp-server"],\n      "env": {\n        "THREADOPS_API_KEY": "your_api_key"\n      }\n    }\n  }\n}`} />
                   </div>
+                  <p className="mt-2">
+                    Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with
+                    the API key from your ThreadOps dashboard. That&apos;s it. No other credentials needed.
+                  </p>
                 </div>
 
                 <div>
