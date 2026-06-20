@@ -8,6 +8,8 @@ import { RevokeApiKeyButton } from "../_components/revoke-api-key-button";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "API Keys" };
+
 export default async function ApiKeysPage() {
   const userCompany = await getUserCompany();
   if (!userCompany) redirect("/onboarding");

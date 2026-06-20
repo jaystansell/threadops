@@ -6,6 +6,8 @@ import type { WebhookDelivery } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Webhook Deliveries" };
+
 export default async function WebhooksPage(props: {
   searchParams: Promise<{ page?: string }>;
 }) {
@@ -37,11 +39,11 @@ export default async function WebhooksPage(props: {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold">Webhook Deliveries</h2>
         <Link
           href="/webhooks/endpoints"
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity w-fit"
         >
           Manage Endpoints
         </Link>
@@ -58,10 +60,10 @@ export default async function WebhooksPage(props: {
               <li key={d.id}>
                 <Link
                   href={`/webhooks/${d.id}`}
-                  className="block rounded-lg border border-[var(--border)] p-4 hover:border-[var(--primary)] transition-colors"
+                  className="block rounded-lg border border-[var(--border)] p-3 sm:p-4 hover:border-[var(--primary)] transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-sm truncate max-w-[200px]">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="font-mono text-sm truncate max-w-full sm:max-w-[200px]">
                       {d.idempotency_key}
                     </span>
                     <div className="flex items-center gap-2">
@@ -71,11 +73,11 @@ export default async function WebhooksPage(props: {
                       </span>
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center gap-3">
+                  <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
                       {d.event_type}
                     </span>
-                    <span className="text-xs text-[var(--muted-foreground)]">
+                    <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
                       {truncatePayload(d.payload)}
                     </span>
                   </div>
