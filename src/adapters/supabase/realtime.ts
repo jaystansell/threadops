@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "./client";
 import type { Message, ThreadId } from "@/core/types";
 import type { RealtimeAdapter, Subscription } from "@/core/ports";
+import type { SupabaseClient } from "./client";
 
 export function createRealtimeAdapter(db: SupabaseClient): RealtimeAdapter {
   return {

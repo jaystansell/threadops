@@ -1,6 +1,6 @@
-import { createAuthServerClient } from "./server";
 import { createServerClient } from "@/adapters/supabase/client";
 import type { CompanyId } from "@/core/types";
+import { createAuthServerClient } from "./server";
 
 interface UserCompany {
   userId: string;

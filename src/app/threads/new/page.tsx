@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { NewThreadForm } from "@/app/_components/new-thread-form";
 import type { Theme } from "@/core/types";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 

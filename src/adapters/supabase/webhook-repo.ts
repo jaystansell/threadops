@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "./client";
 import type {
   WebhookDelivery,
   WebhookDeliveryId,
@@ -6,6 +5,7 @@ import type {
   CompanyId,
 } from "@/core/types";
 import type { WebhookRepo, WebhookDeliveryCreateInput } from "@/core/ports";
+import type { SupabaseClient } from "./client";
 
 export function createWebhookRepo(db: SupabaseClient): WebhookRepo {
   return {

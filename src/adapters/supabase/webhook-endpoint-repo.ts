@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "./client";
 import type {
   WebhookEndpoint,
   WebhookEndpointId,
@@ -9,6 +8,7 @@ import type {
   WebhookEndpointCreateInput,
   WebhookEndpointUpdateInput,
 } from "@/core/ports";
+import type { SupabaseClient } from "./client";
 
 export function createWebhookEndpointRepo(
   db: SupabaseClient,
