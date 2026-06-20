@@ -28,9 +28,15 @@ export async function POST(req: NextRequest) {
 
   const rawBody = await req.text();
 
-  const signature = req.headers.get(SIGNATURE_HEADER);
   const webhookSecret = process.env.WEBHOOK_SIGNING_SECRET;
-  if (signature && webhookSecret) {
+  if (webhookSecret) {
+    const signature = req.headers.get(SIGNATURE_HEADER);
+    if (!signature) {
+      return Response.json(
+        { error: "Missing webhook signature" },
+        { status: 401 },
+      );
+    }
     const valid = await verifySignature(rawBody, signature, webhookSecret);
     if (!valid) {
       return Response.json(
@@ -76,13 +82,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const delivery = await webhookRepo.create({
-    company_id: companyId,
-    idempotency_key: idempotencyKey,
-    source: (payload.source as string) ?? "unknown",
-    event_type: (payload.event_type as string) ?? "unknown",
-    payload,
-  });
+  let delivery;
+  try {
+    delivery = await webhookRepo.create({
+      company_id: companyId,
+      idempotency_key: idempotencyKey,
+      source: (payload.source as string) ?? "unknown",
+      event_type: (payload.event_type as string) ?? "unknown",
+      payload,
+    });
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      err.code === "23505"
+    ) {
+      const dup = await webhookRepo.findByIdempotencyKey(
+        companyId,
+        idempotencyKey,
+      );
+      return Response.json(
+        { message: "Already processed", delivery_id: dup?.id },
+        { status: 200 },
+      );
+    }
+    throw err;
+  }
 
   try {
     await webhookRepo.updateStatus(delivery.id, "processing");

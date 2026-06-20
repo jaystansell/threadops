@@ -49,9 +49,16 @@ export function createWebhookRepo(db: SupabaseClient): WebhookRepo {
       status: DeliveryStatus,
       error?: string,
     ): Promise<WebhookDelivery> {
+      const { data: current, error: fetchError } = await db
+        .from("webhook_deliveries")
+        .select("attempts")
+        .eq("id", deliveryId)
+        .single();
+      if (fetchError) throw fetchError;
+
       const update: Record<string, unknown> = {
         status,
-        attempts: status === "processing" ? undefined : undefined,
+        attempts: (current.attempts as number) + 1,
       };
       if (status === "succeeded" || status === "failed") {
         update.processed_at = new Date().toISOString();
@@ -59,7 +66,6 @@ export function createWebhookRepo(db: SupabaseClient): WebhookRepo {
       if (error) {
         update.last_error = error;
       }
-      delete update.attempts;
 
       const { data, error: dbError } = await db
         .from("webhook_deliveries")

@@ -42,7 +42,7 @@ export async function POST(
   try {
     const message = await messageRepo.create({
       thread_id: threadId as ThreadId,
-      author_id: body.author_id ?? "anonymous",
+      author_id: body.author_id ?? crypto.randomUUID(),
       author_kind: body.author_kind ?? "user",
       body: body.body,
     });
