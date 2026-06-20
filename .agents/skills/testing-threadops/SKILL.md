@@ -1,13 +1,15 @@
 ---
 name: testing-threadops
-description: Test the ThreadOps forum app end-to-end. Use when verifying UI, API routes, or database changes against a live Supabase project.
+description: Test ThreadOps forum features end-to-end. Use when verifying thread creation, status management, theme filtering, or other forum UI changes.
 ---
 
-# Testing ThreadOps
+## Overview
+
+ThreadOps is a Next.js 16 forum app with Supabase backend and Tailwind CSS v4. Testing involves running the app locally against the production Supabase database.
 
 ## Devin Secrets Needed
 
-- `THREADOPS_SUPABASE_SECRET_KEY` — Supabase secret/service role key (bypasses RLS). Stored as a user-scoped Devin secret.
+- `THREADOPS_SUPABASE_SECRET_KEY` — Supabase secret/service role key (bypasses RLS). Stored as a user-scoped Devin secret. Required for local dev because the app's RLS policies have self-referencing `company_members` queries that cause infinite recursion (PostgreSQL error 42P17) without the service role key.
 - The anon key and project URL can be retrieved via the Supabase MCP (`get_publishable_keys` for project `gymsbxkuiknbdtulmopv`).
 
 These should be in `.env.local` at the repo root:
@@ -18,32 +20,37 @@ SUPABASE_SERVICE_ROLE_KEY=<value of THREADOPS_SUPABASE_SECRET_KEY>
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-## Environment Setup
+## Local Dev Setup
 
-### IPv6 DNS Issue
+1. Clone the repo and install dependencies: `npm install`
+2. Create `.env.local` with the values shown above.
+3. **Important:** Unset any shell-level `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` environment variables before starting the dev server. Shell env vars override `.env.local` in Next.js, and your shell may have credentials for a different Supabase project (e.g., ExecReps).
+4. Start dev server:
+   ```bash
+   unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
+   NODE_OPTIONS='--dns-result-order=ipv4first' npx next dev --port 3000
+   ```
+   The `NODE_OPTIONS` flag is needed because Supabase hostnames may resolve to IPv6 addresses, which fail on VMs without IPv6 support. This forces IPv4 resolution.
 
-This VM does not support IPv6. Supabase hostnames resolve to IPv6 addresses, which causes Node.js connections to fail with "Invalid API key" or connection timeouts. The Supabase REST API may work via curl (which falls back to IPv4) while the Node.js Supabase client fails.
+## Authentication
 
-**Fix:** Start the dev server with:
-```bash
-NODE_OPTIONS='--dns-result-order=ipv4first' npm run dev
-```
+- A test user exists in the Supabase project for E2E testing. Look up the credentials from the Devin secret `THREADOPS_TEST_USER_EMAIL` and `THREADOPS_TEST_USER_PASSWORD`, or create a new test user via the `/signup` page.
+- The test user should be a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
+- Login via the `/login` page in the browser
 
-### Shell Environment Variables Override .env.local
+## RLS Policy Considerations
 
-If previous sessions set Supabase env vars in the shell (e.g., for a different project like ExecReps), those shell env vars will **override** `.env.local`. This causes the app to connect to the wrong Supabase project.
+- The `company_members` table has a self-referencing SELECT RLS policy that causes infinite recursion when queried with an auth-aware client (anon key + user JWT). This affects ALL tables because every RLS policy references `company_members` in subqueries.
+- The service role key bypasses RLS entirely, which is how the production app works.
+- If you encounter PostgreSQL error `42P17` ("infinite recursion detected in policy"), you are missing the service role key.
+- Do NOT attempt to use `createAuthServerClient()` for data queries — it will trigger the infinite recursion. The app architecture requires `createServerClient()` (service role) for all data operations.
 
-**Fix:** Before starting the dev server, unset any conflicting shell vars:
-```bash
-unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
-```
+## Vercel Deployment
 
-### Full Dev Server Start Command
-```bash
-unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
-cd /home/ubuntu/repos/threadops
-NODE_OPTIONS='--dns-result-order=ipv4first' npm run dev
-```
+- Production URL: `threadops-product-coalition.vercel.app`
+- Vercel Deployment Protection may be active, blocking access with 401. If so, either:
+  - Ask the user to disable it (Vercel Project Settings > Deployment Protection)
+  - Test locally with the service role key (preferred)
 
 ### Middleware Blocks API Key Auth on API Routes
 
@@ -63,33 +70,27 @@ Remember to **revert this change** after testing.
 
 **Note:** The `/api/webhooks/inbound` path is NOT in the protected routes list, so webhook ingestion via curl works without modification.
 
-## Test User
+## Key Test Flows
 
-A test user exists for login testing:
-- **Email:** `devin-test-agent@threadops.test`
-- **Password:** `TestPass123!`
-- **Company:** Demo company (`a0000000-0000-0000-0000-000000000001`)
+### Thread Creation
+1. Navigate to `/threads`, click "New Thread"
+2. Fill form: Title (required), Theme (dropdown), Message (required)
+3. Verify "Create Thread" button is disabled when fields empty, enabled when filled
+4. Submit and verify redirect to thread detail page with correct title, status, theme badge, and message
 
-If this user doesn't exist, create via Supabase Auth API:
-```bash
-curl -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/auth/v1/signup" \
-  -H "apikey: <anon_key>" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"devin-test-agent@threadops.test","password":"TestPass123!"}'
-```
-Then add to demo company via psql:
-```sql
-INSERT INTO company_members (user_id, company_id, role) VALUES ('<user_id>', 'a0000000-0000-0000-0000-000000000001', 'member');
-```
+### Status Management
+1. On thread detail page, verify buttons match status:
+   - open: Close + Archive buttons, message composer visible
+   - closed: Reopen + Archive buttons, composer hidden
+   - archived: NO buttons, NO composer
+2. Test full state machine: open -> closed -> open -> archived
 
-## Key URLs and IDs
-
-- **Demo Company ID:** `a0000000-0000-0000-0000-000000000001`
-- **Demo Thread ID:** `d0000000-0000-0000-0000-000000000001`
-- **Supabase project ref:** `gymsbxkuiknbdtulmopv`
-- **Vercel deployment:** `https://threadops-jade.vercel.app/`
-
-## Test Flows
+### Theme Filtering
+1. On `/threads` page, use theme filter dropdown
+2. Verify URL updates with `?theme=<id>` parameter
+3. Verify only matching threads shown
+4. Verify "All themes" resets filter and removes URL param
+5. Verify empty state for themes with no threads
 
 ### UI Navigation (Browser)
 1. `/login` — Email/password login form
@@ -177,7 +178,18 @@ curl -s -X POST http://localhost:3000/api/webhooks/inbound \
 - Invalid scopes (e.g. `["admin:delete"]`) → 400 `"Invalid scopes provided"`
 - Cross-company API key → 403 `"Forbidden"`
 
+## Key URLs and IDs
+
+- **Demo Company ID:** `a0000000-0000-0000-0000-000000000001`
+- **Demo Thread ID:** `d0000000-0000-0000-0000-000000000001`
+- **Supabase project ref:** `gymsbxkuiknbdtulmopv`
+- **Vercel deployment:** `https://threadops-jade.vercel.app/`
+
 ## Database
+
+- Supabase project ref: `gymsbxkuiknbdtulmopv`
+- Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
+- Use Supabase MCP (`execute_sql`) to inspect data if needed
 
 Migrations are in `infra/migrations/` (000-010). Seed data is in `infra/seed/seed.sql`.
 
