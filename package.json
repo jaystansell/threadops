@@ -12,9 +12,11 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "mcp": "npx tsx src/mcp/server.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.108.2",
     "next": "16.2.9",
