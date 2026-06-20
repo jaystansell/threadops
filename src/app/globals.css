@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -10,22 +10,28 @@
   --border: #E2E8F0;
   --primary: #0F172A;
   --primary-foreground: #FFFFFF;
-  --accent: #0369A1;
+  --accent: #0D9488;
   --accent-foreground: #FFFFFF;
+  --accent-secondary: #2563EB;
+  --accent-secondary-foreground: #FFFFFF;
   --destructive: #DC2626;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0F172A;
-    --foreground: #F8FAFC;
-    --muted: #1E293B;
+    --background: #0A0F1A;
+    --foreground: #F1F5F9;
+    --muted: #141B2D;
     --muted-foreground: #94A3B8;
-    --border: #334155;
+    --border: #1E293B;
     --primary: #E2E8F0;
-    --primary-foreground: #0F172A;
-    --accent: #38BDF8;
-    --accent-foreground: #0F172A;
+    --primary-foreground: #0A0F1A;
+    --accent: #14B8A6;
+    --accent-foreground: #0A0F1A;
+    --accent-secondary: #3B82F6;
+    --accent-secondary-foreground: #FFFFFF;
     --destructive: #EF4444;
   }
 }
@@ -33,7 +39,12 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
 }
 
 button, a {
