@@ -17,7 +17,7 @@ export async function PATCH(
   ctx: RouteContext<"/api/threads/[threadId]/status">,
 ) {
   const apiKey = req.headers.get("x-api-key");
-  let authenticated = false;
+  let apiKeyCompanyId: string | null = null;
 
   if (apiKey) {
     const db = createServerClient();
@@ -28,7 +28,7 @@ export async function PATCH(
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
     await apiKeyRepo.touchLastUsed(keyRecord.id);
-    authenticated = true;
+    apiKeyCompanyId = keyRecord.company_id;
   } else {
     const supabase = await createAuthServerClient();
     const {
@@ -37,11 +37,6 @@ export async function PATCH(
     if (!user) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
-    authenticated = true;
-  }
-
-  if (!authenticated) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { threadId } = await ctx.params;
@@ -54,7 +49,9 @@ export async function PATCH(
     );
   }
 
-  if (!body.company_id || typeof body.company_id !== "string") {
+  const companyId = apiKeyCompanyId ?? body.company_id;
+
+  if (!companyId || typeof companyId !== "string") {
     return Response.json(
       { error: "company_id is required" },
       { status: 400 },
@@ -66,7 +63,7 @@ export async function PATCH(
 
   try {
     const thread = await threadRepo.getById(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       threadId as ThreadId,
     );
 
@@ -81,13 +78,13 @@ export async function PATCH(
     }
 
     const updated = await threadRepo.updateStatus(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       threadId as ThreadId,
       newStatus,
     );
 
     dispatchOutboundWebhooks(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       "thread.status_changed",
       {
         thread_id: threadId,

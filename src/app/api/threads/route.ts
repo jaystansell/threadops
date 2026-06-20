@@ -13,18 +13,22 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 10;
 
-async function resolveApiKeyCompany(
-  req: NextRequest,
-): Promise<{ companyId: string; keyLabel: string; keyId: string } | null> {
+type ApiKeyResult =
+  | { kind: "none" }
+  | { kind: "invalid" }
+  | { kind: "ok"; companyId: string; keyLabel: string; keyId: string };
+
+async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const apiKey = req.headers.get("x-api-key");
-  if (!apiKey) return null;
+  if (!apiKey) return { kind: "none" };
   const db = createServerClient();
   const apiKeyRepo = createApiKeyRepo(db);
   const keyHash = await hashKey(apiKey);
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
-  if (!keyRecord) return null;
+  if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
   return {
+    kind: "ok",
     companyId: keyRecord.company_id,
     keyLabel: keyRecord.label,
     keyId: keyRecord.id,
@@ -34,9 +38,11 @@ async function resolveApiKeyCompany(
 export async function GET(req: NextRequest) {
   let companyId: string;
 
-  const apiKeyInfo = await resolveApiKeyCompany(req);
-  if (apiKeyInfo) {
-    companyId = apiKeyInfo.companyId;
+  const apiKeyResult = await resolveApiKeyCompany(req);
+  if (apiKeyResult.kind === "invalid") {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "ok") {
+    companyId = apiKeyResult.companyId;
   } else {
     const userCompany = await getUserCompany();
     if (!userCompany) {
@@ -91,12 +97,16 @@ export async function POST(req: NextRequest) {
   let authorId: string;
   let authorKind: "user" | "agent" = "user";
   let authorName: string | null = null;
+  let apiKeyCompanyId: string | null = null;
 
-  const apiKeyInfo = await resolveApiKeyCompany(req);
-  if (apiKeyInfo) {
-    authorId = apiKeyInfo.keyId;
+  const apiKeyResult = await resolveApiKeyCompany(req);
+  if (apiKeyResult.kind === "invalid") {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "ok") {
+    authorId = apiKeyResult.keyId;
     authorKind = "agent";
-    authorName = apiKeyInfo.keyLabel;
+    authorName = apiKeyResult.keyLabel;
+    apiKeyCompanyId = apiKeyResult.companyId;
   } else {
     const supabase = await createAuthServerClient();
     const {
@@ -118,9 +128,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const companyId = apiKeyInfo
-    ? apiKeyInfo.companyId
-    : body.company_id;
+  const companyId = apiKeyCompanyId ?? body.company_id;
 
   if (!companyId || typeof companyId !== "string") {
     return Response.json(
