@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
-import type { ThreadId } from "@/core/types";
+import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import type { ThreadId, CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,28 @@ export async function POST(
       author_kind: body.author_kind ?? "user",
       body: body.body,
     });
+
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id")
+      .eq("id", threadId)
+      .single();
+
+    if (thread) {
+      dispatchOutboundWebhooks(
+        thread.company_id as CompanyId,
+        "message.created",
+        {
+          message_id: message.id,
+          thread_id: threadId,
+          author_id: message.author_id,
+          author_kind: message.author_kind,
+          body: message.body,
+          created_at: message.created_at,
+        },
+      );
+    }
+
     return Response.json(message, { status: 201 });
   } catch (err) {
     return Response.json(

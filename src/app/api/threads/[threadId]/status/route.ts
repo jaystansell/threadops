@@ -3,6 +3,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { canTransition, InvalidStatusTransitionError } from "@/core/rules";
+import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +63,18 @@ export async function PATCH(
       body.company_id as CompanyId,
       threadId as ThreadId,
       newStatus,
+    );
+
+    dispatchOutboundWebhooks(
+      body.company_id as CompanyId,
+      "thread.status_changed",
+      {
+        thread_id: threadId,
+        previous_status: thread.status,
+        new_status: updated.status,
+        company_id: updated.company_id,
+        updated_at: updated.updated_at,
+      },
     );
 
     return Response.json(updated);
