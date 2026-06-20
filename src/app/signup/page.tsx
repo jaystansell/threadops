@@ -19,7 +19,7 @@ export default function SignupPage() {
     setError(null);
 
     const supabase = createAuthBrowserClient();
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -30,11 +30,14 @@ export default function SignupPage() {
       return;
     }
 
-    setSuccess(true);
     setLoading(false);
 
-    router.push("/threads");
-    router.refresh();
+    if (data.session) {
+      router.push("/threads");
+      router.refresh();
+    } else {
+      setSuccess(true);
+    }
   }
 
   if (success) {
