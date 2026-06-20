@@ -45,11 +45,12 @@ export function ThreadTimeline({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-testid="thread-timeline">
       {messages.map((msg) => (
         <div
           key={msg.id}
           className="rounded-lg border border-[var(--border)] p-3"
+          data-testid="timeline-message"
         >
           <div className="flex items-center gap-2 mb-1">
             {msg.author_kind === "agent" ? (

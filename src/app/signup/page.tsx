@@ -64,7 +64,7 @@ export default function SignupPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" data-testid="signup-form">
         <div className="space-y-1">
           <label htmlFor="email" className="text-sm font-medium">
             Email
@@ -75,6 +75,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            data-testid="signup-email"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
           />
         </div>
@@ -90,6 +91,7 @@ export default function SignupPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
+            data-testid="signup-password"
             className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
           />
           <p className="text-xs text-[var(--muted-foreground)]">
@@ -102,6 +104,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
+          data-testid="signup-submit"
           className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loading ? "Creating account..." : "Sign up"}

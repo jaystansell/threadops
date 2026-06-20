@@ -51,7 +51,7 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" data-testid="new-thread-form">
       <div>
         <label
           htmlFor="title"
@@ -66,6 +66,7 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Thread title"
           required
+          data-testid="thread-title-input"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
           disabled={submitting}
         />
@@ -82,6 +83,7 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
           id="theme"
           value={themeId}
           onChange={(e) => setThemeId(e.target.value)}
+          data-testid="thread-theme-select"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
           disabled={submitting}
         >
@@ -108,6 +110,7 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
           placeholder="Write the first message..."
           rows={5}
           required
+          data-testid="thread-message-input"
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)] resize-none"
           disabled={submitting}
         />
@@ -119,6 +122,7 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
         <button
           type="submit"
           disabled={submitting || !title.trim() || !messageBody.trim()}
+          data-testid="thread-submit"
           className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {submitting ? "Creating..." : "Create Thread"}

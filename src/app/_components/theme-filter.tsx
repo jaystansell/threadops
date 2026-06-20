@@ -26,6 +26,7 @@ export function ThemeFilter({ themes }: ThemeFilterProps) {
     <select
       value={currentThemeId}
       onChange={(e) => handleChange(e.target.value)}
+      data-testid="theme-filter"
       className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs focus:outline-none focus:border-[var(--primary)]"
     >
       <option value="">All themes</option>

@@ -70,7 +70,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
 
   if (result) {
     return (
-      <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-4 space-y-3">
+      <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-4 space-y-3" data-testid="api-key-created">
         <p className="font-semibold text-yellow-800 dark:text-yellow-200">
           API Key Created — Copy it now!
         </p>
@@ -78,7 +78,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
           This key will not be shown again. Store it securely.
         </p>
         <div className="flex items-center gap-2">
-          <code className="flex-1 text-sm font-mono bg-white dark:bg-black/30 border border-[var(--border)] rounded px-3 py-2 break-all">
+          <code className="flex-1 text-sm font-mono bg-white dark:bg-black/30 border border-[var(--border)] rounded px-3 py-2 break-all" data-testid="api-key-plaintext">
             {result.plaintext_key}
           </code>
           <button
@@ -105,6 +105,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        data-testid="create-api-key-button"
         className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
       >
         Create API Key
@@ -115,6 +116,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
+      data-testid="create-api-key-form"
       className="rounded-lg border border-[var(--border)] p-4 space-y-4"
     >
       <p className="text-xs text-[var(--muted-foreground)]">
@@ -136,6 +138,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="e.g. Support Bot"
+          data-testid="api-key-label-input"
           className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm bg-transparent"
         />
       </div>
@@ -164,6 +167,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
         <button
           type="submit"
           disabled={loading || !label}
+          data-testid="api-key-submit"
           className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {loading ? "Creating..." : "Create Key"}

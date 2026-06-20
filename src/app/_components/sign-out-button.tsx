@@ -16,6 +16,7 @@ export function SignOutButton() {
   return (
     <button
       onClick={handleSignOut}
+      data-testid="sign-out-button"
       className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
     >
       Sign out
