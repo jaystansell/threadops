@@ -5,6 +5,7 @@ import type { Message } from "@/core/types";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
+import { FormattedDate } from "./formatted-date";
 
 interface ThreadTimelineProps {
   initialMessages: Message[];
@@ -78,11 +79,8 @@ export function ThreadTimeline({
                 {msg.author_name ?? "user"}
               </span>
             )}
-            <span
-              className="text-xs text-[var(--muted-foreground)]"
-              suppressHydrationWarning
-            >
-              {new Date(msg.created_at).toLocaleString()}
+            <span className="text-xs text-[var(--muted-foreground)]">
+              <FormattedDate date={msg.created_at} includeTime />
             </span>
           </div>
           <p className="text-sm whitespace-pre-wrap">{msg.body}</p>

@@ -1,20 +1,41 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
+import { hashKey } from "@/core/rules/api-key";
 import { WEBHOOK_EVENT_TYPES } from "@/core/types";
-import type { WebhookEndpointId, WebhookEventType } from "@/core/types";
+import type { CompanyId, WebhookEndpointId, WebhookEventType } from "@/core/types";
 
 export const dynamic = "force-dynamic";
+
+async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string } | Response> {
+  const apiKey = req.headers.get("x-api-key");
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+    return { companyId: keyRecord.company_id };
+  }
+  const userCompany = await getUserCompany();
+  if (!userCompany) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return { companyId: userCompany.companyId };
+}
 
 export async function PATCH(
   req: NextRequest,
   ctx: RouteContext<"/api/webhook-endpoints/[endpointId]">,
 ) {
-  const userCompany = await getUserCompany();
-  if (!userCompany) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const result = await resolveCompanyId(req);
+  if (result instanceof Response) return result;
+  const { companyId } = result;
 
   const { endpointId } = await ctx.params;
   const body = await req.json();
@@ -73,7 +94,7 @@ export async function PATCH(
 
   try {
     const endpoint = await repo.update(
-      userCompany.companyId,
+      companyId as CompanyId,
       endpointId as WebhookEndpointId,
       update,
     );
@@ -87,13 +108,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: RouteContext<"/api/webhook-endpoints/[endpointId]">,
 ) {
-  const userCompany = await getUserCompany();
-  if (!userCompany) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const result = await resolveCompanyId(req);
+  if (result instanceof Response) return result;
+  const { companyId } = result;
 
   const { endpointId } = await ctx.params;
   const db = createServerClient();
@@ -101,7 +121,7 @@ export async function DELETE(
 
   try {
     await repo.remove(
-      userCompany.companyId,
+      companyId as CompanyId,
       endpointId as WebhookEndpointId,
     );
     return Response.json({ message: "Deleted" });

@@ -19,10 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 relative">
-          <div className="flex items-center justify-between max-w-5xl mx-auto">
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col">
+        <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 shrink-0">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MobileNav />
               <h1 className="text-lg font-semibold tracking-tight">ThreadOps</h1>
@@ -34,7 +34,7 @@ export default function RootLayout({
             <AuthHeader />
           </div>
         </header>
-        <main className="max-w-3xl mx-auto px-4 py-6">{children}</main>
+        <div className="flex-1 flex flex-col">{children}</div>
       </body>
     </html>
   );

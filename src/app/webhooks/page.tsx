@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { WebhookDelivery } from "@/core/types";
+import { FormattedDate } from "@/app/_components/formatted-date";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function WebhooksPage(props: {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold">Webhook Deliveries</h2>
         <Link
@@ -82,7 +83,7 @@ export default async function WebhooksPage(props: {
                     </span>
                   </div>
                   <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                    {new Date(d.created_at).toLocaleString()}
+                    <FormattedDate date={d.created_at} includeTime />
                   </p>
                 </Link>
               </li>

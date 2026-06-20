@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Welcome to ThreadOps</h2>
         <p className="mt-2 text-[var(--muted-foreground)]">

@@ -45,7 +45,7 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="max-w-sm mx-auto space-y-4">
+      <div className="max-w-sm mx-auto px-4 py-6 space-y-4">
         <h2 className="text-xl font-bold">Check your email</h2>
         <p className="text-sm text-[var(--muted-foreground)]">
           We sent a confirmation link to <strong>{email}</strong>. Click the link
@@ -56,7 +56,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="max-w-sm mx-auto space-y-6">
+    <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
       <div>
         <h2 className="text-xl font-bold">Create a ThreadOps account</h2>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">

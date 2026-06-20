@@ -2,22 +2,23 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-const STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "closed", label: "Closed" },
-  { value: "archived", label: "Archived" },
-  { value: "all", label: "All" },
+const GROUP_OPTIONS = [
+  { value: "timeline", label: "By timeline" },
+  { value: "agent", label: "By agent" },
 ] as const;
 
-export function StatusFilter() {
+export function GroupFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const current = searchParams.get("status") ?? "open";
+  const current = searchParams.get("group") ?? "timeline";
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("status", value);
-    params.delete("page");
+    if (value === "timeline") {
+      params.delete("group");
+    } else {
+      params.set("group", value);
+    }
     router.push(`/threads?${params.toString()}`);
   }
 
@@ -25,10 +26,10 @@ export function StatusFilter() {
     <select
       value={current}
       onChange={(e) => handleChange(e.target.value)}
-      data-testid="status-filter"
+      data-testid="group-filter"
       className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-2 py-1 text-xs focus:outline-none focus:border-[var(--primary)]"
     >
-      {STATUS_OPTIONS.map((opt) => (
+      {GROUP_OPTIONS.map((opt) => (
         <option key={opt.value} value={opt.value}>
           {opt.label}
         </option>

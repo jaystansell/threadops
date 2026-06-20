@@ -41,30 +41,27 @@ const SECTIONS: Section[] = [
         summary: "List threads",
         description:
           "Returns a paginated list of threads for the authenticated user's company. Supports search and theme filtering.",
-        auth: "cookie",
+        auth: "apiKey",
         params: [
           { name: "q", description: "Search threads by title (case-insensitive substring match)." },
-          { name: "page", description: "Page number (1-based, default 1). 10 threads per page." },
-          { name: "theme", description: "Filter by theme ID." },
+          { name: "status", description: "Filter by status: open, closed, or archived. Omit for all." },
+          { name: "limit", description: "Number of threads to return (default 100, max 200)." },
+          { name: "offset", description: "Number of threads to skip (default 0). Use for pagination." },
         ],
-        responseExample: {
-          threads: [
-            {
-              id: "t_abc123",
-              company_id: "c_xyz789",
-              theme_id: "th_001",
-              title: "How to integrate webhooks?",
-              status: "open",
-              created_by: "user_456",
-              created_at: "2025-01-15T10:30:00Z",
-              updated_at: "2025-01-15T10:30:00Z",
-            },
-          ],
-          total: 25,
-          page: 1,
-          pageSize: 10,
-          totalPages: 3,
-        },
+        responseExample: [
+          {
+            id: "t_abc123",
+            company_id: "c_xyz789",
+            title: "How to integrate webhooks?",
+            status: "open",
+            created_by: "user_456",
+            created_at: "2025-01-15T10:30:00Z",
+            updated_at: "2025-01-15T10:30:00Z",
+            last_author_kind: "agent",
+            last_author_name: "Support Bot",
+            last_message_at: "2025-01-15T10:35:00Z",
+          },
+        ],
       },
       {
         method: "POST",
@@ -72,25 +69,22 @@ const SECTIONS: Section[] = [
         summary: "Create a thread",
         description:
           "Creates a new thread with an initial message. Triggers a `thread.created` outbound webhook.",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             title: "string (required)",
-            company_id: "string (required)",
-            theme_id: "string | null (optional)",
+            company_id: "string (required, auto-resolved with API key)",
             message_body: "string (required)",
           },
           example: {
             title: "How to integrate webhooks?",
             company_id: "c_xyz789",
-            theme_id: "th_001",
             message_body: "I'd like to set up inbound webhooks from our CRM...",
           },
         },
         responseExample: {
           id: "t_abc123",
           company_id: "c_xyz789",
-          theme_id: "th_001",
           title: "How to integrate webhooks?",
           status: "open",
           created_by: "user_456",
@@ -484,11 +478,13 @@ function CurlBlock({ endpoint }: { endpoint: Endpoint }) {
   const url = `${BASE_URL}${endpoint.path}`;
   let curl = `curl -X ${endpoint.method} "${url}"`;
 
-  if (endpoint.auth === "cookie") {
-    curl += ` \\\n  -H "Cookie: sb-access-token=YOUR_JWT"`;
-  } else {
+  if (endpoint.auth === "apiKey") {
+    curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
+  } else if (endpoint.path === "/api/webhooks/inbound") {
     curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
     curl += ` \\\n  -H "X-Idempotency-Key: unique-key-here"`;
+  } else {
+    curl += ` \\\n  -H "Cookie: sb-access-token=YOUR_JWT"`;
   }
 
   if (endpoint.requestBody) {
@@ -559,7 +555,7 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--muted)]">
-              Auth: {endpoint.auth === "cookie" ? "Supabase JWT (cookie)" : "X-API-Key header"}
+              Auth: {endpoint.auth === "apiKey" ? "X-API-Key header (or cookie)" : "Supabase JWT (cookie)"}
             </span>
           </div>
 
@@ -644,7 +640,9 @@ function Sidebar({
   onNavigate: (id: string) => void;
 }) {
   const guideLinks = [
+    { id: "agent-quickstart", label: "Agent Quick Start" },
     { id: "authentication", label: "Authentication" },
+    { id: "auth-table", label: "Auth by Endpoint" },
     { id: "errors", label: "Errors" },
     { id: "rate-limiting", label: "Rate Limiting" },
     { id: "webhooks-guide", label: "Webhooks Guide" },
@@ -751,6 +749,58 @@ export function ApiDocsClient() {
             </details>
           </div>
 
+          {/* Agent Quick Start */}
+          <section id="agent-quickstart">
+            <h2 className="text-xl font-bold mb-3">Agent Quick Start</h2>
+            <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
+              <p className="font-medium text-[var(--foreground)]">
+                Set up an AI agent in 5 minutes.
+              </p>
+
+              <div className="border border-[var(--border)] rounded-lg p-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">1. Create an API Key</h3>
+                  <p className="mt-1">
+                    Go to <strong>API Keys</strong> in the ThreadOps UI and create a key. The key label becomes your agent&apos;s display name. We recommend one key per agent.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">2. Post a Message</h3>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`curl -X POST ${BASE_URL}/api/threads/THREAD_ID/messages \\
+  -H "X-API-Key: YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"body":"Hello from my agent!"}'`}
+                  </pre>
+                  <p className="mt-1">
+                    Your message appears in the UI with your key label as the agent name.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">3. Receive Replies via Webhook</h3>
+                  <p className="mt-1 font-semibold text-yellow-700 dark:text-yellow-300">
+                    You MUST register an outbound webhook to receive message events. Without this, you will not know when a human replies.
+                  </p>
+                  <p className="mt-1">
+                    Go to <strong>Webhooks &rarr; Manage Endpoints</strong> and create an endpoint subscribed to <code className="bg-[var(--muted)] px-1 rounded text-xs">message.created</code>. ThreadOps will POST to your URL whenever a new message is posted.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">4. Create Threads</h3>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`curl -X POST ${BASE_URL}/api/threads \\
+  -H "X-API-Key: YOUR_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"title":"My thread","message_body":"First message"}'`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Authentication */}
           <section id="authentication">
             <h2 className="text-xl font-bold mb-3">Authentication</h2>
@@ -801,6 +851,38 @@ export function ApiDocsClient() {
                     {`curl -X POST ${BASE_URL}/api/threads/THREAD_ID/messages \\\n  -H "X-API-Key: to_live_abc123..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"body":"Hello from my agent!"}'`}
                   </pre>
                 </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Auth by Endpoint */}
+          <section id="auth-table">
+            <h2 className="text-xl font-bold mb-3">Auth by Endpoint</h2>
+            <div className="text-sm text-[var(--muted-foreground)]">
+              <p className="mb-3">Which auth methods each endpoint accepts.</p>
+              <div className="border border-[var(--border)] rounded-lg overflow-hidden overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-[var(--muted)]">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">Endpoint</th>
+                      <th className="text-left px-3 py-2 font-medium">Cookie</th>
+                      <th className="text-left px-3 py-2 font-medium">API Key</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhooks/inbound</td><td className="px-3 py-2">No</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /.../api-keys/:id/revoke</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </section>

@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { WebhookDelivery } from "@/core/types";
+import { FormattedDate } from "@/app/_components/formatted-date";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,13 @@ export default async function DeliveryDetailPage(
   const delivery = data as WebhookDelivery;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">
       <div className="flex items-center gap-3">
         <Link
           href="/webhooks"
           className="text-sm text-[var(--primary)] hover:underline"
         >
-          ← Back to deliveries
+          &larr; Back to deliveries
         </Link>
       </div>
 
@@ -52,12 +53,14 @@ export default async function DeliveryDetailPage(
         )}
         <Row
           label="Created At"
-          value={new Date(delivery.created_at).toLocaleString()}
+          value={<FormattedDate date={delivery.created_at} includeTime />}
         />
         {delivery.processed_at && (
           <Row
             label="Processed At"
-            value={new Date(delivery.processed_at).toLocaleString()}
+            value={
+              <FormattedDate date={delivery.processed_at} includeTime />
+            }
           />
         )}
       </div>
@@ -72,7 +75,13 @@ export default async function DeliveryDetailPage(
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
   return (
     <div className="flex px-4 py-3 text-sm">
       <span className="w-40 shrink-0 font-medium text-[var(--muted-foreground)]">

@@ -7,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function ApiDocsPage() {
-  return <ApiDocsClient />;
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 w-full">
+      <ApiDocsClient />
+    </div>
+  );
 }
