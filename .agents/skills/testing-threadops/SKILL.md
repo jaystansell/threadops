@@ -10,6 +10,7 @@ ThreadOps is a Next.js 16 forum app with Supabase backend and Tailwind CSS v4. T
 ## Devin Secrets Needed
 
 - `THREADOPS_SUPABASE_SECRET_KEY` — Supabase secret/service role key (bypasses RLS). Stored as a user-scoped Devin secret. Required for local dev because the app's RLS policies have self-referencing `company_members` queries that cause infinite recursion (PostgreSQL error 42P17) without the service role key.
+- `VERCEL_AUTOMATION_BYPASS_SECRET` — Bypasses Vercel deployment protection for curl testing
 - The anon key and project URL can be retrieved via the Supabase MCP (`get_publishable_keys` for project `gymsbxkuiknbdtulmopv`).
 
 These should be in `.env.local` at the repo root:
@@ -21,6 +22,15 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ## Local Dev Setup
+
+### .env.local Must Exist for Dev Server
+
+The dev server will hang indefinitely on pages that import Supabase (including the root layout's `AuthHeader` component) if `.env.local` is missing. Create it from shell secrets:
+```bash
+cd /home/ubuntu/repos/threadops
+printf "NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\nSUPABASE_SERVICE_ROLE_KEY=%s\n" \
+  "$NEXT_PUBLIC_SUPABASE_URL" "$NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_SERVICE_ROLE_KEY" > .env.local
+```
 
 1. Clone the repo and install dependencies: `npm install`
 2. Create `.env.local` with the values shown above.
@@ -70,6 +80,32 @@ Remember to **revert this change** after testing.
 
 **Note:** The `/api/webhooks/inbound` path is NOT in the protected routes list, so webhook ingestion via curl works without modification.
 
+### Chrome May Crash During Testing
+
+If the default Chrome (managed via CDP at localhost:29229) crashes, you can restart Chrome manually:
+```bash
+DISPLAY=:0 /opt/.devin/chrome/chrome/linux-133.0.6943.126/chrome-linux64/chrome \
+  --no-first-run --disable-session-crashed-bubble --no-sandbox --disable-gpu \
+  --user-data-dir=/home/ubuntu/.chrome-profile \
+  --remote-debugging-port=29229 \
+  http://localhost:3000 &>/dev/null &
+```
+Then maximize with: `wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz`
+
+### Vercel Deployment Protection Bypass
+
+Preview and production deployments may have Vercel SSO protection enabled. To test deployed URLs via curl:
+```bash
+curl -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" "https://threadops-jade.vercel.app/..."
+```
+Browser access to Vercel previews requires Vercel SSO login, so prefer testing against local dev server for UI testing.
+
+### Mobile Viewport Testing Limitation
+
+The VM display is 1600x1200. Browser window resizing via `xdotool` or `wmctrl` may not affect the actual rendered viewport width (Chrome's content area). Tailwind responsive breakpoints (sm=640px, lg=1024px) cannot be easily tested visually. Verify responsive classes exist in HTML instead:
+- `sm:hidden` for mobile-only elements
+- `hidden lg:block` for desktop-only sidebar
+
 ### Testing Against Production vs Local
 
 **Recommended: Test against production (https://threadops-jade.vercel.app)**
@@ -114,6 +150,11 @@ Remember to **revert this change** after testing.
 3. `/threads/<threadId>` — Thread detail with messages timeline and composer
 4. `/api-keys` — API key management with "Create API Key" button
 5. `/docs/api` — API documentation with expandable endpoint sections
+
+### API Documentation Page (`/docs/api`)
+1. Navigate to `/docs/api` — page should render without auth redirect (it's public)
+2. Verify endpoint sections are expandable/collapsible
+3. Verify request/response examples are shown
 
 ### Search
 1. Type query in search bar on `/threads` and click "Search"
