@@ -67,10 +67,10 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
       if (res.ok) {
         const data = await res.json();
         setHistory(data.summaries ?? []);
+        setShowHistory(true);
       }
     } finally {
       setHistoryLoading(false);
-      setShowHistory(true);
     }
   }, [threadId, showHistory]);
 

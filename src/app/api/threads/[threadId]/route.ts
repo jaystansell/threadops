@@ -125,18 +125,6 @@ export async function PATCH(
       return Response.json({ error: "summary must be a string or null" }, { status: 400 });
     }
     updates.summary = body.summary;
-
-    // Append to summary log if setting a non-null summary
-    if (body.summary) {
-      const authorKind = agentKeyId ? "agent" : "user";
-      const authorName = apiKeyResult.kind === "ok" ? apiKeyResult.keyLabel : undefined;
-      await db.from("thread_summaries").insert({
-        thread_id: threadId,
-        summary: body.summary,
-        author_kind: authorKind,
-        author_name: authorName ?? null,
-      });
-    }
   }
 
   if ("title" in body) {
@@ -160,6 +148,22 @@ export async function PATCH(
       .single();
 
     if (error) throw error;
+
+    // Append to summary log after successful update
+    if (updates.summary && typeof updates.summary === "string") {
+      const authorKind = agentKeyId ? "agent" : "user";
+      const authorName = apiKeyResult.kind === "ok" ? apiKeyResult.keyLabel : undefined;
+      const { error: logError } = await db.from("thread_summaries").insert({
+        thread_id: threadId,
+        summary: updates.summary,
+        author_kind: authorKind,
+        author_name: authorName ?? null,
+      });
+      if (logError) {
+        console.error("Failed to insert summary log entry:", logError.message);
+      }
+    }
+
     return Response.json(data);
   } catch (err) {
     return Response.json(

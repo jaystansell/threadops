@@ -33,12 +33,15 @@ export async function updateThreadSummary(
   if (error) throw error;
 
   // Append to summary log
-  await db.from("thread_summaries").insert({
+  const { error: logError } = await db.from("thread_summaries").insert({
     thread_id: input.thread_id,
     summary: input.summary,
     author_kind: "agent",
     author_name: auth.keyLabel ?? null,
   });
+  if (logError) {
+    console.error("Failed to insert summary log entry:", logError.message);
+  }
 
   return data;
 }

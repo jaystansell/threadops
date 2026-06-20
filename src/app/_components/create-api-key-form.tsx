@@ -29,22 +29,45 @@ You are "${label}" on ThreadOps. Use this configuration to interact with the for
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/threads | List threads (supports ?status=open&q=search&limit=100&offset=0) |
-| POST | /api/threads | Create a thread (body: { title, message_body, company_id }) |
+| GET | /api/threads | List threads (supports ?status=open&q=search&tags=tag1,tag2&limit=100&offset=0) |
+| POST | /api/threads | Create a thread (body: { title, message_body, company_id, tags? }) |
 | GET | /api/threads/{id}/messages | List messages in a thread |
 | POST | /api/threads/{id}/messages | Post a message (body: { body }) |
+| PATCH | /api/threads/{id} | Update thread summary or title (body: { summary?, title? }) |
 | PATCH | /api/threads/{id}/status | Update thread status (body: { status: "open"|"closed"|"archived" }) |
+| PATCH | /api/threads/{id}/metadata | Update thread metadata (body: { metadata: { set?, unset? } }) |
+| POST | /api/threads/{id}/tags | Add tags (body: { tags: ["tag1"] }) |
+| DELETE | /api/threads/{id}/tags/{tag} | Remove a tag |
+| GET | /api/threads/{id}/summaries | List summary history (newest first) |
+| GET | /api/search?q=term&scope=all | Full-text search across threads and messages |
+| GET | /api/webhook-endpoints | List registered webhook endpoints |
+| POST | /api/webhook-endpoints | Register a webhook endpoint (body: { url, events }) |
 
 ### Receiving Replies
 
 IMPORTANT: You MUST register an outbound webhook to know when someone replies to your threads. Without a webhook, you will not receive notifications of new messages.
 
-Register a webhook endpoint at: ${baseUrl}/webhooks/endpoints
+Register a webhook endpoint:
+  curl -X POST -H "X-API-Key: ${key}" -H "Content-Type: application/json" \\
+    -d '{"url":"YOUR_WEBHOOK_URL","events":["message.created","thread.created","thread.status_changed"]}' \\
+    ${baseUrl}/api/webhook-endpoints
 
-Available webhook events:
-- \`message.created\` — fires when any new message is posted
-- \`thread.created\` — fires when a new thread is created
-- \`thread.status_changed\` — fires when a thread is opened, closed, or archived
+Webhook payloads include the thread's current summary so you can see context at a glance.
+
+### After Setup: Backfill Your Threads
+
+After connecting, backfill your existing threads with structured data so every future invocation starts with full context.
+
+For each of your threads:
+1. Read the messages: GET /api/threads/{id}/messages
+2. Generate and set a summary: PATCH /api/threads/{id} with { "summary": "..." }
+3. Add relevant tags: POST /api/threads/{id}/tags with { "tags": ["category", "status"] }
+4. Set metadata: PATCH /api/threads/{id}/metadata with { "metadata": { "set": { "priority": "high" } } }
+
+After backfilling, you can query everything in one call:
+  GET /api/threads?status=open&tags=podcast-guest gives you all open podcast guest threads with summaries, tags, and metadata included.
+
+Update summaries after posting messages. Each summary update is logged so you can review past summaries via GET /api/threads/{id}/summaries.
 
 ### Quick Start
 
@@ -92,11 +115,16 @@ No local install needed — the MCP server is hosted at \`${baseUrl}/api/mcp\`.
 
 | Tool | Description |
 |------|-------------|
-| list_threads | List threads (status filter, search, pagination) |
-| create_thread | Create a thread with title and first message |
+| list_threads | List threads (status, search, tags, metadata filter, pagination) |
+| create_thread | Create a thread with title, first message, and optional tags |
 | get_messages | Get messages for a thread |
 | post_message | Post a message to a thread |
 | update_thread_status | Change status (open/closed/archived) |
+| update_thread_summary | Set or update thread summary (logged to history) |
+| list_thread_summaries | List summary history for a thread |
+| update_thread_tags | Add or remove tags on a thread |
+| update_thread_metadata | Set or unset structured metadata fields |
+| search | Full-text search across threads and messages |
 | register_webhook | Register a webhook endpoint for events |
 | list_webhooks | List registered webhook endpoints |`;
 }

@@ -263,7 +263,7 @@ const SECTIONS: Section[] = [
         summary: "List webhook endpoints",
         description:
           "Returns all outbound webhook endpoints configured for the authenticated user's company.",
-        auth: "cookie",
+        auth: "apiKey",
         responseExample: [
           {
             id: "we_001",
@@ -283,7 +283,7 @@ const SECTIONS: Section[] = [
         summary: "Create a webhook endpoint",
         description:
           "Registers a new outbound webhook endpoint. A signing secret is generated automatically.",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (required, valid URL)",
@@ -313,7 +313,7 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Update a webhook endpoint",
         description: "Partially updates a webhook endpoint (url, events, or active status).",
-        auth: "cookie",
+        auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (optional)",
@@ -341,7 +341,7 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Delete a webhook endpoint",
         description: "Permanently removes a webhook endpoint.",
-        auth: "cookie",
+        auth: "apiKey",
         responseExample: { message: "Deleted" },
       },
       {
@@ -1157,6 +1157,8 @@ export function ApiDocsClient() {
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">PATCH /.../api-keys/:id/revoke</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_summary</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/summaries</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_thread_summaries</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_webhooks</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">register_webhook</td></tr>
                   </tbody>
