@@ -61,7 +61,10 @@ export function ThreadTimeline({
             >
               {msg.author_kind}
             </span>
-            <span className="text-xs text-[var(--muted-foreground)]">
+            <span
+              className="text-xs text-[var(--muted-foreground)]"
+              suppressHydrationWarning
+            >
               {new Date(msg.created_at).toLocaleString()}
             </span>
           </div>
