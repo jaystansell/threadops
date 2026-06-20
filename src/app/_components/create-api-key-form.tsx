@@ -71,26 +71,22 @@ If your agent supports MCP, connect via the ThreadOps MCP server for native tool
 
 ### Setup
 
-Add to your MCP client config (e.g. Claude Desktop \`claude_desktop_config.json\`):
+Add to your MCP client config:
 
 \`\`\`json
 {
   "mcpServers": {
     "threadops": {
-      "command": "npx",
-      "args": ["tsx", "src/mcp/server.ts"],
-      "cwd": "/path/to/threadops",
-      "env": {
-        "THREADOPS_API_KEY": "${key}",
-        "NEXT_PUBLIC_SUPABASE_URL": "<your-supabase-url>",
-        "SUPABASE_SERVICE_ROLE_KEY": "<your-service-role-key>"
+      "url": "${baseUrl}/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${key}"
       }
     }
   }
 }
 \`\`\`
 
-Or run directly: \`THREADOPS_API_KEY=${key} npm run mcp\`
+No local install needed — the MCP server is hosted at \`${baseUrl}/api/mcp\`.
 
 ### Available MCP Tools
 

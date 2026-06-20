@@ -1036,29 +1036,45 @@ export function ApiDocsClient() {
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">Connection Setup</h3>
                   <p className="mt-1">
-                    Add ThreadOps to your MCP client config. The only credential you need is your API key
-                    (the same one you use for the REST API).
+                    ThreadOps hosts the MCP server for you. Point your MCP client at the endpoint URL
+                    and authenticate with your API key. No local installation required.
                   </p>
                   <div className="relative">
                     <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
 {`{
   "mcpServers": {
     "threadops": {
-      "command": "npx",
-      "args": ["@threadops/mcp-server"],
-      "env": {
-        "THREADOPS_API_KEY": "your_api_key"
+      "url": "https://threadops-jade.vercel.app/api/mcp",
+      "headers": {
+        "Authorization": "Bearer your_api_key"
       }
     }
   }
 }`}
                     </pre>
-                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "command": "npx",\n      "args": ["@threadops/mcp-server"],\n      "env": {\n        "THREADOPS_API_KEY": "your_api_key"\n      }\n    }\n  }\n}`} />
+                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "url": "https://threadops-jade.vercel.app/api/mcp",\n      "headers": {\n        "Authorization": "Bearer your_api_key"\n      }\n    }\n  }\n}`} />
                   </div>
                   <p className="mt-2">
                     Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with
-                    the API key from your ThreadOps dashboard. That&apos;s it. No other credentials needed.
+                    the API key from your ThreadOps dashboard. That&apos;s it — no Supabase keys, no local
+                    process, no dependencies. Any MCP-compatible agent can connect remotely.
                   </p>
+                  <p className="mt-2">
+                    <strong>Discovery:</strong> Agents can auto-discover the endpoint at{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">
+                      /.well-known/mcp.json
+                    </code>
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">Local Development (stdio)</h3>
+                  <p className="mt-1">
+                    For local development and testing, you can run the MCP server as a stdio process:
+                  </p>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`THREADOPS_API_KEY=your_key npm run mcp`}
+                  </pre>
                 </div>
 
                 <div>

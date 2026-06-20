@@ -53,7 +53,9 @@ export async function updateSession(request: NextRequest) {
     apiKeyRoutes.some((r) => path.startsWith(r)) &&
     request.headers.has("x-api-key");
 
-  if (isProtectedRoute && !user && !hasApiKey) {
+  const isMcpRoute = path.startsWith("/api/mcp");
+
+  if (isProtectedRoute && !user && !hasApiKey && !isMcpRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
