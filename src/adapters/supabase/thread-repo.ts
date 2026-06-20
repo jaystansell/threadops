@@ -50,6 +50,7 @@ export function createThreadRepo(db: SupabaseClient): ThreadRepo {
           theme_id: input.theme_id ?? null,
           title: input.title,
           created_by: input.created_by,
+          agent_api_key_id: input.agent_api_key_id ?? null,
           status: "open" as ThreadStatus,
         })
         .select()

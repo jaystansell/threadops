@@ -18,6 +18,7 @@ export async function PATCH(
 ) {
   const apiKey = req.headers.get("x-api-key");
   let apiKeyCompanyId: string | null = null;
+  let apiKeyId: string | null = null;
 
   if (apiKey) {
     const db = createServerClient();
@@ -29,6 +30,7 @@ export async function PATCH(
     }
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     apiKeyCompanyId = keyRecord.company_id;
+    apiKeyId = keyRecord.id;
   } else {
     const supabase = await createAuthServerClient();
     const {
@@ -69,6 +71,13 @@ export async function PATCH(
 
     if (!thread) {
       return Response.json({ error: "Thread not found" }, { status: 404 });
+    }
+
+    if (apiKeyId && thread.agent_api_key_id && thread.agent_api_key_id !== apiKeyId) {
+      return Response.json(
+        { error: "This thread belongs to another agent" },
+        { status: 403 },
+      );
     }
 
     const newStatus = body.status as ThreadStatus;

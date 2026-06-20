@@ -21,6 +21,7 @@ export async function createThread(
     company_id: auth.companyId as CompanyId,
     title: input.title.trim(),
     created_by: auth.keyId,
+    agent_api_key_id: auth.keyId,
   });
 
   const message = await messageRepo.create({

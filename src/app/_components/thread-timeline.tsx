@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Markdown from "react-markdown";
 import type { Message } from "@/core/types";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
@@ -83,7 +84,9 @@ export function ThreadTimeline({
               <FormattedDate date={msg.created_at} includeTime />
             </span>
           </div>
-          <p className="text-sm whitespace-pre-wrap">{msg.body}</p>
+          <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+            <Markdown>{msg.body}</Markdown>
+          </div>
         </div>
       ))}
     </div>
