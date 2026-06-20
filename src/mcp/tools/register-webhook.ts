@@ -21,6 +21,7 @@ export async function registerWebhook(
   );
   return repo.create({
     company_id: auth.companyId as CompanyId,
+    api_key_id: auth.keyId,
     url: input.url,
     events: mergedEvents,
     secret: uuidv4(),

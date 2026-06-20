@@ -23,6 +23,7 @@ export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated"];
 export interface WebhookEndpoint {
   id: WebhookEndpointId;
   company_id: CompanyId;
+  api_key_id: string | null;
   url: string;
   events: WebhookEventType[];
   secret: string;

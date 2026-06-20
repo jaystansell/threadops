@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
-  | { kind: "ok"; companyId: string };
+  | { kind: "ok"; companyId: string; apiKeyId: string };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const apiKey = req.headers.get("x-api-key");
@@ -23,22 +23,22 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id };
+  return { kind: "ok", companyId: keyRecord.company_id, apiKeyId: keyRecord.id };
 }
 
-async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string } | Response> {
+async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string; apiKeyId: string | null } | Response> {
   const apiKeyResult = await resolveApiKeyCompany(req);
   if (apiKeyResult.kind === "invalid") {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
   if (apiKeyResult.kind === "ok") {
-    return { companyId: apiKeyResult.companyId };
+    return { companyId: apiKeyResult.companyId, apiKeyId: apiKeyResult.apiKeyId };
   }
   const userCompany = await getUserCompany();
   if (!userCompany) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return { companyId: userCompany.companyId };
+  return { companyId: userCompany.companyId, apiKeyId: null };
 }
 
 export async function GET(req: NextRequest) {
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const result = await resolveCompanyId(req);
   if (result instanceof Response) return result;
-  const { companyId } = result;
+  const { companyId, apiKeyId } = result;
 
   const body = await req.json();
 
@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
   try {
     const endpoint = await repo.create({
       company_id: companyId as CompanyId,
+      api_key_id: apiKeyId,
       url: body.url.trim(),
       events: mergedEvents,
       secret,

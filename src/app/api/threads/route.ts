@@ -290,15 +290,20 @@ export async function POST(req: NextRequest) {
       body: body.message_body.trim(),
     });
 
-    dispatchOutboundWebhooks(companyId as CompanyId, "thread.created", {
-      thread_id: thread.id,
-      title: thread.title,
-      status: thread.status,
-      company_id: thread.company_id,
-      created_by: thread.created_by,
-      created_at: thread.created_at,
-      current_summary: null,
-    });
+    dispatchOutboundWebhooks(
+      companyId as CompanyId,
+      "thread.created",
+      {
+        thread_id: thread.id,
+        title: thread.title,
+        status: thread.status,
+        company_id: thread.company_id,
+        created_by: thread.created_by,
+        created_at: thread.created_at,
+        current_summary: null,
+      },
+      thread.agent_api_key_id,
+    );
 
     return Response.json(thread, { status: 201 });
   } catch (err) {

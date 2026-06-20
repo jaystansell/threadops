@@ -102,6 +102,7 @@ export async function PATCH(
         company_id: updated.company_id,
         updated_at: updated.updated_at,
       },
+      thread.agent_api_key_id,
     );
 
     return Response.json(updated);

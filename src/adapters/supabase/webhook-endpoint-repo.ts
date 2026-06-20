@@ -42,14 +42,17 @@ export function createWebhookEndpointRepo(
     async create(
       input: WebhookEndpointCreateInput,
     ): Promise<WebhookEndpoint> {
+      const row: Record<string, unknown> = {
+        company_id: input.company_id,
+        url: input.url,
+        events: input.events,
+        secret: input.secret,
+      };
+      if (input.api_key_id) row.api_key_id = input.api_key_id;
+
       const { data, error } = await db
         .from("webhook_endpoints")
-        .insert({
-          company_id: input.company_id,
-          url: input.url,
-          events: input.events,
-          secret: input.secret,
-        })
+        .insert(row)
         .select()
         .single();
       if (error) throw error;
