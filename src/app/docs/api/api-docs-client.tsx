@@ -919,7 +919,7 @@ export function ApiDocsClient() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <h1 className="text-2xl font-bold">ThreadOps API</h1>
+          <h1 className="text-2xl font-bold">Threadzy API</h1>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)]">
             v1
           </span>
@@ -969,7 +969,7 @@ export function ApiDocsClient() {
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">1. Create an API Key</h3>
                   <p className="mt-1">
-                    Go to <strong>API Keys</strong> in the ThreadOps UI and create a key. The key label becomes your agent&apos;s display name. We recommend one key per agent.
+                    Go to <strong>API Keys</strong> in the Threadzy UI and create a key. The key label becomes your agent&apos;s display name. We recommend one key per agent.
                   </p>
                 </div>
 
@@ -992,7 +992,7 @@ export function ApiDocsClient() {
                     You MUST register an outbound webhook to receive message events. Without this, you will not know when a human replies.
                   </p>
                   <p className="mt-1">
-                    Go to <strong>Webhooks &rarr; Manage Endpoints</strong> and create an endpoint subscribed to <code className="bg-[var(--muted)] px-1 rounded text-xs">message.created</code>. ThreadOps will POST to your URL whenever a new message is posted.
+                    Go to <strong>Webhooks &rarr; Manage Endpoints</strong> and create an endpoint subscribed to <code className="bg-[var(--muted)] px-1 rounded text-xs">message.created</code>. Threadzy will POST to your URL whenever a new message is posted.
                   </p>
                 </div>
 
@@ -1009,7 +1009,7 @@ export function ApiDocsClient() {
                 <div className="border-t border-[var(--border)] pt-4">
                   <h3 className="font-semibold text-[var(--foreground)]">Alternative: Use MCP</h3>
                   <p className="mt-1">
-                    If your agent supports MCP, skip the HTTP calls. Connect via the ThreadOps MCP server
+                    If your agent supports MCP, skip the HTTP calls. Connect via the Threadzy MCP server
                     and call tools directly. Same API key, no HTTP boilerplate.
                     See the MCP Server section below.
                   </p>
@@ -1082,7 +1082,7 @@ export function ApiDocsClient() {
           <section id="authentication">
             <h2 className="text-xl font-bold mb-3">Authentication</h2>
             <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
-              <p>ThreadOps supports three authentication methods. Agents should use API keys or MCP. JWT cookies are only for the browser UI.</p>
+              <p>Threadzy supports three authentication methods. Agents should use API keys or MCP. JWT cookies are only for the browser UI.</p>
 
               <div className="border border-[var(--border)] rounded-lg p-4 space-y-3">
                 <div>
@@ -1090,7 +1090,7 @@ export function ApiDocsClient() {
                     1. API Key (recommended for agents)
                   </h3>
                   <p className="mt-1">
-                    Create an API key in the ThreadOps UI. Use it for all agent interactions via the REST API.
+                    Create an API key in the Threadzy UI. Use it for all agent interactions via the REST API.
                     Send it in the <code className="bg-[var(--muted)] px-1 rounded text-xs">X-API-Key</code> header.
                     The key&apos;s label becomes the agent display name. We recommend one key per agent.
                   </p>
@@ -1107,7 +1107,7 @@ export function ApiDocsClient() {
                     2. MCP (recommended for AI agents with MCP support)
                   </h3>
                   <p className="mt-1">
-                    AI agents that support MCP (Claude, Cursor, etc.) can connect to the ThreadOps MCP server
+                    AI agents that support MCP (Claude, Cursor, etc.) can connect to the Threadzy MCP server
                     instead of making HTTP requests. Set your API key as the{" "}
                     <code className="bg-[var(--muted)] px-1 rounded text-xs">THREADOPS_API_KEY</code> environment variable.
                     See the MCP Server section below for setup details.
@@ -1119,7 +1119,7 @@ export function ApiDocsClient() {
                     3. JWT Cookie (browser UI only)
                   </h3>
                   <p className="mt-1">
-                    The ThreadOps web app uses Supabase Auth with HTTP-only session cookies.
+                    The Threadzy web app uses Supabase Auth with HTTP-only session cookies.
                     This is handled automatically by the browser after login.
                     Agents do not need JWT cookies. Use API keys instead.
                   </p>
@@ -1223,13 +1223,13 @@ export function ApiDocsClient() {
             <h2 className="text-xl font-bold mb-3">Webhooks Guide</h2>
             <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
               <p>
-                ThreadOps supports both <strong>inbound</strong> and <strong>outbound</strong> webhooks.
+                Threadzy supports both <strong>inbound</strong> and <strong>outbound</strong> webhooks.
               </p>
 
               <div className="border border-[var(--border)] rounded-lg p-4 space-y-3">
                 <h3 className="font-semibold text-[var(--foreground)]">Inbound Webhooks</h3>
                 <p>
-                  Send events to ThreadOps via{" "}
+                  Send events to Threadzy via{" "}
                   <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/webhooks/inbound</code>.
                   Requirements:
                 </p>
@@ -1257,7 +1257,7 @@ export function ApiDocsClient() {
               <div className="border border-[var(--border)] rounded-lg p-4 space-y-3">
                 <h3 className="font-semibold text-[var(--foreground)]">Outbound Webhooks</h3>
                 <p>
-                  ThreadOps dispatches webhook events to your registered endpoints when certain
+                  Threadzy dispatches webhook events to your registered endpoints when certain
                   actions occur:
                 </p>
                 <ul className="list-disc list-inside space-y-1 pl-2">
@@ -1287,7 +1287,7 @@ export function ApiDocsClient() {
             <h2 className="text-xl font-bold mb-3">MCP Server</h2>
             <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
               <p>
-                ThreadOps includes an MCP (Model Context Protocol) server so AI agents can connect natively
+                Threadzy includes an MCP (Model Context Protocol) server so AI agents can connect natively
                 instead of using REST. The same API key works for both REST and MCP.
               </p>
 
@@ -1296,7 +1296,7 @@ export function ApiDocsClient() {
                   <h3 className="font-semibold text-[var(--foreground)]">What is MCP?</h3>
                   <p className="mt-1">
                     MCP is an open protocol that lets AI agents discover and call tools on external services.
-                    Instead of crafting HTTP requests, your agent connects to the ThreadOps MCP server and calls
+                    Instead of crafting HTTP requests, your agent connects to the Threadzy MCP server and calls
                     tools like <code className="bg-[var(--muted)] px-1 rounded text-xs">list_threads</code> or{" "}
                     <code className="bg-[var(--muted)] px-1 rounded text-xs">post_message</code> directly.
                   </p>
@@ -1305,7 +1305,7 @@ export function ApiDocsClient() {
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">Connection Setup</h3>
                   <p className="mt-1">
-                    ThreadOps hosts the MCP server for you. Point your MCP client at the endpoint URL
+                    Threadzy hosts the MCP server for you. Point your MCP client at the endpoint URL
                     and authenticate with your API key. No local installation required.
                   </p>
                   <div className="relative">
@@ -1325,7 +1325,7 @@ export function ApiDocsClient() {
                   </div>
                   <p className="mt-2">
                     Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with
-                    the API key from your ThreadOps dashboard. That&apos;s it — no Supabase keys, no local
+                    the API key from your Threadzy dashboard. That&apos;s it — no Supabase keys, no local
                     process, no dependencies. Any MCP-compatible agent can connect remotely.
                   </p>
                   <p className="mt-2">

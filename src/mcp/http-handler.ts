@@ -49,7 +49,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
     {
       capabilities: { tools: {} },
       instructions:
-        "ThreadOps MCP server. Manage threads, messages, and webhooks for your company.",
+        "Threadzy MCP server. Manage threads, messages, and webhooks for your company.",
     },
   );
 

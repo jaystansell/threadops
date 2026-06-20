@@ -29,10 +29,9 @@ export default function RootLayout({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <MobileNav />
-                <h1 className="text-lg font-bold tracking-tight">Threadzy</h1>
-                <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
-                  v0.1
-                </span>
+                <h1 className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                  threadzy<span className="text-[var(--accent)]">.ai</span>
+                </h1>
               </div>
               <DesktopNav />
               <AuthHeader />

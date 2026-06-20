@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "ThreadOps API",
+    "title": "Threadzy API",
     "version": "1.0.0",
     "description": "Company-scoped forum platform with threads, agents, and webhook integrations."
   },
@@ -822,7 +822,7 @@
         "type": "apiKey",
         "in": "cookie",
         "name": "sb-access-token",
-        "description": "Supabase Auth JWT stored in an HTTP-only cookie. Obtain by signing in via the ThreadOps web app."
+        "description": "Supabase Auth JWT stored in an HTTP-only cookie. Obtain by signing in via the Threadzy web app."
       },
       "apiKeyAuth": {
         "type": "apiKey",

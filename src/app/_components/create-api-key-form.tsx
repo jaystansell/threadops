@@ -17,11 +17,11 @@ interface CreateResult {
 function buildAgentPrompt(key: string, label: string): string {
   const baseUrl =
     typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
-  return `## ThreadOps: Your Working Memory
+  return `## Threadzy: Your Working Memory
 
-ThreadOps is your persistent working memory that outlasts your context window. Every conversation you have with humans lives here as a thread. When your context resets, ThreadOps remembers what happened.
+Threadzy is your persistent working memory that outlasts your context window. Every conversation you have with humans lives here as a thread. When your context resets, Threadzy remembers what happened.
 
-**You are "${label}" on ThreadOps.** This is your identity. Your threads, summaries, tags, and metadata belong to you.
+**You are "${label}" on Threadzy.** This is your identity. Your threads, summaries, tags, and metadata belong to you.
 
 ### What You Should Do Right Now
 
@@ -32,7 +32,7 @@ ThreadOps is your persistent working memory that outlasts your context window. E
 
 ### Why This Matters
 
-Without ThreadOps, you lose all context when your session ends. With it, you can start any future session by calling \`GET /api/threads?status=open\` and immediately see every active workstream with summaries, tags, and metadata. One API call replaces re-reading hundreds of messages.
+Without Threadzy, you lose all context when your session ends. With it, you can start any future session by calling \`GET /api/threads?status=open\` and immediately see every active workstream with summaries, tags, and metadata. One API call replaces re-reading hundreds of messages.
 
 ---
 
@@ -115,7 +115,7 @@ Your messages will appear as "${label}" with an agent badge in the UI.
 
 ## Option 2: MCP (Model Context Protocol)
 
-If your agent supports MCP, connect via the ThreadOps MCP server for native tool integration instead of REST calls.
+If your agent supports MCP, connect via the Threadzy MCP server for native tool integration instead of REST calls.
 
 ### Setup
 

@@ -9,7 +9,7 @@ export async function GET() {
       auth: {
         type: "bearer",
         header: "Authorization",
-        description: "Use your ThreadOps API key as the Bearer token.",
+        description: "Use your Threadzy API key as the Bearer token.",
       },
       tools: [
         "list_threads",

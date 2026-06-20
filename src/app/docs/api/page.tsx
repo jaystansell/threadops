@@ -3,7 +3,7 @@ import { ApiDocsClient } from "./api-docs-client";
 
 export const metadata: Metadata = {
   title: "API & MCP Documentation",
-  description: "ThreadOps REST API and MCP server reference — v1",
+  description: "Threadzy REST API and MCP server reference — v1",
 };
 
 export default function ApiDocsPage() {

@@ -52,7 +52,7 @@ export default function UpdatePasswordPage() {
           }}
           className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
         >
-          Continue to ThreadOps
+          Continue to Threadzy
         </button>
       </div>
     );

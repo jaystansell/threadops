@@ -48,7 +48,7 @@ function createThread(w: number, h: number, seed: number): Thread {
   }
 
   const maxLife = 300 + Math.random() * 400;
-  // Hue range: 170-210 (teal to blue, matching ThreadOps accent)
+  // Hue range: 170-210 (teal to blue, matching Threadzy accent)
   const hue = 170 + Math.random() * 40;
 
   return {
