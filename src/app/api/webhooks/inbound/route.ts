@@ -6,6 +6,8 @@ import { hashKey } from "@/core/rules/api-key";
 import { verifySignature, SIGNATURE_HEADER } from "@/core/rules/webhook";
 import type { CompanyId } from "@/core/types";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   const apiKey = req.headers.get("x-api-key");
   if (!apiKey) {

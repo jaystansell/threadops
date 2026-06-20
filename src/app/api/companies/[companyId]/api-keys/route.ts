@@ -4,6 +4,8 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { validateScopes } from "@/core/rules/api-key";
 import type { CompanyId } from "@/core/types";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   ctx: RouteContext<"/api/companies/[companyId]/api-keys">,

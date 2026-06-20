@@ -3,6 +3,8 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import type { ThreadId } from "@/core/types";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/messages">,
