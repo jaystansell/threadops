@@ -30,6 +30,16 @@ export default function HomePage() {
             View delivery logs and manage outbound endpoints.
           </p>
         </Link>
+
+        <Link
+          href="/api-keys"
+          className="block rounded-lg border border-[var(--border)] p-4 hover:border-[var(--primary)] transition-colors"
+        >
+          <h3 className="font-semibold">API Keys</h3>
+          <p className="text-sm text-[var(--muted-foreground)] mt-1">
+            Create and manage API keys for programmatic access.
+          </p>
+        </Link>
       </div>
     </div>
   );
