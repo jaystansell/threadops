@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface MessageComposerProps {
   threadId: string;
 }
 
 export function MessageComposer({ threadId }: MessageComposerProps) {
+  const router = useRouter();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,7 @@ export function MessageComposer({ threadId }: MessageComposerProps) {
       }
 
       setBody("");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

@@ -15,7 +15,7 @@ export function ThreadTimeline({
   initialMessages,
   threadId,
 }: ThreadTimelineProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
   useEffect(() => {
     const db = createBrowserClient();
@@ -23,7 +23,7 @@ export function ThreadTimeline({
     const sub = realtime.subscribeToThread(
       threadId as ThreadId,
       (newMessage) => {
-        setMessages((prev) => {
+        setRealtimeMessages((prev) => {
           if (prev.some((m) => m.id === newMessage.id)) return prev;
           return [...prev, newMessage];
         });
@@ -31,6 +31,10 @@ export function ThreadTimeline({
     );
     return () => sub.unsubscribe();
   }, [threadId]);
+
+  const allIds = new Set(initialMessages.map((m) => m.id));
+  const extras = realtimeMessages.filter((m) => !allIds.has(m.id));
+  const messages = [...initialMessages, ...extras];
 
   if (messages.length === 0) {
     return (
@@ -57,7 +61,10 @@ export function ThreadTimeline({
             >
               {msg.author_kind}
             </span>
-            <span className="text-xs text-[var(--muted-foreground)]">
+            <span
+              className="text-xs text-[var(--muted-foreground)]"
+              suppressHydrationWarning
+            >
               {new Date(msg.created_at).toLocaleString()}
             </span>
           </div>
