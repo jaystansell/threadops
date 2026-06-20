@@ -91,7 +91,7 @@ export default function AnimatedThreadsBg() {
       if (!canvas) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = window.innerWidth;
-      h = document.documentElement.scrollHeight;
+      h = window.innerHeight;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       canvas.style.width = `${w}px`;
@@ -102,8 +102,7 @@ export default function AnimatedThreadsBg() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Periodically resize to match document height changes
-    const resizeInterval = setInterval(resize, 2000);
+    const resizeInterval = setInterval(resize, 5000);
 
     const TARGET_THREADS = 25;
 

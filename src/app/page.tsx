@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
-import AnimatedThreadsBg from "@/app/_components/animated-threads-bg";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +11,6 @@ export default async function HomePage() {
 
   return (
     <div className="w-full relative bg-[var(--background)]">
-      <AnimatedThreadsBg />
       <div className="relative" style={{ zIndex: 1 }}>
 
       {/* Nav */}

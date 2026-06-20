@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppHeader } from "./_components/app-header";
+import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
 import { DesktopNav } from "./_components/desktop-nav";
 import { MobileNav } from "./_components/mobile-nav";
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col">
+        <AnimatedThreadsBg />
         <AppHeader>
           <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 shrink-0">
             <div className="flex items-center justify-between">
