@@ -48,7 +48,10 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/api/threads") ||
     path.startsWith("/api/companies");
 
-  if (isProtectedRoute && !user) {
+  const hasApiKey =
+    path.startsWith("/api/") && request.headers.has("x-api-key");
+
+  if (isProtectedRoute && !user && !hasApiKey) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
