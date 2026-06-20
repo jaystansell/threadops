@@ -3,10 +3,61 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import type { CompanyId, ThemeId, ThreadId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZE = 10;
+
+export async function GET(req: NextRequest) {
+  const userCompany = await getUserCompany();
+  if (!userCompany) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+  const searchQuery = searchParams.get("q")?.trim() ?? "";
+  const themeFilter = searchParams.get("theme") ?? "";
+
+  const db = createServerClient();
+
+  let query = db
+    .from("threads")
+    .select("*", { count: "exact" })
+    .eq("company_id", userCompany.companyId)
+    .order("created_at", { ascending: false });
+
+  if (themeFilter) {
+    query = query.eq("theme_id", themeFilter);
+  }
+  if (searchQuery) {
+    query = query.ilike("title", `%${searchQuery}%`);
+  }
+
+  query = query.range(offset, offset + PAGE_SIZE - 1);
+
+  try {
+    const { data, count, error } = await query;
+    if (error) throw error;
+
+    return Response.json({
+      threads: data,
+      total: count ?? 0,
+      page,
+      pageSize: PAGE_SIZE,
+      totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
+    });
+  } catch (err) {
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Internal error" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createAuthServerClient();
