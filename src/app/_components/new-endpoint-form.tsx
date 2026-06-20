@@ -55,6 +55,7 @@ export function NewEndpointForm({
     return (
       <button
         onClick={() => setExpanded(true)}
+        data-testid="new-endpoint-button"
         className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
       >
         + New Endpoint
@@ -65,6 +66,7 @@ export function NewEndpointForm({
   return (
     <form
       onSubmit={handleSubmit}
+      data-testid="new-endpoint-form"
       className="rounded-lg border border-[var(--border)] p-4 space-y-4"
     >
       <h3 className="text-sm font-semibold">New Webhook Endpoint</h3>
@@ -80,6 +82,7 @@ export function NewEndpointForm({
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com/webhooks"
+          data-testid="endpoint-url-input"
           className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)]"
         />
       </div>
@@ -112,6 +115,7 @@ export function NewEndpointForm({
         <button
           type="submit"
           disabled={submitting || selectedEvents.length === 0}
+          data-testid="endpoint-submit"
           className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {submitting ? "Creating…" : "Create Endpoint"}

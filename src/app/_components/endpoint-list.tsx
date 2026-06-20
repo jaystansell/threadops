@@ -58,11 +58,12 @@ export function EndpointList({
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-2" data-testid="endpoint-list">
       {endpoints.map((ep) => (
         <li
           key={ep.id}
           className="rounded-lg border border-[var(--border)] p-4 space-y-2"
+          data-testid="endpoint-item"
         >
           <div className="flex items-center justify-between">
             <span className="font-mono text-sm truncate max-w-[300px]">
@@ -70,6 +71,7 @@ export function EndpointList({
             </span>
             <div className="flex items-center gap-2">
               <span
+                data-testid="endpoint-status"
                 className={`text-xs px-2 py-0.5 rounded-full ${
                   ep.active
                     ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
@@ -100,6 +102,7 @@ export function EndpointList({
             <button
               onClick={() => toggleActive(ep)}
               disabled={busy === ep.id}
+              data-testid="endpoint-toggle"
               className="px-2 py-1 text-xs rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors disabled:opacity-50"
             >
               {ep.active ? "Deactivate" : "Activate"}
@@ -107,6 +110,7 @@ export function EndpointList({
             <button
               onClick={() => deleteEndpoint(ep)}
               disabled={busy === ep.id}
+              data-testid="endpoint-delete"
               className="px-2 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
             >
               Delete

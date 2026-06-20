@@ -62,12 +62,13 @@ export function ThreadStatusActions({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" data-testid="thread-status-actions">
       {actions.map((action) => (
         <button
           key={action.target}
           onClick={() => handleStatusChange(action.target)}
           disabled={updating}
+          data-testid={`status-action-${action.target}`}
           className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] disabled:opacity-50 transition-colors"
         >
           {updating ? "..." : action.label}

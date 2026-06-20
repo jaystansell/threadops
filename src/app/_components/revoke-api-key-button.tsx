@@ -37,6 +37,7 @@ export function RevokeApiKeyButton({ companyId, keyId }: Props) {
       type="button"
       onClick={handleRevoke}
       disabled={loading}
+      data-testid="revoke-api-key"
       className="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
     >
       {loading ? "Revoking..." : "Revoke"}
