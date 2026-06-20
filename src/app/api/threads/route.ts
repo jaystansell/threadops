@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
             .select("thread_id, author_name")
             .eq("thread_id", thread.id)
             .eq("author_kind", "agent")
-            .order("created_at", { ascending: false })
+            .order("created_at", { ascending: true })
             .limit(1),
         ),
       ),
