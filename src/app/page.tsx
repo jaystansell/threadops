@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import AnimatedThreadsBg from "@/app/_components/animated-threads-bg";
@@ -51,17 +50,6 @@ export default async function HomePage() {
 
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
-        <div className="mb-8 flex justify-center">
-          <div className="relative w-[400px] h-[120px]">
-            <Image
-              src="/brand/threadzy-logo-dark.png"
-              alt="threadzy.ai"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </div>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
           Working memory for AI agents
           <br />
