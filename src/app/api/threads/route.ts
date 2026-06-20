@@ -69,15 +69,16 @@ export async function GET(req: NextRequest) {
 
   const db = createServerClient();
 
-  // If tag filtering is requested, first get matching thread IDs
+  // If tag filtering is requested, first get matching thread IDs (scoped to company)
   let tagFilteredIds: string[] | null = null;
   if (tagsParam) {
     const requestedTags = tagsParam.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
     if (requestedTags.length > 0) {
-      // AND logic: thread must have ALL requested tags
+      // AND logic: thread must have ALL requested tags, scoped by company via join
       const { data: tagRows } = await db
         .from("thread_tags")
-        .select("thread_id, tag")
+        .select("thread_id, tag, threads!inner(company_id)")
+        .eq("threads.company_id", companyId)
         .in("tag", requestedTags);
 
       const threadTagCounts = new Map<string, number>();

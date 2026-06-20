@@ -25,20 +25,21 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
 
 function highlightMatch(text: string, query: string): string {
   const words = query.split(/\s+/).filter(Boolean);
-  let highlighted = text;
+  // Truncate first, then highlight to avoid offset drift
+  const firstWordRegex = new RegExp(words[0]?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "", "i");
+  const matchIndex = text.search(firstWordRegex);
+  let truncated = text;
+  if (matchIndex > 50) {
+    truncated = "..." + text.slice(Math.max(0, matchIndex - 50));
+  }
+  if (truncated.length > 200) {
+    truncated = truncated.slice(0, 200) + "...";
+  }
+  // Now apply highlights to the truncated text
+  let highlighted = truncated;
   for (const word of words) {
     const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
     highlighted = highlighted.replace(regex, "**$1**");
-  }
-  // Extract context around first match
-  const firstWordRegex = new RegExp(words[0]?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "", "i");
-  const matchIndex = text.search(firstWordRegex);
-  if (matchIndex > 50) {
-    const start = Math.max(0, matchIndex - 50);
-    highlighted = "..." + highlighted.slice(start);
-  }
-  if (highlighted.length > 200) {
-    highlighted = highlighted.slice(0, 200) + "...";
   }
   return highlighted;
 }
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
     if (scope === "threads" || scope === "all") {
       let threadQuery = db
         .from("threads")
-        .select("id, title, status, created_at", { count: "exact" })
+        .select("id, title, status, created_at", { count: scope === "threads" ? "exact" : undefined })
         .eq("company_id", companyId)
         .textSearch("search_vector", tsquery);
 
@@ -129,6 +130,8 @@ export async function GET(req: NextRequest) {
 
       if (scope === "threads") {
         threadQuery = threadQuery.range(offset, offset + perPage - 1);
+      } else {
+        threadQuery = threadQuery.limit(100);
       }
 
       threadQuery = threadQuery.order("created_at", { ascending: false });
@@ -176,6 +179,8 @@ export async function GET(req: NextRequest) {
 
       if (scope === "messages") {
         msgQuery = msgQuery.range(offset, offset + perPage - 1);
+      } else {
+        msgQuery = msgQuery.limit(100);
       }
 
       msgQuery = msgQuery.order("created_at", { ascending: false });

@@ -22,14 +22,15 @@ export async function listThreads(
   const limit = Math.min(200, Math.max(1, input.limit ?? 100));
   const offset = Math.max(0, input.offset ?? 0);
 
-  // If tags filter, resolve matching thread IDs first
+  // If tags filter, resolve matching thread IDs first (scoped by company)
   let tagFilteredIds: string[] | null = null;
   if (input.tags && input.tags.length > 0) {
     const normalizedTags = input.tags.map((t) => t.trim().toLowerCase()).filter(Boolean);
     if (normalizedTags.length > 0) {
       const { data: tagRows } = await db
         .from("thread_tags")
-        .select("thread_id, tag")
+        .select("thread_id, tag, threads!inner(company_id)")
+        .eq("threads.company_id", companyId)
         .in("tag", normalizedTags);
 
       const threadTagCounts = new Map<string, number>();

@@ -14,18 +14,20 @@ export interface SearchInput {
 
 function highlightMatch(text: string, query: string): string {
   const words = query.split(/\s+/).filter(Boolean);
-  let highlighted = text;
+  // Truncate first, then highlight to avoid offset drift
+  const firstWordRegex = new RegExp(words[0]?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "", "i");
+  const matchIndex = text.search(firstWordRegex);
+  let truncated = text;
+  if (matchIndex > 50) {
+    truncated = "..." + text.slice(Math.max(0, matchIndex - 50));
+  }
+  if (truncated.length > 200) {
+    truncated = truncated.slice(0, 200) + "...";
+  }
+  let highlighted = truncated;
   for (const word of words) {
     const regex = new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
     highlighted = highlighted.replace(regex, "**$1**");
-  }
-  const firstWordRegex = new RegExp(words[0]?.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") ?? "", "i");
-  const matchIndex = text.search(firstWordRegex);
-  if (matchIndex > 50) {
-    highlighted = "..." + highlighted.slice(Math.max(0, matchIndex - 50));
-  }
-  if (highlighted.length > 200) {
-    highlighted = highlighted.slice(0, 200) + "...";
   }
   return highlighted;
 }
