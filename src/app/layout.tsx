@@ -25,7 +25,7 @@ export default function RootLayout({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MobileNav />
-              <h1 className="text-lg font-semibold tracking-tight">ThreadOps</h1>
+              <h1 className="text-lg font-bold tracking-tight">ThreadOps</h1>
               <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
                 v0.1
               </span>

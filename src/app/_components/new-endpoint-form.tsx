@@ -56,7 +56,7 @@ export function NewEndpointForm({
       <button
         onClick={() => setExpanded(true)}
         data-testid="new-endpoint-button"
-        className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+        className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
       >
         + New Endpoint
       </button>
@@ -116,7 +116,7 @@ export function NewEndpointForm({
           type="submit"
           disabled={submitting || selectedEvents.length === 0}
           data-testid="endpoint-submit"
-          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >
           {submitting ? "Creating…" : "Create Endpoint"}
         </button>

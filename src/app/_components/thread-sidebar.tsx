@@ -7,7 +7,25 @@ import type { ThreadWithLastMessage } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 
 const BATCH_SIZE = 100;
-const DEFAULT_VISIBLE_THREADS = 10;
+const PINNED_STORAGE_KEY = "threadops-pinned-threads";
+
+function loadPinnedThreads(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const stored = localStorage.getItem(PINNED_STORAGE_KEY);
+    return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function savePinnedThreads(pins: Set<string>) {
+  try {
+    localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...pins]));
+  } catch {
+    // Silently handle
+  }
+}
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
@@ -128,25 +146,39 @@ export function ThreadSidebar({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [showAllGroups, setShowAllGroups] = useState<Set<string>>(new Set());
+  const [pinnedThreads, setPinnedThreads] = useState<Set<string>>(() => loadPinnedThreads());
+  const [menuThreadId, setMenuThreadId] = useState<string | null>(null);
   const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuThreadId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const togglePin = useCallback((threadId: string) => {
+    setPinnedThreads((prev) => {
+      const next = new Set(prev);
+      if (next.has(threadId)) {
+        next.delete(threadId);
+      } else {
+        next.add(threadId);
+      }
+      savePinnedThreads(next);
+      return next;
+    });
+    setMenuThreadId(null);
+  }, []);
 
   const toggleGroup = useCallback((label: string) => {
     setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleShowAll = useCallback((label: string) => {
-    setShowAllGroups((prev) => {
       const next = new Set(prev);
       if (next.has(label)) {
         next.delete(label);
@@ -289,7 +321,7 @@ export function ThreadSidebar({
           <h2 className="text-sm font-semibold">Threads</h2>
           <Link
             href="/threads/new"
-            className="px-2 py-1 text-xs font-medium rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+            className="px-2 py-1 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
           >
             New
           </Link>
@@ -340,14 +372,16 @@ export function ThreadSidebar({
           grouped.map((group) => {
             const isOpen = expandedGroups.has(group.label);
             const color = isAccordion ? getAgentColor(group.label) : null;
-            const showAll = showAllGroups.has(group.label);
-            const maxVisible = showAll ? group.threads.length : DEFAULT_VISIBLE_THREADS;
+            const sortedThreads = [...group.threads].sort((a, b) => {
+              const aPinned = pinnedThreads.has(a.id) ? 0 : 1;
+              const bPinned = pinnedThreads.has(b.id) ? 0 : 1;
+              return aPinned - bPinned;
+            });
             const visibleThreads = isAccordion && isOpen
-              ? group.threads.slice(0, maxVisible)
+              ? sortedThreads
               : isAccordion
                 ? []
-                : group.threads;
-            const hasOverflow = isAccordion && group.threads.length > DEFAULT_VISIBLE_THREADS;
+                : sortedThreads;
             const missingWebhook = isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
 
             return (
@@ -405,56 +439,88 @@ export function ThreadSidebar({
                 )}
 
                 {(isAccordion ? isOpen : true) && (
-                  <div
-                    className={isAccordion && hasOverflow ? "max-h-[440px] overflow-y-auto" : ""}
-                  >
+                  <div>
                     {visibleThreads.map((thread) => {
                       const isActive = thread.id === activeThreadId;
+                      const isPinned = pinnedThreads.has(thread.id);
                       return (
-                        <Link
-                          key={thread.id}
-                          href={`/threads/${thread.id}`}
-                          className={`block px-3 py-2 border-b border-[var(--border)] transition-colors ${
-                            isActive
-                              ? "bg-[var(--primary)] bg-opacity-10 border-l-2 border-l-[var(--primary)]"
-                              : "hover:bg-[var(--muted)]"
-                          }`}
-                        >
-                          <h3
-                            className={`text-sm leading-tight ${isActive ? "font-semibold" : "font-medium"}`}
+                        <div key={thread.id} className="relative group">
+                          <Link
+                            href={`/threads/${thread.id}`}
+                            className={`block px-3 py-2 border-b border-[var(--border)] transition-colors ${
+                              isActive
+                                ? "bg-[var(--primary)] bg-opacity-10 border-l-2 border-l-[var(--primary)]"
+                                : "hover:bg-[var(--muted)]"
+                            }`}
                           >
-                            {thread.title}
-                          </h3>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            {thread.last_author_kind === "agent" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
-                                Needs reply
+                            <div className="flex items-start gap-1">
+                              {isPinned && (
+                                <svg className="w-3 h-3 shrink-0 mt-0.5 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                                </svg>
+                              )}
+                              <h3
+                                className={`text-sm leading-tight flex-1 ${isActive ? "font-semibold" : "font-medium"}`}
+                              >
+                                {thread.title}
+                              </h3>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setMenuThreadId(menuThreadId === thread.id ? null : thread.id);
+                                }}
+                                className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--muted)] transition-opacity"
+                              >
+                                <svg className="w-4 h-4 text-[var(--muted-foreground)]" fill="currentColor" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="5" r="1.5" />
+                                  <circle cx="12" cy="12" r="1.5" />
+                                  <circle cx="12" cy="19" r="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {thread.last_author_kind === "agent" ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
+                                  Needs reply
+                                </span>
+                              ) : thread.last_author_kind === "user" ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                  Replied
+                                </span>
+                              ) : null}
+                              <span className="text-[10px] text-[var(--muted-foreground)]">
+                                <FormattedDate
+                                  date={thread.last_message_at ?? thread.created_at}
+                                />
                               </span>
-                            ) : thread.last_author_kind === "user" ? (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                Replied
-                              </span>
-                            ) : null}
-                            <span className="text-[10px] text-[var(--muted-foreground)]">
-                              <FormattedDate
-                                date={thread.last_message_at ?? thread.created_at}
-                              />
-                            </span>
-                          </div>
-                        </Link>
+                            </div>
+                          </Link>
+                          {menuThreadId === thread.id && (
+                            <div
+                              ref={menuRef}
+                              className="absolute right-2 top-8 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]"
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  togglePin(thread.id);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left"
+                              >
+                                <svg className="w-3.5 h-3.5" fill={isPinned ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isPinned ? 0 : 2}>
+                                  <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                                </svg>
+                                {isPinned ? "Unpin thread" : "Pin to top"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
-                    {isAccordion && hasOverflow && (
-                      <button
-                        type="button"
-                        onClick={() => toggleShowAll(group.label)}
-                        className="w-full px-3 py-1.5 text-[10px] text-[var(--primary)] hover:underline text-left"
-                      >
-                        {showAll
-                          ? "Show less"
-                          : `+${group.threads.length - DEFAULT_VISIBLE_THREADS} more threads`}
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -515,7 +581,7 @@ export function ThreadSidebar({
                   setWebhookPromptCopied(true);
                   setTimeout(() => setWebhookPromptCopied(false), 2000);
                 }}
-                className="flex-1 px-3 py-1.5 text-sm font-medium rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+                className="flex-1 px-3 py-1.5 text-sm font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
               >
                 {webhookPromptCopied ? "Copied!" : "Copy Prompt"}
               </button>

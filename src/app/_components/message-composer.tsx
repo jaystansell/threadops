@@ -89,7 +89,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
           type="submit"
           disabled={isBusy || !body.trim()}
           data-testid="message-send"
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {sending ? "Sending..." : "Send Message"}
         </button>
