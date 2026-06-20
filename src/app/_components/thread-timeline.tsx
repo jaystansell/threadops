@@ -10,14 +10,38 @@ import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 import { FormattedDate } from "./formatted-date";
 
+export type SortOrder = "old-first" | "new-first";
+
+const SORT_STORAGE_KEY = "threadops-sort-order";
+
+export function loadSortOrder(): SortOrder {
+  if (typeof window === "undefined") return "old-first";
+  try {
+    const stored = localStorage.getItem(SORT_STORAGE_KEY);
+    return stored === "new-first" ? "new-first" : "old-first";
+  } catch {
+    return "old-first";
+  }
+}
+
+export function saveSortOrder(order: SortOrder) {
+  try {
+    localStorage.setItem(SORT_STORAGE_KEY, order);
+  } catch {
+    // Silently handle
+  }
+}
+
 interface ThreadTimelineProps {
   initialMessages: Message[];
   threadId: string;
+  sortOrder: SortOrder;
 }
 
 export function ThreadTimeline({
   initialMessages,
   threadId,
+  sortOrder,
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
@@ -38,7 +62,16 @@ export function ThreadTimeline({
 
   const allIds = new Set(initialMessages.map((m) => m.id));
   const extras = realtimeMessages.filter((m) => !allIds.has(m.id));
-  const messages = [...initialMessages, ...extras];
+  const combined = [...initialMessages, ...extras];
+
+  const messages =
+    sortOrder === "new-first"
+      ? [...combined].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime(),
+        )
+      : combined;
 
   if (messages.length === 0) {
     return (

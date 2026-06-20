@@ -4,8 +4,7 @@ import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { ThreadId } from "@/core/types";
-import { ThreadTimeline } from "@/app/_components/thread-timeline";
-import { MessageComposer } from "@/app/_components/message-composer";
+import { ThreadDetailClient } from "@/app/_components/thread-detail-client";
 import { ThreadStatusActions } from "@/app/_components/thread-status-actions";
 import { FormattedDate } from "@/app/_components/formatted-date";
 
@@ -51,11 +50,12 @@ export default async function ThreadDetailPage(
         </div>
       </div>
 
-      <ThreadTimeline initialMessages={messages} threadId={threadId} />
-
-      {thread.status === "open" && (
-        <MessageComposer threadId={threadId} userId={userCompany.userId} />
-      )}
+      <ThreadDetailClient
+        messages={messages}
+        threadId={threadId}
+        userId={userCompany.userId}
+        isOpen={thread.status === "open"}
+      />
     </div>
   );
 }
