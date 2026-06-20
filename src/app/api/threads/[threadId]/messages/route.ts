@@ -37,6 +37,8 @@ export async function POST(
   let authorKind: "user" | "agent";
   let authorName: string | null = null;
 
+  const { threadId } = await ctx.params;
+
   if (apiKey) {
     const db = createServerClient();
     const apiKeyRepo = createApiKeyRepo(db);
@@ -45,6 +47,19 @@ export async function POST(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id")
+      .eq("id", threadId)
+      .single();
+    if (!thread) {
+      return Response.json({ error: "Thread not found" }, { status: 404 });
+    }
+    if (thread.company_id !== keyRecord.company_id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     authorId = keyRecord.id;
     authorKind = "agent";
@@ -62,7 +77,6 @@ export async function POST(
     authorKind = "user";
   }
 
-  const { threadId } = await ctx.params;
   const body = await req.json();
 
   if (!body.body || typeof body.body !== "string") {
