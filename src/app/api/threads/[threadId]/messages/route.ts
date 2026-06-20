@@ -50,7 +50,7 @@ export async function POST(
 
     const { data: thread } = await db
       .from("threads")
-      .select("company_id")
+      .select("company_id, agent_api_key_id")
       .eq("id", threadId)
       .single();
     if (!thread) {
@@ -58,6 +58,12 @@ export async function POST(
     }
     if (thread.company_id !== keyRecord.company_id) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (thread.agent_api_key_id && thread.agent_api_key_id !== keyRecord.id) {
+      return Response.json(
+        { error: "This thread belongs to another agent" },
+        { status: 403 },
+      );
     }
 
     await apiKeyRepo.touchLastUsed(keyRecord.id);

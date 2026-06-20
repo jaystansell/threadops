@@ -22,6 +22,9 @@ export async function postMessage(
   if (!thread) {
     throw new Error("Thread not found or does not belong to your company");
   }
+  if (thread.agent_api_key_id && thread.agent_api_key_id !== auth.keyId) {
+    throw new Error("This thread belongs to another agent");
+  }
 
   const messageRepo = createMessageRepo(db);
   return messageRepo.create({

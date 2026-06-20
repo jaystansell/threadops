@@ -37,12 +37,14 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
 
 export async function GET(req: NextRequest) {
   let companyId: string;
+  let agentKeyId: string | null = null;
 
   const apiKeyResult = await resolveApiKeyCompany(req);
   if (apiKeyResult.kind === "invalid") {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   } else if (apiKeyResult.kind === "ok") {
     companyId = apiKeyResult.companyId;
+    agentKeyId = apiKeyResult.keyId;
   } else {
     const userCompany = await getUserCompany();
     if (!userCompany) {
@@ -71,6 +73,9 @@ export async function GET(req: NextRequest) {
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
+  if (agentKeyId) {
+    query = query.eq("agent_api_key_id", agentKeyId);
+  }
   if (VALID_STATUSES.includes(statusParam as ThreadStatus)) {
     query = query.eq("status", statusParam);
   }
@@ -210,6 +215,7 @@ export async function POST(req: NextRequest) {
       company_id: companyId as CompanyId,
       title: body.title.trim(),
       created_by: authorId,
+      agent_api_key_id: authorKind === "agent" ? authorId : undefined,
     });
 
     await messageRepo.create({

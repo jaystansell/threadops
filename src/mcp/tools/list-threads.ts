@@ -24,6 +24,7 @@ export async function listThreads(
     .from("threads")
     .select("*")
     .eq("company_id", companyId)
+    .eq("agent_api_key_id", auth.keyId)
     .order("created_at", { ascending: false });
 
   if (input.status && VALID_STATUSES.includes(input.status as ThreadStatus)) {

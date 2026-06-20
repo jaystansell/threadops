@@ -23,4 +23,5 @@ export interface ThreadCreateInput {
   theme_id?: ThemeId;
   title: string;
   created_by: string;
+  agent_api_key_id?: string;
 }

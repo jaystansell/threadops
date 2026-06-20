@@ -14,6 +14,16 @@ export async function updateThreadStatus(
   input: UpdateThreadStatusInput,
 ) {
   const threadRepo = createThreadRepo(db);
+  const thread = await threadRepo.getById(
+    auth.companyId as CompanyId,
+    input.thread_id as ThreadId,
+  );
+  if (!thread) {
+    throw new Error("Thread not found or does not belong to your company");
+  }
+  if (thread.agent_api_key_id && thread.agent_api_key_id !== auth.keyId) {
+    throw new Error("This thread belongs to another agent");
+  }
   return threadRepo.updateStatus(
     auth.companyId as CompanyId,
     input.thread_id as ThreadId,

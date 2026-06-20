@@ -12,6 +12,7 @@ export interface Thread {
   title: string;
   status: ThreadStatus;
   created_by: string;
+  agent_api_key_id: string | null;
   created_at: string;
   updated_at: string;
 }
