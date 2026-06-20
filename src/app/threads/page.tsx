@@ -1,19 +1,22 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
-import type { CompanyId, Thread } from "@/core/types";
-
-const DEMO_COMPANY_ID = "a0000000-0000-0000-0000-000000000001" as CompanyId;
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
+import type { Thread } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function ThreadsPage() {
+  const userCompany = await getUserCompany();
+  if (!userCompany) redirect("/onboarding");
+
   const db = createServerClient();
   const threadRepo = createThreadRepo(db);
 
   let threads: Thread[];
   try {
-    threads = await threadRepo.list(DEMO_COMPANY_ID);
+    threads = await threadRepo.list(userCompany.companyId);
   } catch {
     threads = [];
   }

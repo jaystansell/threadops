@@ -5,3 +5,6 @@ export { createMessageRepo } from "./message-repo";
 export { createApiKeyRepo } from "./api-key-repo";
 export { createWebhookRepo } from "./webhook-repo";
 export { createRealtimeAdapter } from "./realtime";
+export { createAuthBrowserClient } from "./auth/browser";
+export { createAuthServerClient } from "./auth/server";
+export { getUserCompany } from "./auth/get-user-company";

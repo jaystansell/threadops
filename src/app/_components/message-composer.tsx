@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 interface MessageComposerProps {
   threadId: string;
+  userId: string;
 }
 
-export function MessageComposer({ threadId }: MessageComposerProps) {
+export function MessageComposer({ threadId, userId }: MessageComposerProps) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
@@ -24,7 +25,7 @@ export function MessageComposer({ threadId }: MessageComposerProps) {
       const res = await fetch(`/api/threads/${threadId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: body.trim() }),
+        body: JSON.stringify({ body: body.trim(), author_id: userId }),
       });
 
       if (!res.ok) {

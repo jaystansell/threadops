@@ -1,26 +1,28 @@
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
-import type { CompanyId, ThreadId } from "@/core/types";
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
+import type { ThreadId } from "@/core/types";
 import { ThreadTimeline } from "@/app/_components/thread-timeline";
 import { MessageComposer } from "@/app/_components/message-composer";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-
-const DEMO_COMPANY_ID = "a0000000-0000-0000-0000-000000000001" as CompanyId;
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function ThreadDetailPage(
   props: PageProps<"/threads/[threadId]">
 ) {
+  const userCompany = await getUserCompany();
+  if (!userCompany) redirect("/onboarding");
+
   const { threadId } = await props.params;
   const db = createServerClient();
   const threadRepo = createThreadRepo(db);
   const messageRepo = createMessageRepo(db);
 
   const thread = await threadRepo.getById(
-    DEMO_COMPANY_ID,
+    userCompany.companyId,
     threadId as ThreadId,
   );
   if (!thread) notFound();
@@ -50,7 +52,7 @@ export default async function ThreadDetailPage(
       <ThreadTimeline initialMessages={messages} threadId={threadId} />
 
       {thread.status === "open" && (
-        <MessageComposer threadId={threadId} />
+        <MessageComposer threadId={threadId} userId={userCompany.userId} />
       )}
     </div>
   );
