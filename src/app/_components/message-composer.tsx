@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface MessageComposerProps {
@@ -10,6 +10,7 @@ interface MessageComposerProps {
 
 export function MessageComposer({ threadId, userId }: MessageComposerProps) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,11 +44,17 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2" data-testid="message-composer">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-2" data-testid="message-composer">
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Type your message..."
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            formRef.current?.requestSubmit();
+          }
+        }}
+        placeholder="Type your message... (⌘/Ctrl+Enter to send)"
         rows={3}
         data-testid="message-input"
         className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)] resize-none"

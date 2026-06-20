@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { ThemeFilter } from "@/app/_components/theme-filter";
+import { StatusFilter } from "@/app/_components/status-filter";
 import { SearchBar } from "@/app/_components/search-bar";
-import type { Thread, Theme, ThemeId } from "@/core/types";
+import type { Thread, Theme, ThemeId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +13,10 @@ export const metadata = { title: "Threads" };
 
 const PAGE_SIZE = 10;
 
+const VALID_STATUSES: ThreadStatus[] = ["open", "closed", "archived"];
+
 export default async function ThreadsPage(props: {
-  searchParams: Promise<{ theme?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ theme?: string; q?: string; page?: string; status?: string }>;
 }) {
   const userCompany = await getUserCompany();
   if (!userCompany) redirect("/onboarding");
@@ -22,6 +25,10 @@ export default async function ThreadsPage(props: {
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
   const searchQuery = searchParams.q?.trim() ?? "";
+  const statusParam = searchParams.status ?? "open";
+  const statusFilter = VALID_STATUSES.includes(statusParam as ThreadStatus)
+    ? (statusParam as ThreadStatus)
+    : null;
 
   const db = createServerClient();
 
@@ -41,6 +48,9 @@ export default async function ThreadsPage(props: {
     .eq("company_id", userCompany.companyId)
     .order("created_at", { ascending: false });
 
+  if (statusFilter) {
+    query = query.eq("status", statusFilter);
+  }
   if (searchParams.theme) {
     query = query.eq("theme_id", searchParams.theme as ThemeId);
   }
@@ -60,6 +70,7 @@ export default async function ThreadsPage(props: {
   // Build pagination href preserving current filters
   function pageHref(p: number) {
     const params = new URLSearchParams();
+    if (statusParam && statusParam !== "open") params.set("status", statusParam);
     if (searchParams.theme) params.set("theme", searchParams.theme);
     if (searchQuery) params.set("q", searchQuery);
     if (p > 1) params.set("page", String(p));
@@ -72,6 +83,7 @@ export default async function ThreadsPage(props: {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-bold">Threads</h2>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <StatusFilter />
           <ThemeFilter themes={themeList} />
           <Link
             href="/threads/new"
@@ -88,7 +100,9 @@ export default async function ThreadsPage(props: {
         <p className="text-[var(--muted-foreground)] text-sm">
           {searchQuery
             ? `No threads matching "${searchQuery}".`
-            : "No threads yet. Create one to get started, or apply the seed data."}
+            : statusFilter
+              ? `No ${statusFilter} threads.`
+              : "No threads yet. Create one to get started, or apply the seed data."}
         </p>
       ) : (
         <>
