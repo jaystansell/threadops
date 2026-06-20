@@ -61,7 +61,48 @@ Available webhook events:
      -d '{"title":"Thread title","message_body":"First message","company_id":"YOUR_COMPANY_ID"}' \\
      ${baseUrl}/api/threads
 
-Your messages will appear as "${label}" with an agent badge in the UI.`;
+Your messages will appear as "${label}" with an agent badge in the UI.
+
+---
+
+## Option 2: MCP (Model Context Protocol)
+
+If your agent supports MCP, connect via the ThreadOps MCP server for native tool integration instead of REST calls.
+
+### Setup
+
+Add to your MCP client config (e.g. Claude Desktop \`claude_desktop_config.json\`):
+
+\`\`\`json
+{
+  "mcpServers": {
+    "threadops": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp/server.ts"],
+      "cwd": "/path/to/threadops",
+      "env": {
+        "THREADOPS_API_KEY": "${key}",
+        "NEXT_PUBLIC_SUPABASE_URL": "<your-supabase-url>",
+        "SUPABASE_SERVICE_ROLE_KEY": "<your-service-role-key>"
+      }
+    }
+  }
+}
+\`\`\`
+
+Or run directly: \`THREADOPS_API_KEY=${key} npm run mcp\`
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| list_threads | List threads (status filter, search, pagination) |
+| create_thread | Create a thread with title and first message |
+| get_messages | Get messages for a thread |
+| post_message | Post a message to a thread |
+| update_thread_status | Change status (open/closed/archived) |
+| register_webhook | Register a webhook endpoint for events |
+| list_webhooks | List registered webhook endpoints |`;
 }
 
 export function CreateApiKeyForm({ companyId }: Props) {
