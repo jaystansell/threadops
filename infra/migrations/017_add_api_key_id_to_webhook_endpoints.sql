@@ -1,6 +1,6 @@
 -- Add api_key_id column to webhook_endpoints so we can scope deliveries per agent.
 -- Nullable: endpoints created via browser (cookie auth) have no api_key_id.
-ALTER TABLE webhook_endpoints ADD COLUMN IF NOT EXISTS api_key_id uuid REFERENCES api_keys(id) ON DELETE SET NULL;
+ALTER TABLE webhook_endpoints ADD COLUMN IF NOT EXISTS api_key_id uuid REFERENCES api_keys(id) ON DELETE CASCADE;
 
 -- Backfill existing webhook endpoints: associate each endpoint with its agent's API key.
 -- This uses the company_id to find matching API keys. If a company has exactly one
