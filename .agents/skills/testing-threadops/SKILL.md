@@ -70,6 +70,22 @@ Remember to **revert this change** after testing.
 
 **Note:** The `/api/webhooks/inbound` path is NOT in the protected routes list, so webhook ingestion via curl works without modification.
 
+### Testing Against Production vs Local
+
+**Recommended: Test against production (https://threadops-jade.vercel.app)**
+- Production is publicly accessible (no Vercel auth wall)
+- Vercel **preview** URLs are protected by Vercel Authentication and require team login - don't use them for testing
+- Production has real data and correct Supabase connection
+
+**Signup flow for production testing:**
+1. Navigate to `https://threadops-jade.vercel.app/signup`
+2. Sign up with any email + password (min 6 chars). Email confirmation is **disabled** - session is created immediately
+3. After signup, you'll be redirected to `/onboarding` with a "Join Demo Company" button
+4. Click "Join Demo Company" to get access to threads, webhooks, API keys
+5. You now have full authenticated access as a "member" role user
+
+**Note on .env.local:** The repo's `.env.local` may point to a different Supabase project (e.g. `sdqnfhdorrlbjyssokqs`) that has **no tables**. This is not useful for local testing unless you apply all migrations first. The production Vercel deployment uses the correct project (`gymsbxkuiknbdtulmopv`).
+
 ## Key Test Flows
 
 ### Thread Creation
@@ -98,6 +114,23 @@ Remember to **revert this change** after testing.
 3. `/threads/<threadId>` — Thread detail with messages timeline and composer
 4. `/api-keys` — API key management with "Create API Key" button
 5. `/docs/api` — API documentation with expandable endpoint sections
+
+### Search
+1. Type query in search bar on `/threads` and click "Search"
+2. URL updates to `?q=<query>` (server-side filtering)
+3. Only matching threads shown (case-insensitive `ilike`)
+4. Empty results show "No threads matching '<query>'" message
+5. Clearing search shows all threads again
+
+### Pagination
+- Page size is 10 items
+- Previous/Next buttons only appear when total > 10
+- URL param: `?page=2`
+
+### Sign Out
+1. Click "Sign out" in header
+2. Redirects to `/login`
+3. Protected routes redirect back to `/login` when unauthenticated
 
 ### Agent Identity Features (PR #12 + #13)
 1. **Create API Key form** — Shows hint: "We recommend creating one key per agent...", label: "Label (agent display name)", placeholder: "e.g. Support Bot"
