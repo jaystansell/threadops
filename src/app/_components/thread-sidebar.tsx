@@ -89,7 +89,9 @@ export function ThreadSidebar({
 }: ThreadSidebarProps) {
   const pathname = usePathname();
 
-  const [threads, setThreads] = useState(initialThreads);
+  const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
+  const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
+  const threads = overrideThreads ?? [...initialThreads, ...extraThreads];
   const [status, setStatus] = useState("open");
   const [groupBy, setGroupBy] = useState("agent");
   const [search, setSearch] = useState("");
@@ -124,7 +126,7 @@ export function ThreadSidebar({
       const res = await fetch(`/api/threads?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load threads");
       const newThreads = (await res.json()) as ThreadWithLastMessage[];
-      setThreads((prev) => [...prev, ...newThreads]);
+      setExtraThreads((prev) => [...prev, ...newThreads]);
       setHasMore(newThreads.length >= BATCH_SIZE);
     } catch {
       // Silently handle
@@ -162,7 +164,8 @@ export function ThreadSidebar({
         const res = await fetch(`/api/threads?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to load threads");
         const data = (await res.json()) as ThreadWithLastMessage[];
-        setThreads(data);
+        setOverrideThreads(data);
+        setExtraThreads([]);
         setHasMore(data.length >= BATCH_SIZE);
       } catch {
         // Silently handle
