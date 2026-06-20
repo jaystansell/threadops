@@ -8,6 +8,9 @@ import { ThreadTimeline } from "@/app/_components/thread-timeline";
 import { MessageComposer } from "@/app/_components/message-composer";
 import { ThreadStatusActions } from "@/app/_components/thread-status-actions";
 import { FormattedDate } from "@/app/_components/formatted-date";
+import { ThreadTags } from "@/app/_components/thread-tags";
+import { ThreadMetadata } from "@/app/_components/thread-metadata";
+import { ThreadSummaryEditor } from "@/app/_components/thread-summary-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +33,19 @@ export default async function ThreadDetailPage(
 
   const messages = await messageRepo.listByThread(threadId as ThreadId);
 
+  // Fetch tags
+  const { data: tagRows } = await db
+    .from("thread_tags")
+    .select("tag")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
+  const tags = (tagRows ?? []).map((r: { tag: string }) => r.tag);
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-xl font-bold">{thread.title}</h2>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
             {thread.status}
           </span>
@@ -42,6 +53,7 @@ export default async function ThreadDetailPage(
             <FormattedDate date={thread.created_at} />
           </span>
         </div>
+        <ThreadTags threadId={threadId} initialTags={tags} />
         <div className="mt-3">
           <ThreadStatusActions
             threadId={threadId}
@@ -50,6 +62,12 @@ export default async function ThreadDetailPage(
           />
         </div>
       </div>
+
+      {thread.summary !== undefined && (
+        <ThreadSummaryEditor threadId={threadId} initialSummary={thread.summary ?? ""} />
+      )}
+
+      <ThreadMetadata threadId={threadId} initialMetadata={thread.metadata ?? {}} />
 
       <ThreadTimeline initialMessages={messages} threadId={threadId} />
 

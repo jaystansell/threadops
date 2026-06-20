@@ -64,8 +64,37 @@ export async function GET(req: NextRequest) {
   );
   const searchQuery = searchParams.get("q")?.trim() ?? "";
   const statusParam = searchParams.get("status") ?? "";
+  const tagsParam = searchParams.get("tags") ?? "";
+  const metadataPrefix = "metadata.";
 
   const db = createServerClient();
+
+  // If tag filtering is requested, first get matching thread IDs
+  let tagFilteredIds: string[] | null = null;
+  if (tagsParam) {
+    const requestedTags = tagsParam.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+    if (requestedTags.length > 0) {
+      // AND logic: thread must have ALL requested tags
+      const { data: tagRows } = await db
+        .from("thread_tags")
+        .select("thread_id, tag")
+        .in("tag", requestedTags);
+
+      const threadTagCounts = new Map<string, number>();
+      for (const row of tagRows ?? []) {
+        threadTagCounts.set(row.thread_id, (threadTagCounts.get(row.thread_id) ?? 0) + 1);
+      }
+      tagFilteredIds = [];
+      for (const [tid, count] of threadTagCounts) {
+        if (count >= requestedTags.length) {
+          tagFilteredIds.push(tid);
+        }
+      }
+      if (tagFilteredIds.length === 0) {
+        return Response.json([]);
+      }
+    }
+  }
 
   let query = db
     .from("threads")
@@ -82,6 +111,17 @@ export async function GET(req: NextRequest) {
   if (searchQuery) {
     const escaped = searchQuery.replace(/[%_\\]/g, "\\$&");
     query = query.ilike("title", `%${escaped}%`);
+  }
+  if (tagFilteredIds) {
+    query = query.in("id", tagFilteredIds);
+  }
+
+  // Metadata filtering: ?metadata.key=value
+  for (const [key, value] of searchParams.entries()) {
+    if (key.startsWith(metadataPrefix)) {
+      const metaKey = key.slice(metadataPrefix.length);
+      query = query.eq(`metadata->>${metaKey}`, value);
+    }
   }
 
   query = query.range(offset, offset + limit - 1);
@@ -131,10 +171,26 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Fetch tags for all threads
+    const threadIds = threads.map((t: { id: string }) => t.id);
+    const tagMap = new Map<string, string[]>();
+    if (threadIds.length > 0) {
+      const { data: allTags } = await db
+        .from("thread_tags")
+        .select("thread_id, tag")
+        .in("thread_id", threadIds);
+      for (const row of allTags ?? []) {
+        const existing = tagMap.get(row.thread_id) ?? [];
+        existing.push(row.tag);
+        tagMap.set(row.thread_id, existing);
+      }
+    }
+
     const enriched = threads.map((thread) => {
       const lm = lastMsgMap.get(thread.id);
       return {
         ...thread,
+        tags: tagMap.get(thread.id) ?? [],
         last_author_kind: lm?.author_kind ?? null,
         last_author_name: lm?.author_name ?? null,
         last_message_at: lm?.created_at ?? null,
