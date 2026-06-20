@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
   const offset = (page - 1) * PAGE_SIZE;
   const searchQuery = searchParams.get("q")?.trim() ?? "";
   const themeFilter = searchParams.get("theme") ?? "";
+  const statusFilter = searchParams.get("status") ?? "";
 
   const db = createServerClient();
 
@@ -65,6 +66,9 @@ export async function GET(req: NextRequest) {
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
+  if (statusFilter && ["open", "closed", "archived"].includes(statusFilter)) {
+    query = query.eq("status", statusFilter);
+  }
   if (themeFilter) {
     query = query.eq("theme_id", themeFilter);
   }
