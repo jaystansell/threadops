@@ -48,7 +48,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/api/threads") ||
     path.startsWith("/api/companies");
 
-  const apiKeyRoutes = ["/api/threads", "/api/webhooks/inbound"];
+  const apiKeyRoutes = ["/api/threads", "/api/webhooks/inbound", "/api/webhook-endpoints"];
   const hasApiKey =
     apiKeyRoutes.some((r) => path.startsWith(r)) &&
     request.headers.has("x-api-key");

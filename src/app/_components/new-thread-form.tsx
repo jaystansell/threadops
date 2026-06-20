@@ -2,17 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Theme } from "@/core/types";
-
 interface NewThreadFormProps {
-  themes: Theme[];
   companyId: string;
 }
 
-export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
+export function NewThreadForm({ companyId }: NewThreadFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [themeId, setThemeId] = useState("");
   const [messageBody, setMessageBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +26,6 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          theme_id: themeId || undefined,
           company_id: companyId,
           message_body: messageBody.trim(),
         }),
@@ -70,30 +65,6 @@ export function NewThreadForm({ themes, companyId }: NewThreadFormProps) {
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
           disabled={submitting}
         />
-      </div>
-
-      <div>
-        <label
-          htmlFor="theme"
-          className="block text-sm font-medium mb-1"
-        >
-          Theme
-        </label>
-        <select
-          id="theme"
-          value={themeId}
-          onChange={(e) => setThemeId(e.target.value)}
-          data-testid="thread-theme-select"
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
-          disabled={submitting}
-        >
-          <option value="">No theme</option>
-          {themes.map((theme) => (
-            <option key={theme.id} value={theme.id}>
-              {theme.name}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div>

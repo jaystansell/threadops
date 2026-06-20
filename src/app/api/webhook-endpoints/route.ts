@@ -1,23 +1,56 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
+import { hashKey } from "@/core/rules/api-key";
 import { WEBHOOK_EVENT_TYPES } from "@/core/types";
-import type { WebhookEventType } from "@/core/types";
+import type { CompanyId, WebhookEventType } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+type ApiKeyResult =
+  | { kind: "none" }
+  | { kind: "invalid" }
+  | { kind: "ok"; companyId: string };
+
+async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
+  const apiKey = req.headers.get("x-api-key");
+  if (!apiKey) return { kind: "none" };
+  const db = createServerClient();
+  const apiKeyRepo = createApiKeyRepo(db);
+  const keyHash = await hashKey(apiKey);
+  const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+  if (!keyRecord) return { kind: "invalid" };
+  await apiKeyRepo.touchLastUsed(keyRecord.id);
+  return { kind: "ok", companyId: keyRecord.company_id };
+}
+
+async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string } | Response> {
+  const apiKeyResult = await resolveApiKeyCompany(req);
+  if (apiKeyResult.kind === "invalid") {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  }
+  if (apiKeyResult.kind === "ok") {
+    return { companyId: apiKeyResult.companyId };
+  }
   const userCompany = await getUserCompany();
   if (!userCompany) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  return { companyId: userCompany.companyId };
+}
+
+export async function GET(req: NextRequest) {
+  const result = await resolveCompanyId(req);
+  if (result instanceof Response) return result;
+  const { companyId } = result;
 
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
 
   try {
-    const endpoints = await repo.listByCompany(userCompany.companyId);
+    const endpoints = await repo.listByCompany(companyId as CompanyId);
     return Response.json(endpoints);
   } catch (err) {
     return Response.json(
@@ -28,10 +61,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const userCompany = await getUserCompany();
-  if (!userCompany) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const result = await resolveCompanyId(req);
+  if (result instanceof Response) return result;
+  const { companyId } = result;
 
   const body = await req.json();
 
@@ -74,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const endpoint = await repo.create({
-      company_id: userCompany.companyId,
+      company_id: companyId as CompanyId,
       url: body.url.trim(),
       events: body.events,
       secret,

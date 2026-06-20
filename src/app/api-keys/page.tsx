@@ -5,6 +5,7 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import type { ApiKey } from "@/core/types";
 import { CreateApiKeyForm } from "../_components/create-api-key-form";
 import { RevokeApiKeyButton } from "../_components/revoke-api-key-button";
+import { FormattedDate } from "../_components/formatted-date";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export default async function ApiKeysPage() {
   const keys: ApiKey[] = await apiKeyRepo.listByCompany(userCompany.companyId);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">API Keys</h2>
       </div>
@@ -74,7 +75,7 @@ export default async function ApiKeysPage() {
                 ))}
               </div>
               <p className="text-xs text-[var(--muted-foreground)] mt-2">
-                Created {new Date(key.created_at).toLocaleDateString()}
+                Created <FormattedDate date={key.created_at} />
               </p>
             </li>
           ))}
