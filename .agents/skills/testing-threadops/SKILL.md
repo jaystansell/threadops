@@ -1,117 +1,72 @@
 ---
 name: testing-threadops
-description: Test the ThreadOps forum app end-to-end. Use when verifying UI, API routes, or database changes against a live Supabase project.
+description: Test ThreadOps forum features end-to-end. Use when verifying thread creation, status management, theme filtering, or other forum UI changes.
 ---
 
-# Testing ThreadOps
+## Overview
+
+ThreadOps is a Next.js 16 forum app with Supabase backend and Tailwind CSS v4. Testing involves running the app locally against the production Supabase database.
 
 ## Devin Secrets Needed
 
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (bypasses RLS)
+- `THREADOPS_SUPABASE_SERVICE_ROLE_KEY` (repo-scoped) — Required for local dev. The app's RLS policies have self-referencing `company_members` queries that cause infinite recursion (PostgreSQL error 42P17) without the service role key. ALL data queries go through `company_members` RLS policies, so the anon key alone is insufficient for local testing.
 
-These should be in `.env.local` at the repo root. If missing, check the Supabase dashboard for the project `gymsbxkuiknbdtulmopv` or ask the user.
+## Local Dev Setup
 
-## Environment Setup
+1. Clone the repo and install dependencies: `npm install`
+2. Create `.env.local` with:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://gymsbxkuiknbdtulmopv.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key from Supabase>
+   SUPABASE_SERVICE_ROLE_KEY=<service role key - REQUIRED>
+   ```
+3. **Important:** Unset any shell-level `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` environment variables before starting the dev server. Shell env vars override `.env.local` in Next.js, and your shell may have credentials for a different Supabase project (e.g., ExecReps).
+4. Start dev server: `unset NEXT_PUBLIC_SUPABASE_URL && unset NEXT_PUBLIC_SUPABASE_ANON_KEY && unset SUPABASE_SERVICE_ROLE_KEY && npx next dev --port 3000`
 
-### IPv6 DNS Issue
+## Authentication
 
-This VM does not support IPv6. Supabase hostnames resolve to IPv6 addresses, which causes Node.js connections to fail with "Invalid API key" or connection timeouts. The Supabase REST API may work via curl (which falls back to IPv4) while the Node.js Supabase client fails.
+- Test user: `devin-test-20260620@mailinator.com` / `TestPass123!`
+- This user is a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
+- Login via the `/login` page in the browser
 
-**Fix:** Start the dev server with:
-```bash
-NODE_OPTIONS='--dns-result-order=ipv4first' npm run dev
-```
+## RLS Policy Considerations
 
-### Shell Environment Variables Override .env.local
+- The `company_members` table has a self-referencing SELECT RLS policy that causes infinite recursion when queried with an auth-aware client (anon key + user JWT). This affects ALL tables because every RLS policy references `company_members` in subqueries.
+- The service role key bypasses RLS entirely, which is how the production app works.
+- If you encounter PostgreSQL error `42P17` ("infinite recursion detected in policy"), you are missing the service role key.
+- Do NOT attempt to use `createAuthServerClient()` for data queries — it will trigger the infinite recursion. The app architecture requires `createServerClient()` (service role) for all data operations.
 
-If previous sessions set Supabase env vars in the shell (e.g., for a different project like ExecReps), those shell env vars will **override** `.env.local`. This causes the app to connect to the wrong Supabase project.
+## Vercel Deployment
 
-**Fix:** Before starting the dev server, unset any conflicting shell vars:
-```bash
-unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
-```
+- Production URL: `threadops-product-coalition.vercel.app`
+- Vercel Deployment Protection may be active, blocking access with 401. If so, either:
+  - Ask the user to disable it (Vercel Project Settings > Deployment Protection)
+  - Test locally with the service role key (preferred)
 
-### Full Dev Server Start Command
-```bash
-unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
-cd /home/ubuntu/repos/threadops
-NODE_OPTIONS='--dns-result-order=ipv4first' npm run dev
-```
+## Key Test Flows
 
-## Key URLs and IDs
+### Thread Creation
+1. Navigate to `/threads`, click "New Thread"
+2. Fill form: Title (required), Theme (dropdown), Message (required)
+3. Verify "Create Thread" button is disabled when fields empty, enabled when filled
+4. Submit and verify redirect to thread detail page with correct title, status, theme badge, and message
 
-- **Demo Company ID:** `a0000000-0000-0000-0000-000000000001`
-- **Demo Thread ID:** `d0000000-0000-0000-0000-000000000001`
-- **Supabase project ref:** `gymsbxkuiknbdtulmopv`
-- **Vercel deployment:** `https://threadops-jade.vercel.app/` (requires env vars configured in Vercel)
+### Status Management
+1. On thread detail page, verify buttons match status:
+   - open: Close + Archive buttons, message composer visible
+   - closed: Reopen + Archive buttons, composer hidden
+   - archived: NO buttons, NO composer
+2. Test full state machine: open -> closed -> open -> archived
 
-## Test Flows
-
-### UI Navigation (Browser)
-1. Home page (`/`) shows "Welcome to ThreadOps" with Threads and Webhooks cards
-2. `/threads` shows thread list with count badge and "open" status
-3. `/threads/<threadId>` shows thread detail with messages timeline and composer
-4. "All Threads" back link navigates correctly
-
-### Message Posting
-1. Type in the composer textarea on thread detail page
-2. Click "Send Message"
-3. Textarea clears on success (no error message)
-4. Refresh to verify message persisted with "user" author kind badge
-
-Note: Messages may not appear in realtime without refresh. Supabase Realtime must be enabled on the `messages` table in the Supabase dashboard (Database > Replication).
-
-### API Key Generation (curl)
-```bash
-# Create key — valid scopes: threads:read, threads:write, messages:read, messages:write, webhooks:read
-curl -s -X POST http://localhost:3000/api/companies/a0000000-0000-0000-0000-000000000001/api-keys \
-  -H "Content-Type: application/json" \
-  -d '{"label": "test-key", "scopes": ["threads:read"]}'
-
-# List keys — should show key_hash and key_prefix, never plaintext_key
-curl -s http://localhost:3000/api/companies/a0000000-0000-0000-0000-000000000001/api-keys
-```
-
-### Webhook Ingestion (curl)
-```bash
-# First request — expect 202 Accepted
-curl -s -X POST http://localhost:3000/api/webhooks/inbound \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: <plaintext_key_from_above>" \
-  -H "x-idempotency-key: test-idem-001" \
-  -d '{"source": "test", "event_type": "ping", "data": {}}'
-
-# Duplicate — expect 200 "Already processed" with same delivery_id
-curl -s -X POST http://localhost:3000/api/webhooks/inbound \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: <plaintext_key_from_above>" \
-  -H "x-idempotency-key: test-idem-001" \
-  -d '{"source": "test", "event_type": "ping", "data": {}}'
-```
-
-### Error Handling
-- Missing `x-api-key` header → 401 `"Missing x-api-key header"`
-- Invalid API key → 401 `"Invalid API key"`
-- Empty message body → 400 `"body is required and must be a string"`
-- Invalid scopes (e.g. `["admin:delete"]`) → 400 `"Invalid scopes provided"`
+### Theme Filtering
+1. On `/threads` page, use theme filter dropdown
+2. Verify URL updates with `?theme=<id>` parameter
+3. Verify only matching threads shown
+4. Verify "All themes" resets filter and removes URL param
+5. Verify empty state for themes with no threads
 
 ## Database
 
-Migrations are in `infra/migrations/` (000-007). Seed data is in `infra/seed/seed.sql`.
-
-To apply migrations via psql (pooler connection, bypasses IPv6 issue):
-```bash
-export DBURL="postgres://postgres.gymsbxkuiknbdtulmopv:<password>@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require"
-for f in infra/migrations/*.sql; do psql "$DBURL" -f "$f"; done
-psql "$DBURL" -f infra/seed/seed.sql
-```
-
-The Supabase MCP tool's `execute_sql` might be read-only for DDL. If so, use the psql pooler connection above.
-
-## Lint and Type Check
-```bash
-npm run lint
-npx tsc --noEmit
-```
+- Supabase project ref: `gymsbxkuiknbdtulmopv`
+- Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
+- Use Supabase MCP (`execute_sql`) to inspect data if needed
