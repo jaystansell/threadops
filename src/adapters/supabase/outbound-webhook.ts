@@ -1,10 +1,10 @@
 import { after } from "next/server";
+import { v4 as uuidv4 } from "uuid";
+import { SIGNATURE_HEADER } from "@/core/rules/webhook";
+import type { CompanyId } from "@/core/types";
 import { createServerClient } from "./client";
 import { createWebhookEndpointRepo } from "./webhook-endpoint-repo";
 import { createWebhookRepo } from "./webhook-repo";
-import { SIGNATURE_HEADER } from "@/core/rules/webhook";
-import type { CompanyId } from "@/core/types";
-import { v4 as uuidv4 } from "uuid";
 
 async function signPayload(
   payload: string,

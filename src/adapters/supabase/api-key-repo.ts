@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "./client";
 import type { ApiKey, ApiKeyId, ApiKeyCreateResult, CompanyId } from "@/core/types";
 import type { ApiKeyRepo, ApiKeyCreateInput } from "@/core/ports";
 import {
@@ -6,6 +5,7 @@ import {
   extractPrefix,
   hashKey,
 } from "@/core/rules/api-key";
+import type { SupabaseClient } from "./client";
 
 export function createApiKeyRepo(db: SupabaseClient): ApiKeyRepo {
   return {

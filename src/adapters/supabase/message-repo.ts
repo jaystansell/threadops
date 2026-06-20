@@ -1,6 +1,6 @@
-import type { SupabaseClient } from "./client";
 import type { Message, MessageId, ThreadId } from "@/core/types";
 import type { MessageRepo, MessageCreateInput } from "@/core/ports";
+import type { SupabaseClient } from "./client";
 
 export function createMessageRepo(db: SupabaseClient): MessageRepo {
   return {
