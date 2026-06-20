@@ -246,6 +246,9 @@ export default async function HomePage() {
             <Link href="/docs/api" className="hover:text-[var(--foreground)] transition-colors">
               API Docs
             </Link>
+            <Link href="/changelog" className="hover:text-[var(--foreground)] transition-colors">
+              Changelog
+            </Link>
             <Link href="/login" className="hover:text-[var(--foreground)] transition-colors">
               Log In
             </Link>
