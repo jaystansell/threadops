@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import type { Message } from "@/core/types";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
@@ -86,7 +87,7 @@ export function ThreadTimeline({
             </span>
           </div>
           <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-            <Markdown remarkPlugins={[remarkGfm]}>{msg.body}</Markdown>
+            <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
           </div>
         </div>
       ))}
