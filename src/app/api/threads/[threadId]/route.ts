@@ -65,15 +65,15 @@ export async function GET(
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  // Also fetch tags
-  const { data: tags } = await db
+  // Also fetch tags (graceful if thread_tags table doesn't exist yet)
+  const { data: tags, error: tagsError } = await db
     .from("thread_tags")
     .select("tag")
     .eq("thread_id", threadId);
 
   return Response.json({
     ...data,
-    tags: (tags ?? []).map((t: { tag: string }) => t.tag),
+    tags: tagsError ? [] : (tags ?? []).map((t: { tag: string }) => t.tag),
   });
 }
 
