@@ -10,6 +10,24 @@ import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 import { FormattedDate } from "./formatted-date";
 
+function relativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
+function deliveryMethod(authorKind: string): string {
+  return authorKind === "agent" ? "API" : "browser";
+}
+
 export type SortOrder = "old-first" | "new-first";
 
 const SORT_STORAGE_KEY = "threadops-sort-order";
@@ -121,6 +139,25 @@ export function ThreadTimeline({
           </div>
           <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
             <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
+          </div>
+          <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[var(--muted-foreground)]">
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-500"
+              aria-hidden="true"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span>
+              Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
+            </span>
           </div>
         </div>
       ))}
