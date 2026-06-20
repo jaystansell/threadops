@@ -48,15 +48,20 @@ export default async function ThreadsLayout({
   const lastMessageMap = new Map<string, LastMessageRow>();
 
   if (threadIds.length > 0) {
-    for (const tid of threadIds) {
-      const { data: msgs } = await db
-        .from("messages")
-        .select("thread_id, author_kind, author_name, created_at")
-        .eq("thread_id", tid)
-        .order("created_at", { ascending: false })
-        .limit(1);
+    const results = await Promise.all(
+      threadIds.map((tid) =>
+        db
+          .from("messages")
+          .select("thread_id, author_kind, author_name, created_at")
+          .eq("thread_id", tid)
+          .order("created_at", { ascending: false })
+          .limit(1),
+      ),
+    );
+    for (const { data: msgs } of results) {
       if (msgs && msgs.length > 0) {
-        lastMessageMap.set(tid, msgs[0] as LastMessageRow);
+        const row = msgs[0] as LastMessageRow;
+        lastMessageMap.set(row.thread_id, row);
       }
     }
   }
