@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { canTransition, InvalidStatusTransitionError } from "@/core/rules";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import { hashKey } from "@/core/rules/api-key";
 import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -14,13 +16,27 @@ export async function PATCH(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/status">,
 ) {
-  const supabase = await createAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const apiKey = req.headers.get("x-api-key");
+  let apiKeyCompanyId: string | null = null;
 
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+    apiKeyCompanyId = keyRecord.company_id;
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const { threadId } = await ctx.params;
@@ -33,7 +49,9 @@ export async function PATCH(
     );
   }
 
-  if (!body.company_id || typeof body.company_id !== "string") {
+  const companyId = apiKeyCompanyId ?? body.company_id;
+
+  if (!companyId || typeof companyId !== "string") {
     return Response.json(
       { error: "company_id is required" },
       { status: 400 },
@@ -45,7 +63,7 @@ export async function PATCH(
 
   try {
     const thread = await threadRepo.getById(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       threadId as ThreadId,
     );
 
@@ -60,13 +78,13 @@ export async function PATCH(
     }
 
     const updated = await threadRepo.updateStatus(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       threadId as ThreadId,
       newStatus,
     );
 
     dispatchOutboundWebhooks(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       "thread.status_changed",
       {
         thread_id: threadId,

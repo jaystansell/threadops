@@ -2,19 +2,53 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import { hashKey } from "@/core/rules/api-key";
 import type { CompanyId, ThemeId, ThreadId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 10;
 
+type ApiKeyResult =
+  | { kind: "none" }
+  | { kind: "invalid" }
+  | { kind: "ok"; companyId: string; keyLabel: string; keyId: string };
+
+async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
+  const apiKey = req.headers.get("x-api-key");
+  if (!apiKey) return { kind: "none" };
+  const db = createServerClient();
+  const apiKeyRepo = createApiKeyRepo(db);
+  const keyHash = await hashKey(apiKey);
+  const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+  if (!keyRecord) return { kind: "invalid" };
+  await apiKeyRepo.touchLastUsed(keyRecord.id);
+  return {
+    kind: "ok",
+    companyId: keyRecord.company_id,
+    keyLabel: keyRecord.label,
+    keyId: keyRecord.id,
+  };
+}
+
 export async function GET(req: NextRequest) {
-  const userCompany = await getUserCompany();
-  if (!userCompany) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  let companyId: string;
+
+  const apiKeyResult = await resolveApiKeyCompany(req);
+  if (apiKeyResult.kind === "invalid") {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "ok") {
+    companyId = apiKeyResult.companyId;
+  } else {
+    const userCompany = await getUserCompany();
+    if (!userCompany) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    companyId = userCompany.companyId;
   }
 
   const { searchParams } = new URL(req.url);
@@ -28,7 +62,7 @@ export async function GET(req: NextRequest) {
   let query = db
     .from("threads")
     .select("*", { count: "exact" })
-    .eq("company_id", userCompany.companyId)
+    .eq("company_id", companyId)
     .order("created_at", { ascending: false });
 
   if (themeFilter) {
@@ -60,13 +94,29 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = await createAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let authorId: string;
+  let authorKind: "user" | "agent" = "user";
+  let authorName: string | null = null;
+  let apiKeyCompanyId: string | null = null;
 
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  const apiKeyResult = await resolveApiKeyCompany(req);
+  if (apiKeyResult.kind === "invalid") {
+    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "ok") {
+    authorId = apiKeyResult.keyId;
+    authorKind = "agent";
+    authorName = apiKeyResult.keyLabel;
+    apiKeyCompanyId = apiKeyResult.companyId;
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    authorId = user.id;
   }
 
   const body = await req.json();
@@ -78,7 +128,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!body.company_id || typeof body.company_id !== "string") {
+  const companyId = apiKeyCompanyId ?? body.company_id;
+
+  if (!companyId || typeof companyId !== "string") {
     return Response.json(
       { error: "company_id is required" },
       { status: 400 },
@@ -102,21 +154,22 @@ export async function POST(req: NextRequest) {
 
   try {
     const thread = await threadRepo.create({
-      company_id: body.company_id as CompanyId,
+      company_id: companyId as CompanyId,
       theme_id: body.theme_id ? (body.theme_id as ThemeId) : undefined,
       title: body.title.trim(),
-      created_by: user.id,
+      created_by: authorId,
     });
 
     await messageRepo.create({
       thread_id: thread.id as ThreadId,
-      author_id: user.id,
-      author_kind: "user",
+      author_id: authorId,
+      author_kind: authorKind,
+      author_name: authorName,
       body: body.message_body.trim(),
     });
 
     dispatchOutboundWebhooks(
-      body.company_id as CompanyId,
+      companyId as CompanyId,
       "thread.created",
       {
         thread_id: thread.id,
