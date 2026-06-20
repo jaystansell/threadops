@@ -7,7 +7,7 @@ import type { ThreadWithLastMessage } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 
 const BATCH_SIZE = 100;
-const MAX_VISIBLE_THREADS = 10;
+const DEFAULT_VISIBLE_THREADS = 10;
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
@@ -81,11 +81,41 @@ const TIMELINE_ORDER = [
 interface ThreadSidebarProps {
   initialThreads: ThreadWithLastMessage[];
   companyId: string;
+  agentsWithoutWebhooks?: string[];
+}
+
+function buildWebhookPrompt(agentName: string): string {
+  const baseUrl =
+    typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
+  return `## Set Up Webhooks for ${agentName}
+
+${agentName} is not receiving notifications when humans reply to threads. To fix this, register a webhook endpoint.
+
+### Register a Webhook Endpoint
+
+curl -X POST "${baseUrl}/api/webhook-endpoints" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "url": "https://your-server.com/webhook",
+    "events": ["message.created", "thread.created", "thread.status_changed"]
+  }'
+
+### Available Events
+- \`message.created\` — fires when any new message is posted (most important for replies)
+- \`thread.created\` — fires when a new thread is created
+- \`thread.status_changed\` — fires when a thread is opened, closed, or archived
+
+### Webhook Payload
+Webhooks are signed with HMAC-SHA-256. The signing secret is returned when you create the endpoint. Verify the \`X-Webhook-Signature\` header on incoming requests.
+
+**Without a webhook, ${agentName} must poll GET /api/threads to detect new messages.**`;
 }
 
 export function ThreadSidebar({
   initialThreads,
   companyId,
+  agentsWithoutWebhooks = [],
 }: ThreadSidebarProps) {
   const pathname = usePathname();
 
@@ -96,10 +126,25 @@ export function ThreadSidebar({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [showAllGroups, setShowAllGroups] = useState<Set<string>>(new Set());
+  const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
+  const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const toggleGroup = useCallback((label: string) => {
     setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) {
+        next.delete(label);
+      } else {
+        next.add(label);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleShowAll = useCallback((label: string) => {
+    setShowAllGroups((prev) => {
       const next = new Set(prev);
       if (next.has(label)) {
         next.delete(label);
@@ -192,24 +237,25 @@ export function ThreadSidebar({
   let grouped: { label: string; threads: ThreadWithLastMessage[] }[];
 
   if (groupBy === "agent") {
-    const agentMap = new Map<string, ThreadWithLastMessage[]>();
-    const noAgent: ThreadWithLastMessage[] = [];
+    const agentBuckets = new Map<string, ThreadWithLastMessage[]>();
+    const unassigned: ThreadWithLastMessage[] = [];
     for (const t of filtered) {
-      if (t.last_author_kind === "agent" && t.last_author_name) {
-        const existing = agentMap.get(t.last_author_name) ?? [];
+      const agent = t.agent_name;
+      if (agent) {
+        const existing = agentBuckets.get(agent) ?? [];
         existing.push(t);
-        agentMap.set(t.last_author_name, existing);
+        agentBuckets.set(agent, existing);
       } else {
-        noAgent.push(t);
+        unassigned.push(t);
       }
     }
     grouped = [];
-    for (const [agent, agentThreads] of agentMap) {
+    for (const [agent, agentThreads] of agentBuckets) {
       grouped.push({ label: agent, threads: agentThreads });
     }
     grouped.sort((a, b) => a.label.localeCompare(b.label));
-    if (noAgent.length > 0) {
-      grouped.push({ label: "You", threads: noAgent });
+    if (unassigned.length > 0) {
+      grouped.push({ label: "Unassigned", threads: unassigned });
     }
   } else {
     const buckets = new Map<string, ThreadWithLastMessage[]>();
@@ -231,6 +277,7 @@ export function ThreadSidebar({
   const activeThreadId = pathname.match(/\/threads\/([^/]+)/)?.[1];
 
   const isAccordion = groupBy === "agent";
+  const hasAnyExpanded = !isAccordion || expandedGroups.size > 0;
 
   return (
     <aside className="w-80 lg:w-96 border-r border-[var(--border)] flex flex-col bg-[var(--background)] shrink-0 overflow-hidden">
@@ -290,12 +337,15 @@ export function ThreadSidebar({
           grouped.map((group) => {
             const isOpen = expandedGroups.has(group.label);
             const color = isAccordion ? getAgentColor(group.label) : null;
+            const showAll = showAllGroups.has(group.label);
+            const maxVisible = showAll ? group.threads.length : DEFAULT_VISIBLE_THREADS;
             const visibleThreads = isAccordion && isOpen
-              ? group.threads.slice(0, MAX_VISIBLE_THREADS)
+              ? group.threads.slice(0, maxVisible)
               : isAccordion
                 ? []
                 : group.threads;
-            const hasOverflow = isAccordion && group.threads.length > MAX_VISIBLE_THREADS;
+            const hasOverflow = isAccordion && group.threads.length > DEFAULT_VISIBLE_THREADS;
+            const missingWebhook = isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
 
             return (
               <div key={group.label}>
@@ -321,6 +371,20 @@ export function ThreadSidebar({
                     <span className="text-xs font-semibold truncate">
                       {group.label}
                     </span>
+                    {missingWebhook && (
+                      <span
+                        title="No webhook registered"
+                        className="shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWebhookPromptAgent(group.label);
+                        }}
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                      </span>
+                    )}
                     <span
                       className="ml-auto text-[10px] font-medium rounded-full px-1.5 py-0.5 shrink-0"
                       style={{
@@ -359,20 +423,15 @@ export function ThreadSidebar({
                             {thread.title}
                           </h3>
                           <div className="flex items-center gap-1.5 mt-1">
-                            {thread.last_author_kind && (() => {
-                              const isAgent = thread.last_author_kind === "agent" && thread.last_author_name;
-                              const agentColor = isAgent ? getAgentColor(thread.last_author_name!) : null;
-                              return (
-                                <span
-                                  className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                    !isAgent ? "bg-[var(--muted)] text-[var(--muted-foreground)]" : ""
-                                  }`}
-                                  style={agentColor ? { backgroundColor: agentColor.bg, color: agentColor.fg } : undefined}
-                                >
-                                  {isAgent ? thread.last_author_name : "You"}
-                                </span>
-                              );
-                            })()}
+                            {thread.last_author_kind === "agent" ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
+                                Needs reply
+                              </span>
+                            ) : thread.last_author_kind === "user" ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                Replied
+                              </span>
+                            ) : null}
                             <span className="text-[10px] text-[var(--muted-foreground)]">
                               <FormattedDate
                                 date={thread.last_message_at ?? thread.created_at}
@@ -383,9 +442,15 @@ export function ThreadSidebar({
                       );
                     })}
                     {isAccordion && hasOverflow && (
-                      <div className="px-3 py-1.5 text-[10px] text-[var(--muted-foreground)] italic">
-                        +{group.threads.length - MAX_VISIBLE_THREADS} more threads
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleShowAll(group.label)}
+                        className="w-full px-3 py-1.5 text-[10px] text-[var(--primary)] hover:underline text-left"
+                      >
+                        {showAll
+                          ? "Show less"
+                          : `+${group.threads.length - DEFAULT_VISIBLE_THREADS} more threads`}
+                      </button>
                     )}
                   </div>
                 )}
@@ -394,7 +459,7 @@ export function ThreadSidebar({
           })
         )}
 
-        <div ref={sentinelRef} className="h-8" />
+        {hasAnyExpanded && <div ref={sentinelRef} className="h-8" />}
 
         {loading && (
           <div className="p-3 space-y-2">
@@ -407,6 +472,61 @@ export function ThreadSidebar({
           </div>
         )}
       </div>
+
+      {webhookPromptAgent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <h3 className="text-sm font-semibold">
+                  {webhookPromptAgent} needs webhooks
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setWebhookPromptAgent(null); setWebhookPromptCopied(false); }}
+                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <p className="text-xs text-[var(--muted-foreground)] mb-3">
+                This agent has no webhook endpoint registered. Without webhooks, it must poll for new messages.
+                Copy the prompt below and give it to your agent.
+              </p>
+              <pre className="text-xs font-mono bg-[var(--muted)] rounded p-3 overflow-x-auto whitespace-pre-wrap break-all">
+                {buildWebhookPrompt(webhookPromptAgent)}
+              </pre>
+            </div>
+            <div className="p-4 border-t border-[var(--border)] flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(buildWebhookPrompt(webhookPromptAgent));
+                  setWebhookPromptCopied(true);
+                  setTimeout(() => setWebhookPromptCopied(false), 2000);
+                }}
+                className="flex-1 px-3 py-1.5 text-sm font-medium rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 transition-opacity"
+              >
+                {webhookPromptCopied ? "Copied!" : "Copy Prompt"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setWebhookPromptAgent(null); setWebhookPromptCopied(false); }}
+                className="px-3 py-1.5 text-sm rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
