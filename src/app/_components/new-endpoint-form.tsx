@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const ALWAYS_ON_EVENTS = ["docs.updated"];
+
 export function NewEndpointForm({
   eventTypes,
 }: {
@@ -16,6 +18,7 @@ export function NewEndpointForm({
   const [expanded, setExpanded] = useState(false);
 
   const toggleEvent = (event: string) => {
+    if (ALWAYS_ON_EVENTS.includes(event)) return;
     setSelectedEvents((prev) =>
       prev.includes(event)
         ? prev.filter((e) => e !== event)
@@ -90,20 +93,27 @@ export function NewEndpointForm({
       <div>
         <label className="block text-sm font-medium mb-2">Events</label>
         <div className="flex flex-wrap gap-2">
-          {eventTypes.map((event) => (
-            <label
-              key={event}
-              className="flex items-center gap-1.5 text-sm cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedEvents.includes(event)}
-                onChange={() => toggleEvent(event)}
-                className="rounded"
-              />
-              {event}
-            </label>
-          ))}
+          {eventTypes.map((event) => {
+            const isAlwaysOn = ALWAYS_ON_EVENTS.includes(event);
+            return (
+              <label
+                key={event}
+                className={`flex items-center gap-1.5 text-sm ${isAlwaysOn ? "opacity-70" : "cursor-pointer"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isAlwaysOn || selectedEvents.includes(event)}
+                  onChange={() => toggleEvent(event)}
+                  disabled={isAlwaysOn}
+                  className="rounded"
+                />
+                {event}
+                {isAlwaysOn && (
+                  <span className="text-xs text-[var(--muted-foreground)]">(always on)</span>
+                )}
+              </label>
+            );
+          })}
         </div>
       </div>
 

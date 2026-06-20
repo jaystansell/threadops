@@ -14,4 +14,4 @@ export type {
   WebhookEndpointId,
   WebhookEventType,
 } from "./webhook-endpoint";
-export { WEBHOOK_EVENT_TYPES } from "./webhook-endpoint";
+export { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "./webhook-endpoint";

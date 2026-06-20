@@ -4,7 +4,7 @@ import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
-import { WEBHOOK_EVENT_TYPES } from "@/core/types";
+import { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "@/core/types";
 import type { CompanyId, WebhookEndpointId, WebhookEventType } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -76,7 +76,10 @@ export async function PATCH(
         { status: 400 },
       );
     }
-    update.events = body.events;
+    // Ensure always-on events cannot be removed
+    update.events = Array.from(
+      new Set([...body.events, ...ALWAYS_ON_EVENTS]),
+    );
   }
 
   if (body.active !== undefined) {
