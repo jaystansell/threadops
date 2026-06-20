@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import { hashKey } from "@/core/rules/api-key";
 import type { ThreadId, CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -30,13 +32,34 @@ export async function POST(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/messages">,
 ) {
-  const supabase = await createAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const apiKey = req.headers.get("x-api-key");
+  let authorId: string;
+  let authorKind: "user" | "agent";
+  let authorName: string | null = null;
 
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+    authorId = keyRecord.id;
+    authorKind = "agent";
+    authorName = keyRecord.label;
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    authorId = user.id;
+    authorKind = "user";
   }
 
   const { threadId } = await ctx.params;
@@ -55,8 +78,9 @@ export async function POST(
   try {
     const message = await messageRepo.create({
       thread_id: threadId as ThreadId,
-      author_id: user.id,
-      author_kind: body.author_kind ?? "user",
+      author_id: authorId,
+      author_kind: authorKind,
+      author_name: authorName,
       body: body.body,
     });
 
@@ -75,6 +99,7 @@ export async function POST(
           thread_id: threadId,
           author_id: message.author_id,
           author_kind: message.author_kind,
+          author_name: message.author_name,
           body: message.body,
           created_at: message.created_at,
         },

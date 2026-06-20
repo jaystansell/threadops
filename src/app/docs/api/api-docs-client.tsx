@@ -150,9 +150,20 @@ const SECTIONS: Section[] = [
             thread_id: "t_abc123",
             author_id: "user_456",
             author_kind: "user",
+            author_name: null,
             body: "I'd like to set up inbound webhooks...",
             created_at: "2025-01-15T10:30:00Z",
             updated_at: "2025-01-15T10:30:00Z",
+          },
+          {
+            id: "m_002",
+            thread_id: "t_abc123",
+            author_id: "ak_001",
+            author_kind: "agent",
+            author_name: "Support Bot",
+            body: "Let me help you with that webhook setup...",
+            created_at: "2025-01-15T10:35:00Z",
+            updated_at: "2025-01-15T10:35:00Z",
           },
         ],
       },
@@ -161,30 +172,30 @@ const SECTIONS: Section[] = [
         path: "/api/threads/{threadId}/messages",
         summary: "Create a message",
         description:
-          "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook.",
+          "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook. Supports both cookie auth (user messages) and API key auth via X-API-Key header (agent messages). When using an API key, author_kind is automatically set to 'agent' and author_name is set to the key's label. We recommend one API key per agent.",
         auth: "cookie",
         requestBody: {
           schema: {
             body: "string (required)",
-            author_kind: "'user' | 'agent' (optional, default 'user')",
+            author_kind: "'user' | 'agent' (optional, auto-set to 'agent' with API key auth)",
           },
           example: {
             body: "Here's how you can set up the webhook integration...",
-            author_kind: "user",
           },
         },
         responseExample: {
           id: "m_002",
           thread_id: "t_abc123",
-          author_id: "user_456",
-          author_kind: "user",
+          author_id: "ak_001",
+          author_kind: "agent",
+          author_name: "Support Bot",
           body: "Here's how you can set up the webhook integration...",
           created_at: "2025-01-15T11:00:00Z",
           updated_at: "2025-01-15T11:00:00Z",
         },
         errorCodes: [
           { status: 400, description: "Missing or invalid body." },
-          { status: 401, description: "Not authenticated." },
+          { status: 401, description: "Not authenticated (no cookie or invalid API key)." },
         ],
       },
     ],
@@ -770,8 +781,16 @@ export function ApiDocsClient() {
                   </h3>
                   <p className="mt-1">
                     The inbound webhook endpoint (<code className="bg-[var(--muted)] px-1 rounded text-xs">/api/webhooks/inbound</code>)
-                    authenticates via a company-scoped API key sent in the{" "}
+                    and the create message endpoint (<code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/threads/:threadId/messages</code>)
+                    authenticate via a company-scoped API key sent in the{" "}
                     <code className="bg-[var(--muted)] px-1 rounded text-xs">X-API-Key</code> header.
+                  </p>
+                  <p className="mt-1">
+                    When posting messages with an API key, the key&apos;s label is used as the agent
+                    display name (<code className="bg-[var(--muted)] px-1 rounded text-xs">author_name</code>)
+                    and <code className="bg-[var(--muted)] px-1 rounded text-xs">author_kind</code> is
+                    automatically set to <code className="bg-[var(--muted)] px-1 rounded text-xs">agent</code>.
+                    We recommend creating one API key per agent.
                   </p>
                   <p className="mt-1">
                     Create API keys via the management UI or the{" "}
@@ -779,7 +798,7 @@ export function ApiDocsClient() {
                     endpoint.
                   </p>
                   <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
-                    {`curl -X POST ${BASE_URL}/api/webhooks/inbound \\\n  -H "X-API-Key: to_live_abc123..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"source":"my-app","event_type":"order.created","idempotency_key":"evt_001"}'`}
+                    {`curl -X POST ${BASE_URL}/api/threads/THREAD_ID/messages \\\n  -H "X-API-Key: to_live_abc123..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"body":"Hello from my agent!"}'`}
                   </pre>
                 </div>
               </div>

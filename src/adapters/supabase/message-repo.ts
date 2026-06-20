@@ -30,14 +30,18 @@ export function createMessageRepo(db: SupabaseClient): MessageRepo {
     },
 
     async create(input: MessageCreateInput): Promise<Message> {
+      const row: Record<string, unknown> = {
+        thread_id: input.thread_id,
+        author_id: input.author_id,
+        author_kind: input.author_kind,
+        body: input.body,
+      };
+      if (input.author_name != null) {
+        row.author_name = input.author_name;
+      }
       const { data, error } = await db
         .from("messages")
-        .insert({
-          thread_id: input.thread_id,
-          author_id: input.author_id,
-          author_kind: input.author_kind,
-          body: input.body,
-        })
+        .insert(row)
         .select()
         .single();
       if (error) throw error;
