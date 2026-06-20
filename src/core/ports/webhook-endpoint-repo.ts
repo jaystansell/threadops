@@ -25,6 +25,7 @@ export interface WebhookEndpointRepo {
 
 export interface WebhookEndpointCreateInput {
   company_id: CompanyId;
+  api_key_id?: string | null;
   url: string;
   events: string[];
   secret: string;

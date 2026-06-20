@@ -28,6 +28,7 @@ export function dispatchOutboundWebhooks(
   companyId: CompanyId,
   eventType: string,
   eventPayload: Record<string, unknown>,
+  agentApiKeyId?: string | null,
 ): void {
   const work = async () => {
     try {
@@ -35,10 +36,20 @@ export function dispatchOutboundWebhooks(
       const endpointRepo = createWebhookEndpointRepo(db);
       const webhookRepo = createWebhookRepo(db);
 
-      const endpoints = await endpointRepo.listActiveForEvent(
+      const allEndpoints = await endpointRepo.listActiveForEvent(
         companyId,
         eventType,
       );
+
+      // Agent-scoped delivery: only deliver thread events to the owning agent's endpoint.
+      // docs.updated events go to all endpoints (no thread ownership).
+      const endpoints = eventType === "docs.updated"
+        ? allEndpoints
+        : allEndpoints.filter((ep) => {
+            if (!agentApiKeyId) return true;
+            if (!ep.api_key_id) return true;
+            return ep.api_key_id === agentApiKeyId;
+          });
 
       for (const endpoint of endpoints) {
         const idempotencyKey = uuidv4();
