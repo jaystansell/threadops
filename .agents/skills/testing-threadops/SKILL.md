@@ -281,12 +281,58 @@ curl -s -w "\n%{http_code}" -H "X-API-Key: to_invalid" http://localhost:3000/api
 **Important:** The proxy matches `/api/threads` (no trailing slash) via `.startsWith()`. If this is changed to include a trailing slash, requests to `GET /api/threads` and `POST /api/threads` will be redirected to `/login` even with a valid API key.
 
 ### Error Handling
-- Missing `x-api-key` header on protected route → 307 redirect to `/login`
-- Invalid API key on `/api/threads` → 401 `"Invalid API key"`
-- Invalid API key on `/api/webhooks/inbound` → 401 `"Invalid API key"`
-- Empty message body → 400 `"body is required and must be a string"`
-- Invalid scopes (e.g. `["admin:delete"]`) → 400 `"Invalid scopes provided"`
-- Cross-company API key → 403 `"Forbidden"`
+- Missing `x-api-key` header on protected route -> 307 redirect to `/login`
+- Invalid API key on `/api/threads` -> 401 `"Invalid API key"`
+- Invalid API key on `/api/webhooks/inbound` -> 401 `"Invalid API key"`
+- Empty message body -> 400 `"body is required and must be a string"`
+- Invalid scopes (e.g. `["admin:delete"]`) -> 400 `"Invalid scopes provided"`
+- Cross-company API key -> 403 `"Forbidden"`
+
+## PR #40 Features (Thread Detail Enhancements)
+
+### Sort Order Toggle
+- Thread detail view has a sort toggle button (right-aligned, above messages)
+- Default: "Oldest first" (chronological), click toggles to "Newest first"
+- Composer position changes: bottom for oldest-first, top for newest-first
+- Preference persisted in localStorage via `ThreadDetailClient` wrapper component
+- File: `src/app/_components/thread-detail-client.tsx`
+
+### Delivery Confirmation Indicator
+- Below each message body: green checkmark SVG + "Delivered via API" or "Delivered via browser" + relative time
+- Uses `author_kind` field: "agent" = API, "user" = browser
+- Helper functions `relativeTime()` and `deliveryMethod()` in thread-timeline.tsx
+- File: `src/app/_components/thread-timeline.tsx` (lines ~13-29 and ~143-161)
+
+### Webhook Log-Style UI
+- `/webhooks` page uses monospace "webhook.log" header, dark bg (#0a0e14)
+- Column headers: timestamp, status, event, payload
+- Status icons: checkmark (ok), X (failed), circle (pending)
+- 50 items per page with pagination
+- File: `src/app/webhooks/page.tsx`
+
+### Public Changelog
+- `/changelog` is a public page (no auth required)
+- Timeline UI with version entries from `src/app/changelog/releases.ts`
+- File: `src/app/changelog/page.tsx`
+
+### Getting-Started Banner
+- Shows on `/api-keys` page when `!hasKeys` (no active API keys)
+- Won't be visible if demo company has active keys
+- File: `src/app/api-keys/page.tsx` (lines 29-37)
+
+### Sidebar Active Thread Contrast
+- Active thread uses `accent/15` background for readability in dark mode
+- File: `src/app/_components/thread-sidebar.tsx`
+
+### Markdown Line Breaks
+- `remark-breaks` plugin added to react-markdown so single `\n` renders as `<br>`
+- Fixes agent messages that use single newlines between sections
+- File: `src/app/_components/thread-timeline.tsx`
+
+### Summary/Metadata/Tags (from child session)
+- Thread detail shows ThreadSummaryEditor (if summary exists), ThreadMetadata, ThreadTags
+- "+ Add metadata" button and "Add tag..." input on thread detail pages
+- Files: `src/app/_components/thread-summary-editor.tsx`, `thread-metadata.tsx`, `thread-tags.tsx`
 
 ## Key URLs and IDs
 
