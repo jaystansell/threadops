@@ -47,18 +47,24 @@ const SECTIONS: Section[] = [
           { name: "page", description: "Page number (1-based, default 1). 10 threads per page." },
           { name: "theme", description: "Filter by theme ID." },
         ],
-        responseExample: [
-          {
-            id: "t_abc123",
-            company_id: "c_xyz789",
-            theme_id: "th_001",
-            title: "How to integrate webhooks?",
-            status: "open",
-            created_by: "user_456",
-            created_at: "2025-01-15T10:30:00Z",
-            updated_at: "2025-01-15T10:30:00Z",
-          },
-        ],
+        responseExample: {
+          threads: [
+            {
+              id: "t_abc123",
+              company_id: "c_xyz789",
+              theme_id: "th_001",
+              title: "How to integrate webhooks?",
+              status: "open",
+              created_by: "user_456",
+              created_at: "2025-01-15T10:30:00Z",
+              updated_at: "2025-01-15T10:30:00Z",
+            },
+          ],
+          total: 25,
+          page: 1,
+          pageSize: 10,
+          totalPages: 3,
+        },
       },
       {
         method: "POST",

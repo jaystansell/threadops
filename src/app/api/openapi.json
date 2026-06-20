@@ -44,25 +44,40 @@
         ],
         "responses": {
           "200": {
-            "description": "Array of threads.",
+            "description": "Paginated list of threads.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Thread" }
-                },
-                "example": [
-                  {
-                    "id": "t_abc123",
-                    "company_id": "c_xyz789",
-                    "theme_id": "th_001",
-                    "title": "How to integrate webhooks?",
-                    "status": "open",
-                    "created_by": "user_456",
-                    "created_at": "2025-01-15T10:30:00Z",
-                    "updated_at": "2025-01-15T10:30:00Z"
+                  "type": "object",
+                  "properties": {
+                    "threads": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Thread" }
+                    },
+                    "total": { "type": "integer" },
+                    "page": { "type": "integer" },
+                    "pageSize": { "type": "integer" },
+                    "totalPages": { "type": "integer" }
                   }
-                ]
+                },
+                "example": {
+                  "threads": [
+                    {
+                      "id": "t_abc123",
+                      "company_id": "c_xyz789",
+                      "theme_id": "th_001",
+                      "title": "How to integrate webhooks?",
+                      "status": "open",
+                      "created_by": "user_456",
+                      "created_at": "2025-01-15T10:30:00Z",
+                      "updated_at": "2025-01-15T10:30:00Z"
+                    }
+                  ],
+                  "total": 25,
+                  "page": 1,
+                  "pageSize": 10,
+                  "totalPages": 3
+                }
               }
             }
           },
