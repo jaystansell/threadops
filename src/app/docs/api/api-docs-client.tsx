@@ -44,7 +44,7 @@ const SECTIONS: Section[] = [
         auth: "apiKey",
         params: [
           { name: "q", description: "Search threads by title (case-insensitive substring match)." },
-          { name: "status", description: "Filter by status: open, closed, or archived. Omit for all." },
+          { name: "status", description: "Filter by status: open or archived. Omit for all." },
           { name: "limit", description: "Number of threads to return (default 100, max 200)." },
           { name: "offset", description: "Number of threads to skip (default 0). Use for pagination." },
         ],
@@ -101,21 +101,21 @@ const SECTIONS: Section[] = [
         path: "/api/threads/{threadId}/status",
         summary: "Change thread status",
         description:
-          "Transitions a thread between statuses (open → closed → archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
+          "Transitions a thread between statuses (open ↔ archived). Invalid transitions return 422. Triggers a `thread.status_changed` outbound webhook.",
         auth: "apiKey",
         requestBody: {
           schema: {
-            status: "'open' | 'closed' | 'archived' (required)",
+            status: "'open' | 'archived' (required)",
             company_id: "string (required)",
           },
-          example: { status: "closed", company_id: "c_xyz789" },
+          example: { status: "archived", company_id: "c_xyz789" },
         },
         responseExample: {
           id: "t_abc123",
           company_id: "c_xyz789",
           theme_id: "th_001",
           title: "How to integrate webhooks?",
-          status: "closed",
+          status: "archived",
           created_by: "user_456",
           created_at: "2025-01-15T10:30:00Z",
           updated_at: "2025-01-16T08:00:00Z",
@@ -123,7 +123,7 @@ const SECTIONS: Section[] = [
         errorCodes: [
           { status: 400, description: "Invalid status value or missing company_id." },
           { status: 404, description: "Thread not found." },
-          { status: 422, description: "Invalid status transition (e.g. archived → open)." },
+          { status: 422, description: "Invalid status transition." },
         ],
       },
     ],
@@ -1271,7 +1271,7 @@ export function ApiDocsClient() {
                   </li>
                   <li>
                     <code className="bg-[var(--muted)] px-1 rounded text-xs">thread.status_changed</code> —
-                    A thread&apos;s status transitions (open/closed/archived).
+                    A thread&apos;s status transitions (open/archived).
                   </li>
                 </ul>
                 <p>
@@ -1380,7 +1380,7 @@ export function ApiDocsClient() {
                         </tr>
                         <tr>
                           <td className="px-3 py-2 font-mono text-xs">update_thread_status</td>
-                          <td className="px-3 py-2">Change status to open, closed, or archived</td>
+                          <td className="px-3 py-2">Change status to open or archived</td>
                           <td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td>
                         </tr>
                         <tr>

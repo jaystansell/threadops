@@ -32,7 +32,7 @@ export function registerTools(
     "list_threads",
     "List threads for the company. Supports status filter, search, tag filter, metadata filter, and pagination.",
     {
-      status: z.enum(["open", "closed", "archived"]).optional().describe("Filter by thread status"),
+      status: z.enum(["open", "archived"]).optional().describe("Filter by thread status"),
       q: z.string().optional().describe("Search threads by title"),
       tags: z.array(z.string()).optional().describe("Filter by tags (AND logic — thread must have all specified tags)"),
       metadata_filter: z.record(z.string(), z.string()).optional().describe("Filter by metadata key-value pairs"),
@@ -106,10 +106,10 @@ export function registerTools(
 
   server.tool(
     "update_thread_status",
-    "Change a thread's status to open, closed, or archived.",
+    "Change a thread's status to open or archived.",
     {
       thread_id: z.string().describe("Thread ID"),
-      status: z.enum(["open", "closed", "archived"]).describe("New status"),
+      status: z.enum(["open", "archived"]).describe("New status"),
     },
     async (args) => {
       try {

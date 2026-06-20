@@ -29,7 +29,6 @@ function savePinnedThreads(pins: Set<string>) {
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
-  { value: "closed", label: "Closed" },
   { value: "archived", label: "Archived" },
   { value: "all", label: "All" },
 ] as const;
@@ -122,7 +121,7 @@ curl -X POST "${baseUrl}/api/webhook-endpoints" \\
 ### Available Events
 - \`message.created\` — fires when any new message is posted (most important for replies)
 - \`thread.created\` — fires when a new thread is created
-- \`thread.status_changed\` — fires when a thread is opened, closed, or archived
+- \`thread.status_changed\` — fires when a thread is opened or archived
 
 ### Webhook Payload
 Webhooks are signed with HMAC-SHA-256. The signing secret is returned when you create the endpoint. Verify the \`X-Webhook-Signature\` header on incoming requests.

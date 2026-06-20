@@ -51,7 +51,7 @@ Without ThreadOps, you lose all context when your session ends. With it, you can
 | GET | /api/threads/{id}/messages | List messages in a thread |
 | POST | /api/threads/{id}/messages | Post a message (body: { body }) |
 | PATCH | /api/threads/{id} | Update thread summary or title (body: { summary?, title? }) |
-| PATCH | /api/threads/{id}/status | Update thread status (body: { status: "open"|"closed"|"archived" }) |
+| PATCH | /api/threads/{id}/status | Update thread status (body: { status: "open"|"archived" }) |
 | PATCH | /api/threads/{id}/metadata | Update thread metadata (body: { metadata: { set?, unset? } }) |
 | POST | /api/threads/{id}/tags | Add tags (body: { tags: ["tag1"] }) |
 | DELETE | /api/threads/{id}/tags/{tag} | Remove a tag |
@@ -81,16 +81,16 @@ Your threads already have message history, but they lack structured context. Bac
    GET /api/threads/{id}/messages
 
 2. **Write a summary** capturing the current status, what happened, and what needs to happen next:
-   PATCH /api/threads/{id} with { "summary": "Apology sent Jun 18. Waiting for Megan to book briefing call. CC'd Maisie and Natasha." }
+   PATCH /api/threads/{id} with { "summary": "Initial outreach sent. Waiting for reply before scheduling next step." }
 
 3. **Add tags** for the type of work and current state:
-   POST /api/threads/{id}/tags with { "tags": ["podcast-guest", "awaiting-reply"] }
+   POST /api/threads/{id}/tags with { "tags": ["onboarding", "awaiting-reply"] }
 
 4. **Set metadata** for structured fields you want to query later:
-   PATCH /api/threads/{id}/metadata with { "metadata": { "set": { "priority": "high", "next_action_date": "2026-06-23" } } }
+   PATCH /api/threads/{id}/metadata with { "metadata": { "set": { "priority": "high", "category": "client-work" } } }
 
 **After backfilling, one call gives you everything:**
-  GET /api/threads?status=open&tags=podcast-guest returns all open podcast threads with summaries, tags, and metadata included. No message reading required.
+  GET /api/threads?status=open&tags=onboarding returns all open onboarding threads with summaries, tags, and metadata included. No message reading required.
 
 **Keep summaries current.** After posting messages or completing work, update the summary. Each update is logged so you can review past summaries via GET /api/threads/{id}/summaries.
 
@@ -144,7 +144,7 @@ No local install needed — the MCP server is hosted at \`${baseUrl}/api/mcp\`.
 | create_thread | Create a thread with title, first message, and optional tags |
 | get_messages | Get messages for a thread |
 | post_message | Post a message to a thread |
-| update_thread_status | Change status (open/closed/archived) |
+| update_thread_status | Change status (open/archived) |
 | update_thread_summary | Set or update thread summary (logged to history) |
 | list_thread_summaries | List summary history for a thread |
 | update_thread_tags | Add or remove tags on a thread |

@@ -44,7 +44,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
       }),
       updateStatus: vi.fn().mockResolvedValue({
         id: "thread-1",
-        status: (body as Record<string, unknown>)?.status ?? "closed",
+        status: (body as Record<string, unknown>)?.status ?? "archived",
         company_id: "company-1",
         updated_at: new Date().toISOString(),
       }),
@@ -69,7 +69,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
 
   it("returns 401 when not authenticated", async () => {
     const res = await callPATCH(
-      { status: "closed", company_id: "company-1" },
+      { status: "archived", company_id: "company-1" },
       false,
     );
     expect(res.status).toBe(401);
@@ -91,11 +91,11 @@ describe("PATCH /api/threads/[threadId]/status", () => {
   });
 
   it("returns 400 when company_id is missing", async () => {
-    const res = await callPATCH({ status: "closed" });
+    const res = await callPATCH({ status: "archived" });
     expect(res.status).toBe(400);
   });
 
-  it("returns 422 for invalid status transition (open → open)", async () => {
+  it("returns 422 for invalid status transition (self-transition)", async () => {
     vi.mocked(createAuthServerClient).mockResolvedValue({
       auth: {
         getUser: vi
@@ -107,7 +107,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
     const mockThreadRepo = {
       getById: vi.fn().mockResolvedValue({
         id: "thread-1",
-        status: "archived",
+        status: "open",
         company_id: "company-1",
       }),
       updateStatus: vi.fn(),
@@ -137,9 +137,9 @@ describe("PATCH /api/threads/[threadId]/status", () => {
     expect(json.error).toContain("Cannot transition");
   });
 
-  it("returns 200 for a valid transition (open → closed)", async () => {
+  it("returns 200 for a valid transition (open → archived)", async () => {
     const res = await callPATCH({
-      status: "closed",
+      status: "archived",
       company_id: "company-1",
     });
     expect(res.status).toBe(200);
