@@ -5,6 +5,7 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import type { ApiKey } from "@/core/types";
 import { CreateApiKeyForm } from "../_components/create-api-key-form";
 import { ApiKeyList } from "../_components/api-key-list";
+import { SavingsDashboard } from "../_components/savings-dashboard";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +56,8 @@ export default async function ApiKeysPage() {
           </p>
         </div>
       )}
+
+      <SavingsDashboard companyId={userCompany.companyId} />
 
       <CreateApiKeyForm companyId={userCompany.companyId} />
 

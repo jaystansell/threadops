@@ -1,6 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { SupabaseClient } from "../adapters/supabase/client";
+import { logThreadRead } from "../adapters/supabase/usage-log-repo";
+import type { ApiKeyId, CompanyId } from "../core/types";
 import type { AuthContext } from "./auth";
 import { listThreads } from "./tools/list-threads";
 import { createThread } from "./tools/create-thread";
@@ -129,10 +131,21 @@ export function registerTools(
       try {
         const auth = await getAuth();
         switch (args.action) {
-          case "list":
-            return toolResult(
-              await getMessages(db, auth, { thread_id: args.thread_id }),
-            );
+          case "list": {
+            const messages = await getMessages(db, auth, { thread_id: args.thread_id });
+            const msgCount = Array.isArray(messages) ? messages.length : 0;
+            if (msgCount > 0) {
+              logThreadRead(db, {
+                apiKeyId: auth.keyId as ApiKeyId,
+                companyId: auth.companyId as CompanyId,
+                threadId: args.thread_id,
+                messageCount: msgCount,
+                userAgent: null,
+                storedModelTier: null,
+              }).catch(() => {});
+            }
+            return toolResult(messages);
+          }
           case "post": {
             if (!args.body) {
               return toolError("body is required for post");
