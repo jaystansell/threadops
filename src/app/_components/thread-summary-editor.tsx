@@ -13,6 +13,8 @@ interface SummaryLogEntry {
 interface ThreadSummaryEditorProps {
   threadId: string;
   initialSummary: string;
+  hideButton?: boolean;
+  generateTrigger?: number;
 }
 
 const POLL_INTERVAL = 5000;
@@ -31,7 +33,7 @@ function formatLogDate(dateStr: string): string {
   return `${diffDay}d ago`;
 }
 
-export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryEditorProps) {
+export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, generateTrigger }: ThreadSummaryEditorProps) {
   const [summary, setSummary] = useState(initialSummary);
   const [generating, setGenerating] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -41,6 +43,14 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
   const [historyLoading, setHistoryLoading] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
+  const prevTriggerRef = useRef(generateTrigger ?? 0);
+
+  useEffect(() => {
+    if (generateTrigger !== undefined && generateTrigger > prevTriggerRef.current) {
+      prevTriggerRef.current = generateTrigger;
+      setRequested(true);
+    }
+  }, [generateTrigger]);
 
   // Poll for summary updates after requesting generation
   useEffect(() => {
@@ -122,6 +132,7 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
   }, [threadId, showHistory]);
 
   if (!summary) {
+    if (hideButton) return null;
     return (
       <div>
         <button
@@ -151,23 +162,25 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
       <div className="bg-[var(--muted)] rounded-lg px-3 py-2">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-medium text-[var(--muted-foreground)]">Summary</p>
-          <button
-            type="button"
-            onClick={requestGenerate}
-            disabled={generating || requested}
-            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
-          >
-            {requested ? (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
-              </svg>
-            ) : (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
-              </svg>
-            )}
-            {generating ? "Requesting..." : requested ? "Summary Requested" : "Regenerate"}
-          </button>
+          {!hideButton && (
+            <button
+              type="button"
+              onClick={requestGenerate}
+              disabled={generating || requested}
+              className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
+            >
+              {requested ? (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+              ) : (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+                </svg>
+              )}
+              {generating ? "Requesting..." : requested ? "Summary Requested" : "Regenerate"}
+            </button>
+          )}
         </div>
         <p className="text-sm">{summary}</p>
         {error && <p className="text-xs text-[var(--destructive)] mt-1">{error}</p>}

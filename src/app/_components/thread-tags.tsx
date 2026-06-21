@@ -8,9 +8,11 @@ const MAX_POLLS = 60;
 interface ThreadTagsProps {
   threadId: string;
   initialTags: string[];
+  hideButton?: boolean;
+  generateTrigger?: number;
 }
 
-export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
+export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger }: ThreadTagsProps) {
   const [tags, setTags] = useState<string[]>(initialTags);
   const [generating, setGenerating] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -18,6 +20,14 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
+  const prevTriggerRef = useRef(generateTrigger ?? 0);
+
+  useEffect(() => {
+    if (generateTrigger !== undefined && generateTrigger > prevTriggerRef.current) {
+      prevTriggerRef.current = generateTrigger;
+      setRequested(true);
+    }
+  }, [generateTrigger]);
 
   useEffect(() => {
     if (!requested) return;
@@ -112,23 +122,25 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
           </button>
         </span>
       ))}
-      <button
-        type="button"
-        onClick={requestGenerate}
-        disabled={generating || requested}
-        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
-      >
-        {requested ? (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
-            <path d="M21 12a9 9 0 11-6.219-8.56" />
-          </svg>
-        ) : (
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
-          </svg>
-        )}
-        {generating ? "Requesting..." : requested ? "Tags Requested" : tags.length > 0 ? "Regenerate Tags" : "Generate Tags"}
-      </button>
+      {!hideButton && (
+        <button
+          type="button"
+          onClick={requestGenerate}
+          disabled={generating || requested}
+          className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
+        >
+          {requested ? (
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
+              <path d="M21 12a9 9 0 11-6.219-8.56" />
+            </svg>
+          ) : (
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+            </svg>
+          )}
+          {generating ? "Requesting..." : requested ? "Tags Requested" : tags.length > 0 ? "Regenerate Tags" : "Generate Tags"}
+        </button>
+      )}
       {error && <p className="text-xs text-[var(--destructive)] mt-1">{error}</p>}
     </div>
   );
