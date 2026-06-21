@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { AppHeader } from "./_components/app-header";
 import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
@@ -39,6 +40,7 @@ export default function RootLayout({
           </header>
         </AppHeader>
         <div className="flex-1 flex flex-col">{children}</div>
+        <Analytics />
       </body>
     </html>
   );
