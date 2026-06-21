@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ThreadWithLastMessage } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 
@@ -154,6 +154,7 @@ export function ThreadSidebar({
   agentsWithoutWebhooks = [],
 }: ThreadSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
@@ -219,11 +220,16 @@ export function ThreadSidebar({
           return base.filter((t) => t.id !== threadId);
         });
         setExtraThreads((prev) => prev.filter((t) => t.id !== threadId));
+        const viewingArchived = pathname.includes(`/threads/${threadId}`);
+        if (viewingArchived) {
+          router.push("/threads");
+        }
+        router.refresh();
       }
     } catch {
       // Silently handle
     }
-  }, [companyId, initialThreads]);
+  }, [companyId, initialThreads, pathname, router]);
 
   const toggleGroup = useCallback((label: string) => {
     const current = readStorageSet(EXPANDED_GROUPS_KEY);

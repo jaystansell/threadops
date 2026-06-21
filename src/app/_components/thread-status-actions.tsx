@@ -50,7 +50,12 @@ export function ThreadStatusActions({
         throw new Error(data.error || "Failed to update status");
       }
 
-      router.refresh();
+      if (newStatus === "archived") {
+        router.push("/threads");
+        router.refresh();
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
