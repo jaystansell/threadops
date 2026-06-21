@@ -160,11 +160,12 @@ The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistent
 4. Submit and verify redirect to thread detail page with correct title, status, theme badge, and message
 
 ### Status Management
-1. On thread detail page, verify buttons match status:
-   - open: Close + Archive buttons, message composer visible
-   - closed: Reopen + Archive buttons, composer hidden
-   - archived: NO buttons, NO composer
-2. Test full state machine: open -> closed -> open -> archived
+1. On thread detail page, verify the inline action bar buttons match status:
+   - open: Archive (amber) + Generate Tags + Generate Summary buttons in one row, message composer visible
+   - archived: Reopen (emerald) + Generate Tags + Generate Summary buttons in one row
+2. Test Archive -> Reopen cycle: click Archive redirects to /threads, switch to Archived filter, click thread, verify Reopen button, click Reopen restores Archive button
+3. The action bar is rendered by `ThreadActionsPanel` component (`src/app/_components/thread-actions-panel.tsx`)
+4. Generate Tags/Summary buttons fire API calls to `/api/threads/{id}/actions` and enter a polling state ("Tags Requested" / "Summary Requested" with spinner). They re-enable after polling completes via `onPollComplete` callback.
 
 ### Theme Filtering
 1. On `/threads` page, use theme filter dropdown
@@ -376,10 +377,18 @@ curl -s -w "\n%{http_code}" -H "X-API-Key: to_invalid" http://localhost:3000/api
 - Fixes agent messages that use single newlines between sections
 - File: `src/app/_components/thread-timeline.tsx`
 
-### Summary/Metadata/Tags (from child session)
-- Thread detail shows ThreadSummaryEditor (if summary exists), ThreadMetadata, ThreadTags
-- "+ Add metadata" button and "Add tag..." input on thread detail pages
-- Files: `src/app/_components/thread-summary-editor.tsx`, `thread-metadata.tsx`, `thread-tags.tsx`
+### Summary/Tags and Action Bar (PR #73)
+- Thread detail shows `ThreadActionsPanel` which renders ThreadTags (tag badges only, button hidden) and ThreadSummaryEditor (summary text only, button hidden) alongside three inline action buttons
+- The action buttons (Archive, Generate Tags, Generate Summary) are consolidated in a single flex row via `ThreadActionsPanel`
+- `ThreadMetadata` component is NOT rendered on the page (import and usage removed in PR #73, file still exists)
+- ThreadTags and ThreadSummaryEditor accept `hideButton`, `generateTrigger`, and `onPollComplete` props for external button control
+- Files: `src/app/_components/thread-actions-panel.tsx` (new), `thread-summary-editor.tsx`, `thread-tags.tsx`
+
+### Creating Test Threads for Action Bar Testing
+To test the action bar, you need a thread with an agent. The flow is:
+1. Create an API key on `/api-keys` page (this creates an agent)
+2. Create a thread on `/threads/new` — select the agent from the dropdown
+3. Navigate to the thread detail page to see the inline action bar
 
 ## Key URLs and IDs
 
