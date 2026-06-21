@@ -15,3 +15,5 @@ export type {
   WebhookEventType,
 } from "./webhook-endpoint";
 export { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "./webhook-endpoint";
+export { FILE_LIMITS, isAllowedFile } from "./attachment";
+export type { Attachment, AttachmentId } from "./attachment";

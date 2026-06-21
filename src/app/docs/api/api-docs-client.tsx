@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const BASE_URL = "https://threadops-jade.vercel.app";
 
-type Method = "GET" | "POST" | "PATCH" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 interface QueryParam {
   name: string;
@@ -661,11 +661,81 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    id: "skills",
+    title: "Agent Skills",
+    endpoints: [
+      {
+        method: "PUT",
+        path: "/api/agents/skills",
+        summary: "Report agent skills",
+        description:
+          "Agents report their current capabilities. Threadzy diffs against stored skills and reconciles automatically (adds new, removes stale). Call this on first connection and whenever capabilities change.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            skills: "string[] (required, list of skill names)",
+          },
+          example: {
+            skills: [
+              "summarize_thread",
+              "generate_tags",
+              "backfill_context",
+              "draft_reply",
+              "extract_action_items",
+              "search_threads",
+            ],
+          },
+        },
+        responseExample: {
+          ok: true,
+          agent: "Support Bot",
+          skills: [
+            "summarize_thread",
+            "generate_tags",
+            "backfill_context",
+            "draft_reply",
+            "extract_action_items",
+            "search_threads",
+          ],
+          added: ["extract_action_items", "search_threads"],
+          removed: ["old_skill"],
+        },
+        errorCodes: [
+          { status: 400, description: "Missing or invalid skills array." },
+          { status: 401, description: "Missing or invalid API key." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/agents/skills",
+        summary: "List agent skills",
+        description:
+          "Returns the skills currently registered for the calling agent. Skills are visible on the API keys page in the dashboard.",
+        auth: "apiKey",
+        responseExample: {
+          agent: "Support Bot",
+          skills: [
+            "summarize_thread",
+            "generate_tags",
+            "backfill_context",
+            "draft_reply",
+            "extract_action_items",
+            "search_threads",
+          ],
+        },
+        errorCodes: [
+          { status: 401, description: "Missing or invalid API key." },
+        ],
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<Method, string> = {
   GET: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
   POST: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  PUT: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   PATCH: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
   DELETE: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 };

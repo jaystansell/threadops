@@ -28,6 +28,32 @@ function deliveryMethod(authorKind: string): string {
   return authorKind === "agent" ? "API" : "browser";
 }
 
+export interface ThreadEvent {
+  id: string;
+  event_type: string;
+  actor_kind: string;
+  actor_label: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
+type TimelineItem =
+  | { kind: "message"; data: Message; created_at: string }
+  | { kind: "event"; data: ThreadEvent; created_at: string };
+
+function eventDescription(evt: ThreadEvent): string {
+  const actor = evt.actor_label ?? evt.actor_kind;
+  if (evt.event_type === "auto_reopened") {
+    return `Thread reopened automatically. ${actor} posted a message to this archived thread.`;
+  }
+  if (evt.event_type === "status_changed") {
+    const action = evt.new_value === "archived" ? "archived" : "reopened";
+    return `Thread ${action} by ${actor}.`;
+  }
+  return `Thread event: ${evt.event_type}`;
+}
+
 export type SortOrder = "old-first" | "new-first";
 
 const SORT_STORAGE_KEY = "threadops-sort-order";
@@ -54,12 +80,14 @@ interface ThreadTimelineProps {
   initialMessages: Message[];
   threadId: string;
   sortOrder: SortOrder;
+  threadEvents?: ThreadEvent[];
 }
 
 export function ThreadTimeline({
   initialMessages,
   threadId,
   sortOrder,
+  threadEvents = [],
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
@@ -82,16 +110,33 @@ export function ThreadTimeline({
   const extras = realtimeMessages.filter((m) => !allIds.has(m.id));
   const combined = [...initialMessages, ...extras];
 
-  const messages =
+  // Build unified timeline items
+  const messageItems: TimelineItem[] = combined.map((m) => ({
+    kind: "message" as const,
+    data: m,
+    created_at: m.created_at,
+  }));
+  const eventItems: TimelineItem[] = threadEvents.map((e) => ({
+    kind: "event" as const,
+    data: e,
+    created_at: e.created_at,
+  }));
+  const allItems = [...messageItems, ...eventItems];
+
+  const timeline =
     sortOrder === "new-first"
-      ? [...combined].sort(
+      ? allItems.sort(
           (a, b) =>
             new Date(b.created_at).getTime() -
             new Date(a.created_at).getTime(),
         )
-      : combined;
+      : allItems.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() -
+            new Date(b.created_at).getTime(),
+        );
 
-  if (messages.length === 0) {
+  if (timeline.length === 0) {
     return (
       <p className="text-sm text-[var(--muted-foreground)]">
         No messages yet. Be the first to post.
@@ -99,78 +144,108 @@ export function ThreadTimeline({
     );
   }
 
-  const newestId = [...combined].sort(
+  const newestMsgId = [...combined].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )[0]?.id;
 
   return (
     <div className="space-y-3" data-testid="thread-timeline">
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className="rounded-lg border border-[var(--border)] p-3"
-          style={
-            msg.id === newestId
-              ? { animation: "border-shimmer 3s ease-in-out infinite" }
-              : undefined
-          }
-          data-testid="timeline-message"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            {msg.author_kind === "agent" ? (
-              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="3" y="11" width="18" height="10" rx="2" />
-                  <circle cx="12" cy="5" r="4" />
-                  <circle cx="9" cy="16" r="1" fill="currentColor" />
-                  <circle cx="15" cy="16" r="1" fill="currentColor" />
-                </svg>
-                {msg.author_name ?? "agent"}
-              </span>
-            ) : (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
-                {msg.author_name ?? "user"}
-              </span>
-            )}
-            <span className="text-xs text-[var(--muted-foreground)]">
-              <FormattedDate date={msg.created_at} includeTime />
-            </span>
-          </div>
-          <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-            <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[var(--muted-foreground)]">
-            <svg
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-green-500"
-              aria-hidden="true"
+      {timeline.map((item) => {
+        if (item.kind === "event") {
+          const evt = item.data;
+          const isArchive = evt.new_value === "archived";
+          return (
+            <div
+              key={`event-${evt.id}`}
+              className="flex items-center gap-3 px-3 py-2"
             >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            <span>
-              Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
-            </span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <div className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  {isArchive ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  )}
+                </svg>
+                <span>{eventDescription(evt)}</span>
+                <span className="text-[10px]">
+                  <FormattedDate date={evt.created_at} includeTime />
+                </span>
+              </div>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+          );
+        }
+
+        const msg = item.data;
+        return (
+          <div
+            key={msg.id}
+            className="rounded-lg border border-[var(--border)] p-3"
+            style={
+              msg.id === newestMsgId
+                ? { animation: "border-shimmer 3s ease-in-out infinite" }
+                : undefined
+            }
+            data-testid="timeline-message"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              {msg.author_kind === "agent" ? (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="11" width="18" height="10" rx="2" />
+                    <circle cx="12" cy="5" r="4" />
+                    <circle cx="9" cy="16" r="1" fill="currentColor" />
+                    <circle cx="15" cy="16" r="1" fill="currentColor" />
+                  </svg>
+                  {msg.author_name ?? "agent"}
+                </span>
+              ) : (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)]">
+                  {msg.author_name ?? "user"}
+                </span>
+              )}
+              <span className="text-xs text-[var(--muted-foreground)]">
+                <FormattedDate date={msg.created_at} includeTime />
+              </span>
+            </div>
+            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+              <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
+            </div>
+            <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[var(--muted-foreground)]">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-green-500"
+                aria-hidden="true"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>
+                Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
+              </span>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

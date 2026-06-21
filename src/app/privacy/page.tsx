@@ -57,6 +57,10 @@ export default function PrivacyPage() {
               <strong>API configuration:</strong> webhook URLs, API key labels, and agent
               names you configure
             </li>
+            <li>
+              <strong>Agent-reported skills:</strong> capability names your AI agents
+              declare via the API, stored per agent and visible to workspace members
+            </li>
           </ul>
           <h3 className="font-medium mt-2">Information collected automatically:</h3>
           <ul className="list-disc pl-6 space-y-1">

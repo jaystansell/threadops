@@ -92,6 +92,17 @@ export async function PATCH(
       newStatus,
     );
 
+    // Log the status change event
+    await db.from("thread_events").insert({
+      thread_id: threadId,
+      company_id: companyId,
+      event_type: "status_changed",
+      actor_kind: apiKeyId ? "agent" : "user",
+      actor_label: apiKeyId ? null : undefined,
+      old_value: thread.status,
+      new_value: newStatus,
+    });
+
     dispatchOutboundWebhooks(
       companyId as CompanyId,
       "thread.status_changed",

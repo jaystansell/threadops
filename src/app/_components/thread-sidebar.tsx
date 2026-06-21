@@ -184,6 +184,26 @@ export function ThreadSidebar({
     setMenuThreadId(null);
   }, []);
 
+  const archiveThread = useCallback(async (threadId: string) => {
+    setMenuThreadId(null);
+    try {
+      const res = await fetch(`/api/threads/${threadId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived", company_id: companyId }),
+      });
+      if (res.ok) {
+        setOverrideThreads((prev) => {
+          const base = prev ?? initialThreads;
+          return base.filter((t) => t.id !== threadId);
+        });
+        setExtraThreads((prev) => prev.filter((t) => t.id !== threadId));
+      }
+    } catch {
+      // Silently handle
+    }
+  }, [companyId, initialThreads]);
+
   const toggleGroup = useCallback((label: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
@@ -586,6 +606,22 @@ export function ThreadSidebar({
                                 </svg>
                                 {isPinned ? "Unpin thread" : "Pin to top"}
                               </button>
+                              {thread.status === "open" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    archiveThread(thread.id);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-amber-400"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                  </svg>
+                                  Archive
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
