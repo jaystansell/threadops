@@ -66,8 +66,21 @@ export function ThreadStatusActions({
           onClick={() => handleStatusChange(action.target)}
           disabled={updating}
           data-testid={`status-action-${action.target}`}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] disabled:opacity-50 transition-colors"
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-50 transition-colors flex items-center gap-1.5 ${
+            action.target === "archived"
+              ? "bg-amber-600/15 text-amber-400 border border-amber-500/30 hover:bg-amber-600/25"
+              : "bg-emerald-600/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/25"
+          }`}
         >
+          {action.target === "archived" ? (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
           {updating ? "..." : action.label}
         </button>
       ))}

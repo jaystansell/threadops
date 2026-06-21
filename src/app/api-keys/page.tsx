@@ -23,6 +23,22 @@ export default async function ApiKeysPage() {
 
   const hasKeys = keys.some((k) => !k.revoked_at);
 
+  // Fetch skills for all active keys
+  const activeKeyIds = keys.filter((k) => !k.revoked_at).map((k) => k.id);
+  const skillsMap: Record<string, string[]> = {};
+  if (activeKeyIds.length > 0) {
+    const { data: skillRows } = await db
+      .from("agent_skills")
+      .select("api_key_id, skill_name")
+      .in("api_key_id", activeKeyIds)
+      .order("created_at", { ascending: true });
+    for (const row of skillRows ?? []) {
+      const keyId = row.api_key_id as string;
+      if (!skillsMap[keyId]) skillsMap[keyId] = [];
+      skillsMap[keyId].push(row.skill_name as string);
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 w-full space-y-6">
       <div className="flex items-center justify-between">
@@ -42,7 +58,7 @@ export default async function ApiKeysPage() {
 
       <CreateApiKeyForm companyId={userCompany.companyId} />
 
-      <ApiKeyList keys={keys} companyId={userCompany.companyId} />
+      <ApiKeyList keys={keys} companyId={userCompany.companyId} skillsMap={skillsMap} />
     </div>
   );
 }

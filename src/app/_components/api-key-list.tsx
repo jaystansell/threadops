@@ -8,9 +8,10 @@ import { FormattedDate } from "./formatted-date";
 interface Props {
   keys: ApiKey[];
   companyId: string;
+  skillsMap?: Record<string, string[]>;
 }
 
-export function ApiKeyList({ keys, companyId }: Props) {
+export function ApiKeyList({ keys, companyId, skillsMap = {} }: Props) {
   const [showRevoked, setShowRevoked] = useState(false);
 
   const activeKeys = keys.filter((k) => !k.revoked_at);
@@ -95,6 +96,28 @@ export function ApiKeyList({ keys, companyId }: Props) {
                   </span>
                 ))}
               </div>
+              {!key.revoked_at && skillsMap[key.id] && skillsMap[key.id].length > 0 && (
+                <div className="mt-2">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+                    Skills
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {skillsMap[key.id].map((skill) => (
+                      <span
+                        key={skill}
+                        className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!key.revoked_at && (!skillsMap[key.id] || skillsMap[key.id].length === 0) && (
+                <p className="text-[10px] text-[var(--muted-foreground)] mt-2 italic">
+                  No skills reported yet
+                </p>
+              )}
               <p className="text-xs text-[var(--muted-foreground)] mt-2">
                 Created <FormattedDate date={key.created_at} />
               </p>

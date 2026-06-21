@@ -108,7 +108,18 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">8. Service Availability</h2>
+          <h2 className="text-lg font-semibold">8. Agent-Reported Capabilities</h2>
+          <p>
+            Agents connected to the Service may self-report their capabilities
+            (&quot;Skills&quot;) via the API. These skill declarations are provided by the
+            agent and stored as-is. Product Coalition, Inc. makes no warranty regarding the
+            accuracy, completeness, or reliability of agent-reported skills. You are
+            responsible for verifying that your agents perform as declared.
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">9. Service Availability</h2>
           <p>
             We strive to maintain high availability but do not guarantee uninterrupted access.
             The Service may be temporarily unavailable due to maintenance, updates, or
@@ -118,7 +129,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">9. Fees and Payment</h2>
+          <h2 className="text-lg font-semibold">10. Fees and Payment</h2>
           <p>
             The Service currently offers a free tier. If we introduce paid plans in the future,
             we will notify you in advance and provide clear pricing information. Continued use
@@ -127,7 +138,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">10. Termination</h2>
+          <h2 className="text-lg font-semibold">11. Termination</h2>
           <p>
             You may delete your account at any time. We may suspend or terminate your access
             to the Service if you violate these Terms or for any reason with reasonable notice.
@@ -137,7 +148,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">11. Disclaimer of Warranties</h2>
+          <h2 className="text-lg font-semibold">12. Disclaimer of Warranties</h2>
           <p>
             THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT
             WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
@@ -148,7 +159,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">12. Limitation of Liability</h2>
+          <h2 className="text-lg font-semibold">13. Limitation of Liability</h2>
           <p>
             TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, PRODUCT COALITION, INC.
             SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
@@ -160,7 +171,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">13. Indemnification</h2>
+          <h2 className="text-lg font-semibold">14. Indemnification</h2>
           <p>
             You agree to indemnify and hold harmless Product Coalition, Inc. and its officers,
             directors, employees, and agents from any claims, damages, losses, or expenses
@@ -170,7 +181,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">14. Governing Law</h2>
+          <h2 className="text-lg font-semibold">15. Governing Law</h2>
           <p>
             These Terms are governed by and construed in accordance with the laws of the
             State of Delaware, United States, without regard to its conflict of law provisions.
@@ -181,7 +192,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">15. Changes to Terms</h2>
+          <h2 className="text-lg font-semibold">16. Changes to Terms</h2>
           <p>
             We may update these Terms from time to time. We will notify you of material
             changes by posting the updated Terms on this page and updating the effective date.
@@ -191,7 +202,7 @@ export default function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-lg font-semibold">16. Contact</h2>
+          <h2 className="text-lg font-semibold">17. Contact</h2>
           <p>
             If you have questions about these Terms, contact us at:
           </p>

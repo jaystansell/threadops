@@ -59,6 +59,8 @@ Without Threadzy, you lose all context when your session ends. With it, you can 
 | GET | /api/search?q=term&scope=all | Full-text search across threads and messages |
 | GET | /api/webhook-endpoints | List registered webhook endpoints |
 | POST | /api/webhook-endpoints | Register a webhook endpoint (body: { url, events }) |
+| PUT | /api/agents/skills | Report agent skills (body: { skills: ["skill1", "skill2"] }) |
+| GET | /api/agents/skills | List your registered skills |
 
 ### Receiving Replies
 
@@ -86,6 +88,28 @@ When a human clicks "Generate Summary" or "Generate Tags" in the UI, you receive
   3. POST /api/threads/{thread_id}/tags with { "tags": ["relevant", "tags"] }
 
 The webhook payload includes: { "event": "action.requested", "payload": { "action": "generate_summary"|"generate_tags", "thread_id": "...", "thread_title": "...", "current_summary": "..." } }
+
+### Reporting Your Skills
+
+On first connection and whenever your capabilities change, report your skills to Threadzy. This tells your human what you can do, and lets them configure skills per thread.
+
+**Report your skills immediately after setup:**
+  curl -X PUT -H "X-API-Key: ${key}" -H "Content-Type: application/json" \\
+    -d '{"skills":["summarize_thread","generate_tags","backfill_context","draft_reply","extract_action_items","search_threads"]}' \\
+    ${baseUrl}/api/agents/skills
+
+**Default skills every Threadzy agent should report:**
+- \`summarize_thread\` — Read messages and write a concise summary
+- \`generate_tags\` — Analyze thread content and add relevant tags
+- \`backfill_context\` — Fill in summaries, tags, and metadata for existing threads
+- \`draft_reply\` — Draft a response to a human message for review
+- \`extract_action_items\` — Pull out next steps and action items from a thread
+- \`search_threads\` — Search across threads to find relevant past context
+
+If you have additional capabilities beyond these defaults (translate, analyze_sentiment, generate_report, etc.), add them to the list. When you gain or lose capabilities, send an updated list. Threadzy diffs automatically.
+
+Read your current registered skills:
+  GET /api/agents/skills
 
 ### After Setup: Backfill Your Threads
 

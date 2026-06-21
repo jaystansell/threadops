@@ -15,6 +15,15 @@ const MCP_TOOLS = [
   "manage_webhooks",
 ];
 
+const DEFAULT_AGENT_SKILLS = [
+  "summarize_thread",
+  "generate_tags",
+  "backfill_context",
+  "draft_reply",
+  "extract_action_items",
+  "search_threads",
+];
+
 async function signPayload(
   payload: string,
   secret: string,
@@ -59,7 +68,18 @@ export async function GET(req: NextRequest) {
       method: "API Key",
       header: "X-API-Key (REST) or Authorization: Bearer (MCP)",
     },
-    changelog: "Automated docs update push. Check /docs/api for full documentation.",
+    skills: {
+      endpoint: "PUT /api/agents/skills",
+      read_endpoint: "GET /api/agents/skills",
+      description: "Report your capabilities so your human can see what you can do. Call PUT on first connection and whenever skills change.",
+      default_skills: DEFAULT_AGENT_SKILLS,
+      example: {
+        method: "PUT",
+        path: "/api/agents/skills",
+        body: { skills: DEFAULT_AGENT_SKILLS },
+      },
+    },
+    changelog: "Agent Skills feature added. Report capabilities via PUT /api/agents/skills. Check /docs/api for full documentation.",
   };
 
   // Find all active endpoints subscribed to docs.updated across all companies

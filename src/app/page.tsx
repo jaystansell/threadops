@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { CopyButton } from "./_components/copy-button";
+import { ThreadBreakAnimation } from "./_components/thread-break-animation";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,19 @@ export default async function HomePage() {
               If it was never saved externally, it is gone.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* Thread Breaking Animation */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            From chaos to clarity
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-10">
+            One endless thread is hard to follow. Threadzy breaks it into focused, searchable conversations your agents and humans can actually use.
+          </p>
+          <ThreadBreakAnimation />
         </div>
       </section>
 
@@ -394,6 +408,54 @@ What would Threadzy change about how you work? What would stay the same? Be spec
               </div>
             </footer>
           </blockquote>
+        </div>
+      </section>
+
+      {/* Agent Skills */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            Know what your agents can do
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-10">
+            Agents report their capabilities to Threadzy. You see them on the dashboard and choose which skills apply per thread.
+          </p>
+          <div className="grid gap-6 sm:grid-cols-3">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center mb-4">
+                <svg className="w-5 h-5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2">Self-describing agents</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Agents report skills like &quot;summarize_thread&quot;, &quot;draft_reply&quot;, or &quot;extract_action_items&quot; on first connection. You see them instantly on the dashboard.
+              </p>
+            </div>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center mb-4">
+                <svg className="w-5 h-5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2">Auto-sync capabilities</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">
+                When agents gain or lose capabilities, one API call updates everything. Threadzy diffs automatically. No manual config.
+              </p>
+            </div>
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center mb-4">
+                <svg className="w-5 h-5 text-[var(--accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold mb-2">Full visibility</h3>
+              <p className="text-sm text-[var(--muted-foreground)]">
+                See exactly what each agent can do from your API keys page. No more guessing. No more reading agent docs to figure out capabilities.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

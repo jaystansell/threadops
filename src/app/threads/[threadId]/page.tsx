@@ -32,6 +32,22 @@ export default async function ThreadDetailPage(
 
   const messages = await messageRepo.listByThread(threadId as ThreadId);
 
+  // Fetch thread events (status changes, auto-reopens)
+  const { data: eventRows } = await db
+    .from("thread_events")
+    .select("id, event_type, actor_kind, actor_label, old_value, new_value, created_at")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
+  const threadEvents = (eventRows ?? []) as Array<{
+    id: string;
+    event_type: string;
+    actor_kind: string;
+    actor_label: string | null;
+    old_value: string | null;
+    new_value: string | null;
+    created_at: string;
+  }>;
+
   // Fetch tags
   const { data: tagRows } = await db
     .from("thread_tags")
@@ -73,6 +89,7 @@ export default async function ThreadDetailPage(
         threadId={threadId}
         userId={userCompany.userId}
         isOpen={thread.status === "open"}
+        threadEvents={threadEvents}
       />
     </div>
   );

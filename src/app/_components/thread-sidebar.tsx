@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ThreadWithLastMessage } from "@/app/threads/layout";
@@ -8,22 +8,41 @@ import { FormattedDate } from "./formatted-date";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
+const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
 
-function loadPinnedThreads(): Set<string> {
-  if (typeof window === "undefined") return new Set();
+function readStorageSet(key: string): Set<string> {
   try {
-    const stored = localStorage.getItem(PINNED_STORAGE_KEY);
+    const stored = localStorage.getItem(key);
     return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
   } catch {
     return new Set();
   }
 }
 
-function savePinnedThreads(pins: Set<string>) {
+function writeStorageSet(key: string, items: Set<string>) {
   try {
-    localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...pins]));
+    localStorage.setItem(key, JSON.stringify([...items]));
   } catch {
-    // Silently handle
+    // ignore
+  }
+}
+
+function useStorageSet(key: string) {
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      const handler = (e: StorageEvent) => { if (e.key === key) cb(); };
+      window.addEventListener("storage", handler);
+      return () => window.removeEventListener("storage", handler);
+    },
+    [key],
+  );
+  const getSnapshot = useCallback(() => localStorage.getItem(key), [key]);
+  const getServerSnapshot = useCallback(() => null, []);
+  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  try {
+    return raw ? (new Set(JSON.parse(raw) as string[])) : new Set<string>();
+  } catch {
+    return new Set<string>();
   }
 }
 
@@ -145,8 +164,11 @@ export function ThreadSidebar({
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [pinnedThreads, setPinnedThreads] = useState<Set<string>>(() => loadPinnedThreads());
+  const storedPins = useStorageSet(PINNED_STORAGE_KEY);
+  const storedExpanded = useStorageSet(EXPANDED_GROUPS_KEY);
+  const [localExpandedOverrides, setLocalExpandedOverrides] = useState<Set<string> | null>(null);
+  const expandedGroups = localExpandedOverrides ?? storedExpanded;
+  const pinnedThreads = storedPins;
   const [menuThreadId, setMenuThreadId] = useState<string | null>(null);
   const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
@@ -171,29 +193,48 @@ export function ThreadSidebar({
   }, []);
 
   const togglePin = useCallback((threadId: string) => {
-    setPinnedThreads((prev) => {
-      const next = new Set(prev);
-      if (next.has(threadId)) {
-        next.delete(threadId);
-      } else {
-        next.add(threadId);
-      }
-      savePinnedThreads(next);
-      return next;
-    });
+    const current = readStorageSet(PINNED_STORAGE_KEY);
+    if (current.has(threadId)) {
+      current.delete(threadId);
+    } else {
+      current.add(threadId);
+    }
+    writeStorageSet(PINNED_STORAGE_KEY, current);
+    // Force re-render by dispatching storage event
+    window.dispatchEvent(new StorageEvent("storage", { key: PINNED_STORAGE_KEY }));
     setMenuThreadId(null);
   }, []);
 
-  const toggleGroup = useCallback((label: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) {
-        next.delete(label);
-      } else {
-        next.add(label);
+  const archiveThread = useCallback(async (threadId: string) => {
+    setMenuThreadId(null);
+    try {
+      const res = await fetch(`/api/threads/${threadId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "archived", company_id: companyId }),
+      });
+      if (res.ok) {
+        setOverrideThreads((prev) => {
+          const base = prev ?? initialThreads;
+          return base.filter((t) => t.id !== threadId);
+        });
+        setExtraThreads((prev) => prev.filter((t) => t.id !== threadId));
       }
-      return next;
-    });
+    } catch {
+      // Silently handle
+    }
+  }, [companyId, initialThreads]);
+
+  const toggleGroup = useCallback((label: string) => {
+    const current = readStorageSet(EXPANDED_GROUPS_KEY);
+    if (current.has(label)) {
+      current.delete(label);
+    } else {
+      current.add(label);
+    }
+    writeStorageSet(EXPANDED_GROUPS_KEY, current);
+    setLocalExpandedOverrides(new Set(current));
+    window.dispatchEvent(new StorageEvent("storage", { key: EXPANDED_GROUPS_KEY }));
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -348,8 +389,22 @@ export function ThreadSidebar({
 
   const activeThreadId = pathname.match(/\/threads\/([^/]+)/)?.[1];
 
+  // Auto-expand: derive the group containing the active thread and merge it
+  let activeGroupLabel: string | null = null;
+  if (activeThreadId) {
+    for (const group of grouped) {
+      if (group.threads.some((t) => t.id === activeThreadId)) {
+        activeGroupLabel = group.label;
+        break;
+      }
+    }
+  }
+  const effectiveExpanded = activeGroupLabel && !expandedGroups.has(activeGroupLabel)
+    ? new Set([...expandedGroups, activeGroupLabel])
+    : expandedGroups;
+
   const isAccordion = groupBy === "agent";
-  const hasAnyExpanded = !isAccordion || expandedGroups.size > 0;
+  const hasAnyExpanded = !isAccordion || effectiveExpanded.size > 0;
 
   const sidebarContent = (
     <>
@@ -425,7 +480,7 @@ export function ThreadSidebar({
           </p>
         ) : (
           grouped.map((group) => {
-            const isOpen = expandedGroups.has(group.label);
+            const isOpen = effectiveExpanded.has(group.label);
             const color = isAccordion ? getAgentColor(group.label) : null;
             const sortedThreads = [...group.threads].sort((a, b) => {
               const aPinned = pinnedThreads.has(a.id) ? 0 : 1;
@@ -586,6 +641,22 @@ export function ThreadSidebar({
                                 </svg>
                                 {isPinned ? "Unpin thread" : "Pin to top"}
                               </button>
+                              {thread.status === "open" && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    archiveThread(thread.id);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-amber-400"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                  </svg>
+                                  Archive
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>

@@ -143,11 +143,43 @@ export async function POST(
 
     const { data: thread } = await db
       .from("threads")
-      .select("company_id, summary, agent_api_key_id")
+      .select("company_id, summary, agent_api_key_id, status")
       .eq("id", threadId)
       .single();
 
     if (thread) {
+      // Auto-reopen archived threads when an agent posts a message
+      if (thread.status === "archived" && authorKind === "agent") {
+        await db
+          .from("threads")
+          .update({ status: "open", updated_at: new Date().toISOString() })
+          .eq("id", threadId);
+
+        await db.from("thread_events").insert({
+          thread_id: threadId,
+          company_id: thread.company_id,
+          event_type: "auto_reopened",
+          actor_kind: "agent",
+          actor_label: authorName,
+          old_value: "archived",
+          new_value: "open",
+        });
+
+        dispatchOutboundWebhooks(
+          thread.company_id as CompanyId,
+          "thread.status_changed",
+          {
+            thread_id: threadId,
+            previous_status: "archived",
+            new_status: "open",
+            company_id: thread.company_id,
+            updated_at: new Date().toISOString(),
+            reason: "auto_reopened_by_agent_message",
+          },
+          thread.agent_api_key_id,
+        );
+      }
+
       dispatchOutboundWebhooks(
         thread.company_id as CompanyId,
         "message.created",

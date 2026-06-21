@@ -8,6 +8,25 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    date: "2026-06-21",
+    version: "0.12",
+    title: "Agent Skills + persistent action buttons",
+    description:
+      "Agents can now report their capabilities to Threadzy. Skills appear on the API keys page. Generate Summary and Generate Tags buttons stay in a requested state until the agent delivers results.",
+    highlights: [
+      "New PUT /api/agents/skills endpoint for agents to report capabilities",
+      "GET /api/agents/skills endpoint to read registered skills",
+      "Skills badges displayed on API keys page per agent",
+      "Default skill set in agent prompt (summarize, tags, backfill, draft, extract, search)",
+      "Generate Summary / Generate Tags buttons persist as requested with polling until agent responds",
+      "Archive button restyled with icon and color for better visibility",
+      "Archive option added to thread ellipsis menu in sidebar",
+      "Agent skills section added to landing page",
+      "API docs updated with Agent Skills section",
+      "Terms and Privacy updated with agent-reported capabilities clauses",
+    ],
+  },
+  {
     date: "2026-06-20",
     version: "0.10",
     title: "Always-on docs webhook scope",

@@ -19,6 +19,7 @@ export async function PATCH(
   const apiKey = req.headers.get("x-api-key");
   let apiKeyCompanyId: string | null = null;
   let apiKeyId: string | null = null;
+  let apiKeyLabel: string | null = null;
 
   if (apiKey) {
     const db = createServerClient();
@@ -31,6 +32,7 @@ export async function PATCH(
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     apiKeyCompanyId = keyRecord.company_id;
     apiKeyId = keyRecord.id;
+    apiKeyLabel = keyRecord.label;
   } else {
     const supabase = await createAuthServerClient();
     const {
@@ -91,6 +93,17 @@ export async function PATCH(
       threadId as ThreadId,
       newStatus,
     );
+
+    // Log the status change event
+    await db.from("thread_events").insert({
+      thread_id: threadId,
+      company_id: companyId,
+      event_type: "status_changed",
+      actor_kind: apiKeyId ? "agent" : "user",
+      actor_label: apiKeyLabel ?? null,
+      old_value: thread.status,
+      new_value: newStatus,
+    });
 
     dispatchOutboundWebhooks(
       companyId as CompanyId,

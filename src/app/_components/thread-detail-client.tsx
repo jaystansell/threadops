@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { Message } from "@/core/types";
 import { ThreadTimeline, loadSortOrder, saveSortOrder } from "./thread-timeline";
+import type { ThreadEvent } from "./thread-timeline";
 import { MessageComposer } from "./message-composer";
 import type { SortOrder } from "./thread-timeline";
 
@@ -11,6 +12,7 @@ interface ThreadDetailClientProps {
   threadId: string;
   userId: string;
   isOpen: boolean;
+  threadEvents?: ThreadEvent[];
 }
 
 export function ThreadDetailClient({
@@ -18,6 +20,7 @@ export function ThreadDetailClient({
   threadId,
   userId,
   isOpen,
+  threadEvents = [],
 }: ThreadDetailClientProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => loadSortOrder());
 
@@ -67,6 +70,7 @@ export function ThreadDetailClient({
         initialMessages={messages}
         threadId={threadId}
         sortOrder={sortOrder}
+        threadEvents={threadEvents}
       />
 
       {sortOrder === "old-first" && composer}

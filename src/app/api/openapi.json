@@ -379,7 +379,7 @@
                 },
                 "example": {
                   "id": "ak_001",
-                  "plaintext_key": "to_live_abc123def456...",
+                  "plaintext_key": "to_live_EXAMPLE_KEY_STORE_SECURELY",
                   "key_prefix": "to_live_",
                   "message": "Store this key securely. It will not be shown again."
                 }
