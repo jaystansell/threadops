@@ -2,6 +2,9 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* App is dark-only — make Tailwind dark: classes always active */
+@variant dark (&);
+
 :root {
   --background: #0A0F1A;
   --foreground: #F1F5F9;
