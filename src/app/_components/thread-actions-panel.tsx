@@ -122,6 +122,7 @@ export function ThreadActionsPanel({
         initialTags={initialTags}
         hideButton
         generateTrigger={tagsTrigger}
+        onPollComplete={() => setTagsRequested(false)}
       />
 
       <div className="mt-3 flex items-center gap-2 flex-wrap" data-testid="thread-actions-bar">
@@ -199,6 +200,7 @@ export function ThreadActionsPanel({
             initialSummary={initialSummary}
             hideButton
             generateTrigger={summaryTrigger}
+            onPollComplete={() => setSummaryRequested(false)}
           />
         </div>
       )}

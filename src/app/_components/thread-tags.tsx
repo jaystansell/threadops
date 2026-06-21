@@ -10,9 +10,10 @@ interface ThreadTagsProps {
   initialTags: string[];
   hideButton?: boolean;
   generateTrigger?: number;
+  onPollComplete?: () => void;
 }
 
-export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger }: ThreadTagsProps) {
+export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger, onPollComplete }: ThreadTagsProps) {
   const [tags, setTags] = useState<string[]>(initialTags);
   const [generating, setGenerating] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -21,6 +22,8 @@ export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
   const prevTriggerRef = useRef(generateTrigger ?? 0);
+  const onPollCompleteRef = useRef(onPollComplete);
+  useEffect(() => { onPollCompleteRef.current = onPollComplete; }, [onPollComplete]);
 
   useEffect(() => {
     if (generateTrigger !== undefined && generateTrigger > prevTriggerRef.current) {
@@ -40,6 +43,7 @@ export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger 
       pollCountRef.current++;
       if (pollCountRef.current > MAX_POLLS) {
         setRequested(false);
+        onPollCompleteRef.current?.();
         if (pollRef.current) clearInterval(pollRef.current);
         return;
       }
@@ -54,6 +58,7 @@ export function ThreadTags({ threadId, initialTags, hideButton, generateTrigger 
           if (hasNewTags) {
             setTags(currentTags);
             setRequested(false);
+            onPollCompleteRef.current?.();
             if (pollRef.current) clearInterval(pollRef.current);
           }
         }

@@ -15,6 +15,7 @@ interface ThreadSummaryEditorProps {
   initialSummary: string;
   hideButton?: boolean;
   generateTrigger?: number;
+  onPollComplete?: () => void;
 }
 
 const POLL_INTERVAL = 5000;
@@ -33,7 +34,7 @@ function formatLogDate(dateStr: string): string {
   return `${diffDay}d ago`;
 }
 
-export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, generateTrigger }: ThreadSummaryEditorProps) {
+export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, generateTrigger, onPollComplete }: ThreadSummaryEditorProps) {
   const [summary, setSummary] = useState(initialSummary);
   const [generating, setGenerating] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -44,6 +45,8 @@ export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, gene
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
   const prevTriggerRef = useRef(generateTrigger ?? 0);
+  const onPollCompleteRef = useRef(onPollComplete);
+  useEffect(() => { onPollCompleteRef.current = onPollComplete; }, [onPollComplete]);
 
   useEffect(() => {
     if (generateTrigger !== undefined && generateTrigger > prevTriggerRef.current) {
@@ -63,6 +66,7 @@ export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, gene
       pollCountRef.current++;
       if (pollCountRef.current > MAX_POLLS) {
         setRequested(false);
+        onPollCompleteRef.current?.();
         if (pollRef.current) clearInterval(pollRef.current);
         return;
       }
@@ -76,6 +80,7 @@ export function ThreadSummaryEditor({ threadId, initialSummary, hideButton, gene
             if (latest && latest !== baselineSummary) {
               setSummary(latest);
               setRequested(false);
+              onPollCompleteRef.current?.();
               if (pollRef.current) clearInterval(pollRef.current);
             }
           }
