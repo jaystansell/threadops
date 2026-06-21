@@ -23,6 +23,7 @@ export async function DELETE(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
 
     const { data: thread } = await db
       .from("threads")
