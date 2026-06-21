@@ -13,6 +13,7 @@ interface ThreadDetailClientProps {
   userId: string;
   isOpen: boolean;
   threadEvents?: ThreadEvent[];
+  attachmentCounts?: Record<string, number>;
 }
 
 export function ThreadDetailClient({
@@ -21,6 +22,7 @@ export function ThreadDetailClient({
   userId,
   isOpen,
   threadEvents = [],
+  attachmentCounts = {},
 }: ThreadDetailClientProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>(() => loadSortOrder());
 
@@ -71,6 +73,7 @@ export function ThreadDetailClient({
         threadId={threadId}
         sortOrder={sortOrder}
         threadEvents={threadEvents}
+        attachmentCounts={attachmentCounts}
       />
 
       {sortOrder === "old-first" && composer}

@@ -9,6 +9,7 @@ import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 import { FormattedDate } from "./formatted-date";
+import { MessageAttachments, AttachmentBadge } from "./message-attachments";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -81,6 +82,7 @@ interface ThreadTimelineProps {
   threadId: string;
   sortOrder: SortOrder;
   threadEvents?: ThreadEvent[];
+  attachmentCounts?: Record<string, number>;
 }
 
 export function ThreadTimeline({
@@ -88,6 +90,7 @@ export function ThreadTimeline({
   threadId,
   sortOrder,
   threadEvents = [],
+  attachmentCounts = {},
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
 
@@ -220,10 +223,18 @@ export function ThreadTimeline({
               <span className="text-xs text-[var(--muted-foreground)]">
                 <FormattedDate date={msg.created_at} includeTime />
               </span>
+              <AttachmentBadge count={attachmentCounts[msg.id] ?? 0} />
             </div>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
             </div>
+            {(attachmentCounts[msg.id] ?? 0) > 0 && (
+              <MessageAttachments
+                threadId={threadId}
+                messageId={msg.id}
+                attachmentCount={attachmentCounts[msg.id] ?? 0}
+              />
+            )}
             <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[var(--muted-foreground)]">
               <svg
                 width="10"
