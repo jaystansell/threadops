@@ -29,6 +29,22 @@ export default async function ThreadDetailPage(
 
   const messages = await messageRepo.listByThread(threadId as ThreadId);
 
+  // Fetch attachment counts per message
+  const messageIds = messages.map((m) => m.id);
+  const attachmentCounts: Record<string, number> = {};
+  if (messageIds.length > 0) {
+    const { data: attRows } = await db
+      .from("message_attachments")
+      .select("message_id")
+      .in("message_id", messageIds);
+    if (attRows) {
+      for (const row of attRows) {
+        const mid = (row as { message_id: string }).message_id;
+        attachmentCounts[mid] = (attachmentCounts[mid] ?? 0) + 1;
+      }
+    }
+  }
+
   // Fetch thread events (status changes, auto-reopens)
   const { data: eventRows } = await db
     .from("thread_events")
@@ -80,6 +96,7 @@ export default async function ThreadDetailPage(
         userId={userCompany.userId}
         isOpen={thread.status === "open"}
         threadEvents={threadEvents}
+        attachmentCounts={attachmentCounts}
       />
     </div>
   );

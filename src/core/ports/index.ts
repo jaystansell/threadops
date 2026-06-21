@@ -11,3 +11,7 @@ export type {
   WebhookEndpointCreateInput,
   WebhookEndpointUpdateInput,
 } from "./webhook-endpoint-repo";
+export type {
+  AttachmentRepo,
+  AttachmentCreateInput,
+} from "./attachment-repo";
