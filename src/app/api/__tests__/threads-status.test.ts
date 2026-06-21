@@ -50,7 +50,12 @@ describe("PATCH /api/threads/[threadId]/status", () => {
       }),
     };
 
-    vi.mocked(createServerClient).mockReturnValue({} as never);
+    const mockDb = {
+      from: vi.fn().mockReturnValue({
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      }),
+    };
+    vi.mocked(createServerClient).mockReturnValue(mockDb as never);
     vi.mocked(createThreadRepo).mockReturnValue(mockThreadRepo as never);
 
     const req = new NextRequest("http://localhost:3000/api/threads/thread-1/status", {
