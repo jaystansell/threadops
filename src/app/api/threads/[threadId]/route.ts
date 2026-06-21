@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
-  | { kind: "ok"; companyId: string; keyId: string; keyLabel: string };
+  | { kind: "ok"; companyId: string; keyId: string; keyLabel: string; modelTier: string | null };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const apiKey = req.headers.get("x-api-key");
@@ -22,7 +22,7 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label };
+  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label, modelTier: keyRecord.model_tier };
 }
 
 export async function GET(
@@ -78,21 +78,26 @@ export async function GET(
     tags: tagsError ? [] : (tags ?? []).map((t: { tag: string }) => t.tag),
   };
 
-  // Log usage for agent reads (fire-and-forget)
+  // Log usage for agent reads (fire-and-forget, non-blocking)
   if (agentKeyId) {
-    const { count } = await db
-      .from("messages")
-      .select("*", { count: "exact", head: true })
-      .eq("thread_id", threadId);
-
-    logThreadRead(db, {
-      apiKeyId: agentKeyId as ApiKeyId,
-      companyId: companyId as CompanyId,
-      threadId,
-      messageCount: count ?? 0,
-      userAgent: req.headers.get("user-agent"),
-      storedModelTier: null,
-    }).catch(() => {});
+    const storedTier = apiKeyResult.kind === "ok" ? apiKeyResult.modelTier : null;
+    const ua = req.headers.get("user-agent");
+    (async () => {
+      const { count } = await db
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("thread_id", threadId);
+      if (count && count > 0) {
+        await logThreadRead(db, {
+          apiKeyId: agentKeyId as ApiKeyId,
+          companyId: companyId as CompanyId,
+          threadId,
+          messageCount: count,
+          userAgent: ua,
+          storedModelTier: storedTier,
+        });
+      }
+    })().catch(() => {});
   }
 
   return Response.json(enriched);

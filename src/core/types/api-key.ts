@@ -13,6 +13,8 @@ export interface ApiKey {
   last_used_at: string | null;
   revoked_at: string | null;
   created_at: string;
+  detected_model: string | null;
+  model_tier: string | null;
 }
 
 export interface ApiKeyCreateResult {
