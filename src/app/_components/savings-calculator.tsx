@@ -76,10 +76,10 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="mb-8">
           <h3 className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>
-            Token Savings Calculator
+            Context Reconstruction Savings
           </h3>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            See how much Threadzy saves on context tokens and cost.
+            See how much Threadzy saves by eliminating context reconstruction overhead.
           </p>
         </div>
       )}
@@ -137,13 +137,13 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ResultCard
-          label="Monthly cost without"
+          label="Reconstruction cost without"
           value={formatDollars(results.monthlyCostWithout)}
           sub={`${formatNumber(results.tokensWithout)} tokens`}
           variant="muted"
         />
         <ResultCard
-          label="Monthly cost with Threadzy"
+          label="Reconstruction cost with Threadzy"
           value={formatDollars(results.monthlyCostWith)}
           sub={`${formatNumber(results.tokensWith)} tokens`}
           variant="accent"
@@ -166,7 +166,7 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       <div className="mt-6 space-y-3">
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[var(--muted-foreground)]">Without Threadzy</span>
+            <span className="text-[var(--muted-foreground)]">Reconstruction cost without Threadzy</span>
             <span className="font-mono text-[var(--foreground)]">{formatDollars(results.monthlyCostWithout)}/mo</span>
           </div>
           <div className="h-6 rounded-lg bg-[var(--muted)] overflow-hidden">
@@ -178,7 +178,7 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
         </div>
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[var(--muted-foreground)]">With Threadzy</span>
+            <span className="text-[var(--muted-foreground)]">Reconstruction cost with Threadzy</span>
             <span className="font-mono text-[var(--accent)]">{formatDollars(results.monthlyCostWith)}/mo</span>
           </div>
           <div className="h-6 rounded-lg bg-[var(--muted)] overflow-hidden">

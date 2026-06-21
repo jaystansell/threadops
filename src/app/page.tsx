@@ -511,11 +511,11 @@ What would Threadzy change about how you work? What would stay the same? Be spec
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-4">
-            Calculate your token savings
+            Calculate your context savings
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
-            See how much Threadzy saves based on your agent workload.
-            Adjust the inputs to match your setup.
+            See how much Threadzy saves by eliminating context reconstruction
+            overhead. Adjust the inputs to match your agent workload.
           </p>
           <SavingsCalculator compact />
           <div className="mt-6 text-center">
