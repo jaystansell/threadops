@@ -18,6 +18,7 @@ export function createApiKeyRepo(db: SupabaseClient): ApiKeyRepo {
         .from("api_keys")
         .insert({
           company_id: input.company_id,
+          created_by: input.created_by,
           label: input.label,
           key_hash: hash,
           key_prefix: prefix,
@@ -60,6 +61,17 @@ export function createApiKeyRepo(db: SupabaseClient): ApiKeyRepo {
         .from("api_keys")
         .select("*")
         .eq("company_id", companyId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ApiKey[];
+    },
+
+    async listByUser(companyId: CompanyId, userId: string): Promise<ApiKey[]> {
+      const { data, error } = await db
+        .from("api_keys")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("created_by", userId)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ApiKey[];

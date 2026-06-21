@@ -123,6 +123,7 @@ export default async function ThreadsLayout({
       .from("api_keys")
       .select("label")
       .eq("company_id", userCompany.companyId)
+      .eq("created_by", userCompany.userId)
       .is("revoked_at", null),
     db
       .from("webhook_endpoints")

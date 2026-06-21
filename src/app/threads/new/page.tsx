@@ -13,7 +13,10 @@ export default async function NewThreadPage() {
 
   const db = createServerClient();
   const apiKeyRepo = createApiKeyRepo(db);
-  const allKeys = await apiKeyRepo.listByCompany(userCompany.companyId as CompanyId);
+  const allKeys = await apiKeyRepo.listByUser(
+    userCompany.companyId as CompanyId,
+    userCompany.userId,
+  );
   const activeAgents = allKeys
     .filter((k) => !k.revoked_at)
     .map((k) => ({ id: k.id, label: k.label }));

@@ -16,7 +16,10 @@ export default async function ApiKeysPage() {
 
   const db = createServerClient();
   const apiKeyRepo = createApiKeyRepo(db);
-  const keys: ApiKey[] = await apiKeyRepo.listByCompany(userCompany.companyId);
+  const keys: ApiKey[] = await apiKeyRepo.listByUser(
+    userCompany.companyId,
+    userCompany.userId,
+  );
 
   const hasKeys = keys.some((k) => !k.revoked_at);
 

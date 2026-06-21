@@ -5,6 +5,13 @@ import type { CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
+function generateSlug(email: string): string {
+  const local = email.split("@")[0] ?? "user";
+  const base = local.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  const suffix = Math.random().toString(36).slice(2, 8);
+  return `${base}-${suffix}`;
+}
+
 export default async function OnboardingPage() {
   const supabase = await createAuthServerClient();
   const {
@@ -25,7 +32,7 @@ export default async function OnboardingPage() {
     redirect("/api-keys");
   }
 
-  async function joinDemoCompany() {
+  async function createWorkspace() {
     "use server";
 
     const authClient = await createAuthServerClient();
@@ -36,23 +43,27 @@ export default async function OnboardingPage() {
 
     const adminDb = createServerClient();
 
-    const { data: company } = await adminDb
+    const email = currentUser.email ?? "user@threadzy.ai";
+    const name = email.split("@")[0] ?? "My Workspace";
+    const slug = generateSlug(email);
+
+    const { data: company, error: companyError } = await adminDb
       .from("companies")
+      .insert({ name, slug })
       .select("id")
-      .limit(1)
       .single();
 
-    if (!company) {
-      throw new Error("No company found. Please contact an administrator.");
-    }
+    if (companyError) throw companyError;
 
-    const { error } = await adminDb.from("company_members").insert({
-      company_id: company.id as CompanyId,
-      user_id: currentUser.id,
-      role: "member",
-    });
+    const { error: memberError } = await adminDb
+      .from("company_members")
+      .insert({
+        company_id: company.id as CompanyId,
+        user_id: currentUser.id,
+        role: "owner",
+      });
 
-    if (error) throw error;
+    if (memberError) throw memberError;
 
     redirect("/api-keys");
   }
@@ -62,17 +73,17 @@ export default async function OnboardingPage() {
       <div>
         <h2 className="text-xl font-bold">Welcome to Threadzy</h2>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Your account is not yet associated with a company. Join the demo
-          company to get started.
+          Create your workspace to get started. Your agents and threads will be
+          private to your account.
         </p>
       </div>
 
-      <form action={joinDemoCompany}>
+      <form action={createWorkspace}>
         <button
           type="submit"
           className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
         >
-          Join Demo Company
+          Create My Workspace
         </button>
       </form>
     </div>
