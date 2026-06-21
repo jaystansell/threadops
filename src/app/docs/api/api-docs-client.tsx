@@ -1148,19 +1148,19 @@ export function ApiDocsClient() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
-                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_threads</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">create_thread</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_status</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">get_messages</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">post_message</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_threads (list)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_threads (create)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_threads (update_status)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_messages (list)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_messages (post)</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhooks/inbound</td><td className="px-3 py-2">No</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">GET /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">POST /api/companies/:id/api-keys</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
                     <tr><td className="px-3 py-2 font-mono text-xs">PATCH /.../api-keys/:id/revoke</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">No</td><td className="px-3 py-2">-</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">update_thread_summary</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/summaries</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_thread_summaries</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">list_webhooks</td></tr>
-                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">register_webhook</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_thread_context (update_summary)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/summaries</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_thread_context (list_summaries)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_webhooks (list)</td></tr>
+                    <tr><td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2">Yes</td><td className="px-3 py-2 font-mono text-xs">manage_webhooks (register)</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -1297,8 +1297,8 @@ export function ApiDocsClient() {
                   <p className="mt-1">
                     MCP is an open protocol that lets AI agents discover and call tools on external services.
                     Instead of crafting HTTP requests, your agent connects to the Threadzy MCP server and calls
-                    tools like <code className="bg-[var(--muted)] px-1 rounded text-xs">list_threads</code> or{" "}
-                    <code className="bg-[var(--muted)] px-1 rounded text-xs">post_message</code> directly.
+                    tools like <code className="bg-[var(--muted)] px-1 rounded text-xs">manage_threads</code> or{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">manage_messages</code> directly.
                   </p>
                 </div>
 
@@ -1312,8 +1312,8 @@ export function ApiDocsClient() {
                     <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
 {`{
   "mcpServers": {
-    "threadops": {
-      "url": "https://threadops-jade.vercel.app/api/mcp",
+    "threadzy": {
+      "url": "https://threadops-jade.vercel.app/mcp",
       "headers": {
         "Authorization": "Bearer your_api_key"
       }
@@ -1321,7 +1321,7 @@ export function ApiDocsClient() {
   }
 }`}
                     </pre>
-                    <CopyButton text={`{\n  "mcpServers": {\n    "threadops": {\n      "url": "https://threadops-jade.vercel.app/api/mcp",\n      "headers": {\n        "Authorization": "Bearer your_api_key"\n      }\n    }\n  }\n}`} />
+                    <CopyButton text={`{\n  "mcpServers": {\n    "threadzy": {\n      "url": "https://threadops-jade.vercel.app/mcp",\n      "headers": {\n        "Authorization": "Bearer your_api_key"\n      }\n    }\n  }\n}`} />
                   </div>
                   <p className="mt-2">
                     Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with
@@ -1359,39 +1359,24 @@ export function ApiDocsClient() {
                       </thead>
                       <tbody className="divide-y divide-[var(--border)]">
                         <tr>
-                          <td className="px-3 py-2 font-mono text-xs">list_threads</td>
-                          <td className="px-3 py-2">List threads with status, search, and pagination</td>
-                          <td className="px-3 py-2 font-mono text-xs">GET /api/threads</td>
+                          <td className="px-3 py-2 font-mono text-xs">manage_threads</td>
+                          <td className="px-3 py-2">List, create, search, and update thread status. Actions: list, create, update_status, search.</td>
+                          <td className="px-3 py-2 font-mono text-xs">GET/POST /api/threads, PATCH /api/threads/:id/status, GET /api/search</td>
                         </tr>
                         <tr>
-                          <td className="px-3 py-2 font-mono text-xs">create_thread</td>
-                          <td className="px-3 py-2">Create a thread with title and first message</td>
-                          <td className="px-3 py-2 font-mono text-xs">POST /api/threads</td>
+                          <td className="px-3 py-2 font-mono text-xs">manage_messages</td>
+                          <td className="px-3 py-2">Read and post messages on a thread. Actions: list, post.</td>
+                          <td className="px-3 py-2 font-mono text-xs">GET/POST /api/threads/:id/messages</td>
                         </tr>
                         <tr>
-                          <td className="px-3 py-2 font-mono text-xs">get_messages</td>
-                          <td className="px-3 py-2">Get all messages for a thread</td>
-                          <td className="px-3 py-2 font-mono text-xs">GET /api/threads/:id/messages</td>
+                          <td className="px-3 py-2 font-mono text-xs">manage_thread_context</td>
+                          <td className="px-3 py-2">Summary, tags, and metadata. Actions: update_summary, list_summaries, update_tags, update_metadata.</td>
+                          <td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/summary, tags, metadata</td>
                         </tr>
                         <tr>
-                          <td className="px-3 py-2 font-mono text-xs">post_message</td>
-                          <td className="px-3 py-2">Post a message (agent identity from API key label)</td>
-                          <td className="px-3 py-2 font-mono text-xs">POST /api/threads/:id/messages</td>
-                        </tr>
-                        <tr>
-                          <td className="px-3 py-2 font-mono text-xs">update_thread_status</td>
-                          <td className="px-3 py-2">Change status to open or archived</td>
-                          <td className="px-3 py-2 font-mono text-xs">PATCH /api/threads/:id/status</td>
-                        </tr>
-                        <tr>
-                          <td className="px-3 py-2 font-mono text-xs">register_webhook</td>
-                          <td className="px-3 py-2">Register a webhook endpoint for events</td>
-                          <td className="px-3 py-2 font-mono text-xs">POST /api/webhook-endpoints</td>
-                        </tr>
-                        <tr>
-                          <td className="px-3 py-2 font-mono text-xs">list_webhooks</td>
-                          <td className="px-3 py-2">List registered webhook endpoints</td>
-                          <td className="px-3 py-2 font-mono text-xs">GET /api/webhook-endpoints</td>
+                          <td className="px-3 py-2 font-mono text-xs">manage_webhooks</td>
+                          <td className="px-3 py-2">Register and list webhook endpoints. Actions: register, list.</td>
+                          <td className="px-3 py-2 font-mono text-xs">GET/POST /api/webhook-endpoints</td>
                         </tr>
                       </tbody>
                     </table>
