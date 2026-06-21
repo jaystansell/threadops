@@ -196,16 +196,23 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
       // Upload any pending files
       const validFiles = pendingFiles.filter((f) => !f.error);
       if (validFiles.length > 0) {
-        await Promise.all(
+        const results = await Promise.all(
           pendingFiles.map((f, i) => {
             if (f.error) return Promise.resolve(false);
             return uploadFile(message.id, f, i);
           }),
         );
+        const failedCount = results.filter((r) => r === false).length;
+        if (failedCount > 0) {
+          setError(`${failedCount} file(s) failed to upload`);
+        }
       }
 
       setBody("");
-      setPendingFiles([]);
+      setPendingFiles((prev) => {
+        prev.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+        return [];
+      });
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

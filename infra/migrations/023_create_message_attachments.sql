@@ -40,9 +40,7 @@ CREATE POLICY "Members can insert attachments"
     )
   );
 
--- Service role can update (for purge operations)
+-- Note: purge operations use the service role key which bypasses RLS entirely.
+-- No UPDATE policy needed; omitting prevents any authenticated user from
+-- modifying attachment rows.
 DROP POLICY IF EXISTS "Service can update attachments" ON message_attachments;
-CREATE POLICY "Service can update attachments"
-  ON message_attachments FOR UPDATE
-  USING (true)
-  WITH CHECK (true);

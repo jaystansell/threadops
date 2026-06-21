@@ -50,6 +50,9 @@ export async function POST(req: NextRequest) {
     if (purgedIds.length > 0) {
       await attachmentRepo.markPurged(purgedIds);
       totalPurged += purgedIds.length;
+    } else {
+      // No progress made — stop to avoid infinite loop during storage outages
+      hasMore = false;
     }
 
     if (expired.length < BATCH_SIZE) {

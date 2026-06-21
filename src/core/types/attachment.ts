@@ -60,7 +60,7 @@ export function isAllowedFile(
   }
 
   const allowed = ALLOWED_MIME_PREFIXES.some((mime) =>
-    contentType === mime || contentType.startsWith(mime.replace(/\/.*/, "/")),
+    contentType === mime,
   );
   if (!allowed) {
     return { ok: false, reason: `Content type ${contentType} is not allowed` };
