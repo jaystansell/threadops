@@ -1,6 +1,6 @@
 ---
 name: testing-threadops
-description: Test ThreadOps forum features end-to-end. Use when verifying thread creation, status management, theme filtering, or other forum UI changes.
+description: Test ThreadOps forum features end-to-end. Use when verifying thread creation, status management, theme filtering, file attachments, or other forum UI changes.
 ---
 
 ## Overview
@@ -47,6 +47,16 @@ printf "NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\nSUPABASE_
 - A test user exists in the Supabase project for E2E testing. Look up the credentials from the Devin secret `THREADOPS_TEST_USER_EMAIL` and `THREADOPS_TEST_USER_PASSWORD`, or create a new test user via the `/signup` page.
 - The test user should be a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
 - Login via the `/login` page in the browser
+- You can also create test users via the Supabase Admin API:
+  ```bash
+  source .env.local
+  curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/auth/v1/admin/users" \
+    -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+    -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+    -H "Content-Type: application/json" \
+    -d '{"email": "test@example.com", "password": "TestPass123!", "email_confirm": true}'
+  ```
+- New users need to go through onboarding (creates a company + membership). After login they'll be redirected to complete onboarding automatically.
 
 ### Signup Auto-Provisioning Gotcha
 
@@ -75,6 +85,14 @@ Alternatively, use the "Join Demo Company" button on the `/onboarding` page whic
 - The service role key bypasses RLS entirely, which is how the production app works.
 - If you encounter PostgreSQL error `42P17` ("infinite recursion detected in policy"), you are missing the service role key.
 - Do NOT attempt to use `createAuthServerClient()` for data queries — it will trigger the infinite recursion. The app architecture requires `createServerClient()` (service role) for all data operations.
+
+## Supabase Database Access Limitations
+
+- **Supabase MCP is read-only for DDL**: `apply_migration` and `execute_sql` cannot run CREATE TABLE, ALTER TABLE, or other DDL statements. They work for SELECT/INSERT/UPDATE/DELETE.
+- **Direct DB host is IPv6-only**: `db.gymsbxkuiknbdtulmopv.supabase.co` resolves to an IPv6 address only. psql connections will fail with "Network is unreachable" from VMs without IPv6.
+- **Pooler connection requires DB password**: The service role key is NOT the database password. Pooler connections (`aws-0-us-east-1.pooler.supabase.com`) require the actual DB password set during project creation.
+- **Workaround for DDL**: Ask the user to run migrations via the Supabase Dashboard SQL Editor, or provide the actual DB password.
+- **Supabase REST API works for data**: You can create/read/update data via the REST API with the service role key (e.g., creating storage buckets, inserting rows).
 
 ## Vercel Deployment
 
@@ -191,6 +209,51 @@ The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistent
 - Click OK/Cancel on the dialog via computer tool coordinates
 - Verify message count changes (or stays the same for cancel)
 - Verify with DB query that deletion persisted
+
+### File Attachments (PR #72)
+
+**Prerequisites:**
+- The `message_attachments` table must exist in the database. If not, run `infra/migrations/023_create_message_attachments.sql` via Supabase Dashboard SQL Editor.
+- The `thread-attachments` storage bucket must exist. Create via REST API if needed:
+  ```bash
+  source .env.local
+  curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/storage/v1/bucket" \
+    -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+    -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+    -H "Content-Type: application/json" \
+    -d '{"id": "thread-attachments", "name": "thread-attachments", "public": false}'
+  ```
+
+**Key files:**
+- Message composer: `src/app/_components/message-composer.tsx` (file picker, drag-drop, paste, previews)
+- Attachment display: `src/app/_components/message-attachments.tsx` (timeline rendering)
+- Validation: `src/core/types/attachment.ts` (MIME types, blocked extensions, size limits)
+- Upload API: `src/app/api/threads/[threadId]/messages/[messageId]/attachments/route.ts`
+- Download API: `src/app/api/threads/[threadId]/messages/[messageId]/attachments/[attachmentId]/download/route.ts`
+
+**UI Testing (works without DB table):**
+1. **File picker**: Click "Attach" button (paperclip icon) next to "Send Message" to open file dialog
+2. **File preview chips**: Selected files show as chips with thumbnail/icon, filename, size, × remove button
+3. **Image previews**: PNG/JPG files show blob URL thumbnail; text files show 📝 icon; PDFs show 📄 icon
+4. **Blocked types**: `.sh`, `.exe`, `.bat` etc. show red error chip with "File type .XX is not allowed"
+5. **Max files**: 5-file cap enforced — Attach button disabled at 5/5, info text shows "5/5 files · Max 10 MB each"
+6. **File removal**: × button removes file chip, Send button re-disables when no valid files remain
+7. **Send with files**: Creates message, attempts upload (fails without DB table), shows red error count
+
+**Using Playwright for file input** (the file input is `display:none`):
+```javascript
+const { chromium } = require('playwright');
+const browser = await chromium.connectOverCDP('http://localhost:29229');
+const page = browser.contexts()[0].pages()[0];
+await page.locator('input[type="file"]').setInputFiles('/path/to/file.png');
+// To remove: await page.locator('button[aria-label="Remove filename.png"]').click();
+```
+
+**Full upload flow (requires DB table):**
+1. Attach valid file + type message → click Send
+2. Message appears in timeline with attachment count badge
+3. Click download link → signed URL with Content-Disposition header
+4. Purge cron: POST `/api/cron/purge-files` with `Authorization: Bearer <CRON_SECRET>`
 
 ### UI Navigation (Browser)
 1. `/login` — Email/password login form
@@ -403,7 +466,7 @@ To test the action bar, you need a thread with an agent. The flow is:
 - Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
 - Use Supabase MCP (`execute_sql`) to inspect data if needed
 
-Migrations are in `infra/migrations/` (000-010). Seed data is in `infra/seed/seed.sql`.
+Migrations are in `infra/migrations/` (000-023). Seed data is in `infra/seed/seed.sql`.
 
 To apply migrations via psql (pooler connection, bypasses IPv6 issue):
 ```bash
@@ -412,7 +475,7 @@ for f in infra/migrations/*.sql; do psql "$DBURL" -f "$f"; done
 psql "$DBURL" -f infra/seed/seed.sql
 ```
 
-The Supabase MCP tool's `execute_sql` might be read-only for DDL. If so, use the psql pooler connection above.
+The Supabase MCP tool's `execute_sql` is read-only for DDL (CREATE TABLE, ALTER TABLE, etc.). For DDL operations, use the Supabase Dashboard SQL Editor or the psql pooler connection above.
 
 ## Lint and Type Check
 ```bash
@@ -432,3 +495,11 @@ VALUES ('f0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-0000000
 ON CONFLICT (id) DO NOTHING;
 ```
 Then POST to this thread with the demo company's API key — should get 403.
+
+
+## Seed Data for Testing
+
+When creating test data via the service role key, note these schema requirements:
+- `threads` table requires: `company_id`, `title`, `status`, `created_by` (user UUID)
+- `messages` table requires: `thread_id`, `author_id` (user UUID), `author_kind`, `body` (no `company_id` column)
+- `message_attachments` table requires: `message_id`, `thread_id`, `company_id`, `filename`, `file_size`, `content_type`, `storage_path`
