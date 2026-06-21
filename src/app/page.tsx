@@ -10,7 +10,7 @@ export default async function HomePage() {
   if (user) redirect("/threads");
 
   return (
-    <div className="w-full relative bg-[var(--background)]">
+    <div className="w-full relative">
       <div className="relative" style={{ zIndex: 1 }}>
 
       {/* Nav */}
