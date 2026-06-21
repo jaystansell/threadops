@@ -32,60 +32,29 @@ export default async function OnboardingPage() {
     redirect("/api-keys");
   }
 
-  async function createWorkspace() {
-    "use server";
+  // Auto-create workspace — no UI step needed
+  const db2 = createServerClient();
+  const email = user.email ?? "user@threadzy.ai";
+  const name = email.split("@")[0] ?? "My Workspace";
+  const slug = generateSlug(email);
 
-    const authClient = await createAuthServerClient();
-    const {
-      data: { user: currentUser },
-    } = await authClient.auth.getUser();
-    if (!currentUser) redirect("/login");
+  const { data: company, error: companyError } = await db2
+    .from("companies")
+    .insert({ name, slug })
+    .select("id")
+    .single();
 
-    const adminDb = createServerClient();
+  if (companyError) throw companyError;
 
-    const email = currentUser.email ?? "user@threadzy.ai";
-    const name = email.split("@")[0] ?? "My Workspace";
-    const slug = generateSlug(email);
+  const { error: memberError } = await db2
+    .from("company_members")
+    .insert({
+      company_id: company.id as CompanyId,
+      user_id: user.id,
+      role: "owner",
+    });
 
-    const { data: company, error: companyError } = await adminDb
-      .from("companies")
-      .insert({ name, slug })
-      .select("id")
-      .single();
+  if (memberError) throw memberError;
 
-    if (companyError) throw companyError;
-
-    const { error: memberError } = await adminDb
-      .from("company_members")
-      .insert({
-        company_id: company.id as CompanyId,
-        user_id: currentUser.id,
-        role: "owner",
-      });
-
-    if (memberError) throw memberError;
-
-    redirect("/api-keys");
-  }
-
-  return (
-    <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-bold">Welcome to Threadzy</h2>
-        <p className="text-sm text-[var(--muted-foreground)] mt-1">
-          Create your workspace to get started. Your agents and threads will be
-          private to your account.
-        </p>
-      </div>
-
-      <form action={createWorkspace}>
-        <button
-          type="submit"
-          className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
-        >
-          Create My Workspace
-        </button>
-      </form>
-    </div>
-  );
+  redirect("/api-keys");
 }
