@@ -89,29 +89,28 @@ export function NewThreadForm({ companyId, agents = [] }: NewThreadFormProps) {
       </div>
 
       <div>
-        <label
-          htmlFor="agent"
-          className="block text-sm font-medium mb-1"
-        >
+        <label className="block text-sm font-medium mb-1">
           Agent <span className="text-red-500">*</span>
         </label>
         {agents.length > 0 ? (
-          <select
-            id="agent"
-            value={selectedAgent}
-            onChange={(e) => setSelectedAgent(e.target.value)}
-            required
-            data-testid="thread-agent-select"
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm focus:outline-none focus:border-[var(--primary)]"
-            disabled={submitting}
-          >
-            <option value="">Select an agent</option>
+          <div className="flex flex-wrap gap-2" data-testid="thread-agent-select">
             {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
+              <button
+                key={agent.id}
+                type="button"
+                onClick={() => setSelectedAgent(agent.id)}
+                disabled={submitting}
+                data-testid={`agent-option-${agent.id}`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                  selectedAgent === agent.id
+                    ? "border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                    : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]/50"
+                }`}
+              >
                 {agent.label}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
         ) : (
           <p className="text-sm text-[var(--muted-foreground)]">
             No active agents. Create an API key first.
