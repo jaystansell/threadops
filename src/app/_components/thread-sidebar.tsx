@@ -583,7 +583,7 @@ export function ThreadSidebar({
               <div key={group.label}>
                 {isAccordion ? (
                   <div
-                    className="relative flex items-center transition-colors hover:opacity-90"
+                    className={`relative flex items-center transition-colors hover:opacity-90 ${colorPickerAgent === group.label ? "z-40" : ""}`}
                     style={{
                       backgroundColor: color?.bg,
                       color: color?.fg,
@@ -648,7 +648,7 @@ export function ThreadSidebar({
                     {colorPickerAgent === group.label && (
                       <div
                         ref={colorPickerRef}
-                        className="absolute right-0 top-full z-30 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-xl py-2 px-2 w-[200px]"
+                        className="absolute right-0 top-full z-50 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-xl py-2 px-2 w-[200px]"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <p className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5 px-1">
