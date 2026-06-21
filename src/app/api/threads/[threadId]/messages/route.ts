@@ -165,6 +165,9 @@ export async function POST(
           new_value: "open",
         });
 
+        // Exclude the posting agent from the auto-reopen notification
+        // since the reopen is a side-effect of its own message.
+        const reopenExclude = authorKind === "agent" ? authorId : null;
         dispatchOutboundWebhooks(
           thread.company_id as CompanyId,
           "thread.status_changed",
@@ -177,33 +180,30 @@ export async function POST(
             reason: "auto_reopened_by_agent_message",
           },
           thread.agent_api_key_id,
+          reopenExclude,
         );
       }
 
-      // Skip webhook when the authoring agent IS the thread's owning agent
-      // to prevent echo loops (agent posts → gets pinged → sees own message).
-      const isOwnAgentMessage =
-        authorKind === "agent" &&
-        thread.agent_api_key_id &&
-        authorId === thread.agent_api_key_id;
-
-      if (!isOwnAgentMessage) {
-        dispatchOutboundWebhooks(
-          thread.company_id as CompanyId,
-          "message.created",
-          {
-            message_id: message.id,
-            thread_id: threadId,
-            author_id: message.author_id,
-            author_kind: message.author_kind,
-            author_name: message.author_name,
-            body: message.body,
-            created_at: message.created_at,
-            current_summary: thread.summary ?? null,
-          },
-          thread.agent_api_key_id,
-        );
-      }
+      // Echo suppression: exclude the posting agent's endpoint so it
+      // does not receive a webhook for its own message. Works for both
+      // agent-owned threads and threads with no owning agent.
+      const excludeId = authorKind === "agent" ? authorId : null;
+      dispatchOutboundWebhooks(
+        thread.company_id as CompanyId,
+        "message.created",
+        {
+          message_id: message.id,
+          thread_id: threadId,
+          author_id: message.author_id,
+          author_kind: message.author_kind,
+          author_name: message.author_name,
+          body: message.body,
+          created_at: message.created_at,
+          current_summary: thread.summary ?? null,
+        },
+        thread.agent_api_key_id,
+        excludeId,
+      );
     }
 
     return Response.json(message, { status: 201 });

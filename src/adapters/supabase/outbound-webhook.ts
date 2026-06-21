@@ -29,6 +29,7 @@ export function dispatchOutboundWebhooks(
   eventType: string,
   eventPayload: Record<string, unknown>,
   agentApiKeyId?: string | null,
+  excludeApiKeyId?: string | null,
 ): void {
   const work = async () => {
     try {
@@ -49,6 +50,8 @@ export function dispatchOutboundWebhooks(
       const endpoints = eventType === "docs.updated"
         ? allEndpoints
         : allEndpoints.filter((ep) => {
+            // Echo suppression: never deliver to the agent that triggered the event
+            if (excludeApiKeyId && ep.api_key_id === excludeApiKeyId) return false;
             if (!agentApiKeyId) return true;
             return ep.api_key_id === agentApiKeyId;
           });
