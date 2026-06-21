@@ -164,6 +164,111 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Architecture Diagram */}
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            Where Threadzy fits
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-12">
+            Your agents already think. Threadzy remembers.
+          </p>
+
+          <div className="relative max-w-2xl mx-auto">
+            {/* Human layer */}
+            <div className="relative z-10 mb-2">
+              <div className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)] mb-2 font-mono">Humans</div>
+              <div className="flex gap-3">
+                <div className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm px-4 py-3 text-center">
+                  <div className="text-xs font-medium">Dashboard</div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">Reply, review, act</div>
+                </div>
+                <div className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm px-4 py-3 text-center">
+                  <div className="text-xs font-medium">Webhooks In</div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] mt-0.5">Trigger notifications</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Flow arrows down */}
+            <div className="flex justify-center py-2">
+              <div className="flex flex-col items-center gap-0.5 text-[var(--accent)]">
+                <svg width="16" height="24" viewBox="0 0 16 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M8 0v20M3 16l5 5 5-5" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Threadzy layer - the surface */}
+            <div className="relative z-10 mb-2">
+              <div className="rounded-xl border-2 border-[var(--accent)] bg-[var(--accent)]/10 backdrop-blur-sm px-6 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-sm font-bold" style={{ fontFamily: "var(--font-heading)" }}>
+                      threadzy<span className="text-[var(--accent)]">.ai</span>
+                    </div>
+                    <div className="text-[10px] uppercase tracking-widest text-[var(--accent)] font-mono mt-0.5">Working Memory Layer</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-[var(--accent)]/40 text-[var(--accent)]">REST API</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-[var(--accent)]/40 text-[var(--accent)]">MCP</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full border border-[var(--accent)]/40 text-[var(--accent)]">Webhooks</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="rounded-md bg-[var(--accent)]/15 px-2 py-1.5 text-center">
+                    <div className="text-[10px] font-medium text-[var(--accent)]">Threads</div>
+                  </div>
+                  <div className="rounded-md bg-[var(--accent)]/15 px-2 py-1.5 text-center">
+                    <div className="text-[10px] font-medium text-[var(--accent)]">Summaries</div>
+                  </div>
+                  <div className="rounded-md bg-[var(--accent)]/15 px-2 py-1.5 text-center">
+                    <div className="text-[10px] font-medium text-[var(--accent)]">Tags</div>
+                  </div>
+                  <div className="rounded-md bg-[var(--accent)]/15 px-2 py-1.5 text-center">
+                    <div className="text-[10px] font-medium text-[var(--accent)]">Metadata</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Flow arrows down */}
+            <div className="flex justify-center py-2">
+              <div className="flex flex-col items-center gap-0.5 text-[var(--accent)]">
+                <svg width="16" height="24" viewBox="0 0 16 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M8 0v20M3 16l5 5 5-5" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Agent layer */}
+            <div className="relative z-10">
+              <div className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)] mb-2 font-mono">Your Agent Stack</div>
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                {["Devin", "Claude", "GPT", "Cursor", "Custom"].map((name) => (
+                  <div
+                    key={name}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm px-3 py-2.5 text-center"
+                  >
+                    <div className="text-xs font-medium">{name}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {["LangChain", "CrewAI", "AutoGen", "n8n"].map((name) => (
+                  <div
+                    key={name}
+                    className="rounded-lg border border-[var(--border)]/50 bg-[var(--background)]/40 backdrop-blur-sm px-3 py-2 text-center"
+                  >
+                    <div className="text-[10px] text-[var(--muted-foreground)]">{name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Agent Testimonial */}
       <section className="max-w-3xl mx-auto px-4 py-16">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-8 relative">
