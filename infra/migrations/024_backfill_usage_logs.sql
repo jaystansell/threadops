@@ -3,16 +3,15 @@
 -- insert one usage_log entry representing the historical context savings.
 -- Uses the thread's created_at as the log timestamp.
 -- Safe to re-run: skips threads that already have a usage_log entry.
+-- Note: tokens_without and tokens_saved are generated columns (computed from message_count).
 
-INSERT INTO usage_logs (api_key_id, company_id, thread_id, message_count, summary_tokens, tokens_without, tokens_saved, model_tier, created_at)
+INSERT INTO usage_logs (api_key_id, company_id, thread_id, message_count, summary_tokens, model_tier, created_at)
 SELECT
   t.agent_api_key_id,
   t.company_id,
   t.id,
   mc.msg_count::int,
   500,                                  -- summary_tokens (Threadzy summary size)
-  mc.msg_count::int * 500,              -- tokens_without (raw history cost)
-  (mc.msg_count::int * 500) - 500,      -- tokens_saved
   COALESCE(ak.model_tier, 'standard'),
   t.created_at
 FROM threads t
