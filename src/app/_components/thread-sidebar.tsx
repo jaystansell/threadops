@@ -698,7 +698,7 @@ export function ThreadSidebar({
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
-              className="absolute top-3 right-3 z-10 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors"
+              className="absolute top-2 left-2 z-10 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors"
               aria-label="Close threads"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -710,9 +710,9 @@ export function ThreadSidebar({
         </div>
       )}
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar — only render content when mobile overlay is closed to avoid shared ref conflicts */}
       <aside className="hidden md:flex w-80 lg:w-96 border-r border-[var(--border)] flex-col bg-[var(--background)] shrink-0 overflow-hidden">
-        {sidebarContent}
+        {!mobileOpen && sidebarContent}
       </aside>
     </>
   );
