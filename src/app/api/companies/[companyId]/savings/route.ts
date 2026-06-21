@@ -59,12 +59,20 @@ export async function GET(
     const totalDollarsWithout = agentSavings.reduce((sum, a) => sum + a.dollarsWithout, 0);
     const totalDollarsWith = agentSavings.reduce((sum, a) => sum + a.dollarsWith, 0);
 
+    // Human time savings: ~2 min per thread read for manual triage/context switching
+    // $100K/yr salary = $48.08/hr = $0.80/min
+    const hourlyRate = 100_000 / 2_080;
+    const minutesSaved = companySavings.totalQueries * 2;
+    const humanTimeDollarsSaved = (minutesSaved / 60) * hourlyRate;
+
     return Response.json({
       company: {
         ...companySavings,
         dollarsSaved: totalDollarsSaved,
         dollarsWithout: totalDollarsWithout,
         dollarsWith: totalDollarsWith,
+        humanTimeDollarsSaved,
+        minutesSaved,
       },
       agents: agentSavings,
       pricing: {

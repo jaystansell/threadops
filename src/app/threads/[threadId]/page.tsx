@@ -7,6 +7,7 @@ import type { ThreadId } from "@/core/types";
 import { ThreadDetailClient } from "@/app/_components/thread-detail-client";
 import { FormattedDate } from "@/app/_components/formatted-date";
 import { ThreadActionsPanel } from "@/app/_components/thread-actions-panel";
+import { ThreadSavingsBanner } from "@/app/_components/thread-savings-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,24 @@ export default async function ThreadDetailPage(
     created_at: string;
   }>;
 
+  // Fetch usage read count and model tier for savings banner
+  const { data: usageRows } = await db
+    .from("usage_logs")
+    .select("model_tier")
+    .eq("thread_id", threadId);
+  const readCount = usageRows?.length ?? 0;
+  const modelTier = (usageRows?.[0]?.model_tier as string) ?? "standard";
+
+  // Fetch model pricing from DB for accurate cost display
+  const { data: pricingRows } = await db
+    .from("model_pricing")
+    .select("cost_per_mtok")
+    .eq("model_tier", modelTier)
+    .limit(1);
+  const costPerMTok = pricingRows?.[0]
+    ? Number(pricingRows[0].cost_per_mtok)
+    : null;
+
   // Fetch tags
   const { data: tagRows } = await db
     .from("thread_tags")
@@ -87,6 +106,12 @@ export default async function ThreadDetailPage(
           currentStatus={thread.status}
           initialTags={tags}
           initialSummary={thread.summary ?? ""}
+        />
+        <ThreadSavingsBanner
+          messageCount={messages.length}
+          readCount={readCount}
+          modelTier={modelTier}
+          costPerMTok={costPerMTok}
         />
       </div>
 
