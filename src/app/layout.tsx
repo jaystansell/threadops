@@ -6,6 +6,7 @@ import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
 import { DesktopNav } from "./_components/desktop-nav";
 import { MobileNav } from "./_components/mobile-nav";
+import { SiteFooter } from "./_components/site-footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export default function RootLayout({
           </header>
         </AppHeader>
         <div className="flex-1 flex flex-col">{children}</div>
+        <SiteFooter />
         <Analytics />
       </body>
     </html>
