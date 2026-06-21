@@ -20,26 +20,28 @@ export async function GET(req: NextRequest) {
   }
 
   const db = createServerClient();
+  const now = new Date().toISOString();
+  const errors: string[] = [];
 
-  const entries = Object.values(FALLBACK_PRICING).map((p) => ({
-    model_pattern: p.tier,
-    model_tier: p.tier,
-    cost_per_mtok: p.costPerMTok,
-    label: p.label,
-    updated_at: new Date().toISOString(),
-  }));
+  for (const p of Object.values(FALLBACK_PRICING)) {
+    const { error } = await db
+      .from("model_pricing")
+      .update({
+        cost_per_mtok: p.costPerMTok,
+        label: p.label,
+        updated_at: now,
+      })
+      .eq("model_tier", p.tier);
+    if (error) errors.push(`${p.tier}: ${error.message}`);
+  }
 
-  const { error } = await db
-    .from("model_pricing")
-    .upsert(entries, { onConflict: "model_pattern" });
-
-  if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+  if (errors.length > 0) {
+    return Response.json({ error: errors.join("; ") }, { status: 500 });
   }
 
   return Response.json({
     message: "Model pricing updated",
-    tiers: entries.length,
-    updated_at: new Date().toISOString(),
+    tiers: Object.keys(FALLBACK_PRICING).length,
+    updated_at: now,
   });
 }
