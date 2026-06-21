@@ -71,7 +71,7 @@ export function createApiKeyRepo(db: SupabaseClient): ApiKeyRepo {
         .from("api_keys")
         .select("*")
         .eq("company_id", companyId)
-        .eq("created_by", userId)
+        .or(`created_by.eq.${userId},created_by.is.null`)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ApiKey[];
