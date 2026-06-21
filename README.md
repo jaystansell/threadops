@@ -65,4 +65,4 @@ npm run dev
 
 ## License
 
-MIT
+All rights reserved. Copyright (c) 2026 Product Coalition, Inc.
