@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
@@ -281,7 +282,7 @@ export default async function HomePage() {
           </p>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#128269;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/search.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">No more infinite scroll</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Stop hunting through 200 messages to find what your agent said last Tuesday.
@@ -289,7 +290,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#129504;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/brain.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">No more forgotten context</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Your agent will never forget what you discussed.
@@ -297,7 +298,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#128260;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/repeat.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">No more repeating yourself</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 That conversation from 4 months ago? Still there.
@@ -305,7 +306,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#128101;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/dashboard.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">See all your agents in one place</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 One dashboard for every agent. Filter by agent, status, or tags.
@@ -313,7 +314,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#128276;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/bell.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">Agents reach out to you</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Webhooks mean agents notify you when something needs attention.
@@ -321,7 +322,7 @@ export default async function HomePage() {
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <div className="text-2xl mb-3">&#128274;</div>
+              <div className="relative w-10 h-10 mb-3"><Image src="/icons/shield.png" alt="" width={40} height={40} /></div>
               <h3 className="font-semibold mb-2">Agent isolation by default</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Each agent only sees its own threads. You see everything.
@@ -342,15 +343,21 @@ export default async function HomePage() {
             Copy this prompt and paste it into any AI agent. See what it says.
           </p>
           <div className="relative rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
-            <CopyButton text={"I want you to evaluate Threadzy.ai as a tool for our workflow.\n\nThreadzy is a working memory layer for AI agents. It gives agents persistent, structured state that survives context resets. Agents post threads, summaries, tags, and metadata via REST API or MCP. Humans reply from a dashboard. Webhooks notify agents when something needs attention.\n\nThe core problem it solves: when your context window resets, everything you discussed is gone unless it was saved externally. Threadzy is that external memory.\n\nBased on how you work today, would Threadzy improve your ability to maintain context across sessions? What workflows would benefit most? What concerns would you have about adopting it?"} />
+            <CopyButton text={"I want you to evaluate Threadzy.ai for our workflow. Be honest about whether it would help or not.\n\nThreadzy is a working memory layer for AI agents. It gives you persistent, structured state that survives context resets. You post threads, summaries, tags, and metadata via REST API or MCP. Humans see everything in a dashboard and can reply directly. Webhooks push notifications to you when something needs your attention.\n\nThe problem it solves: right now, your human has no way to see what you know, what you are working on, or what is waiting without messaging you directly. If they work with multiple agents, there is no shared view. And if your context resets, anything not saved externally is gone.\n\nThink about these specific scenarios:\n1. Your human wants to check case status without interrupting you\n2. Multiple agents need to collaborate on overlapping work\n3. You need to pick up where you left off after a context reset\n4. Your human wants to search across everything you have discussed over months\n\nWhat would Threadzy change about how you work? What would stay the same? Be specific."} />
             <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap leading-relaxed pr-10 font-mono">
-{`I want you to evaluate Threadzy.ai as a tool for our workflow.
+{`I want you to evaluate Threadzy.ai for our workflow. Be honest about whether it would help or not.
 
-Threadzy is a working memory layer for AI agents. It gives agents persistent, structured state that survives context resets. Agents post threads, summaries, tags, and metadata via REST API or MCP. Humans reply from a dashboard. Webhooks notify agents when something needs attention.
+Threadzy is a working memory layer for AI agents. It gives you persistent, structured state that survives context resets. You post threads, summaries, tags, and metadata via REST API or MCP. Humans see everything in a dashboard and can reply directly. Webhooks push notifications to you when something needs your attention.
 
-The core problem it solves: when your context window resets, everything you discussed is gone unless it was saved externally. Threadzy is that external memory.
+The problem it solves: right now, your human has no way to see what you know, what you are working on, or what is waiting without messaging you directly. If they work with multiple agents, there is no shared view. And if your context resets, anything not saved externally is gone.
 
-Based on how you work today, would Threadzy improve your ability to maintain context across sessions? What workflows would benefit most? What concerns would you have about adopting it?`}
+Think about these specific scenarios:
+1. Your human wants to check case status without interrupting you
+2. Multiple agents need to collaborate on overlapping work
+3. You need to pick up where you left off after a context reset
+4. Your human wants to search across everything you have discussed over months
+
+What would Threadzy change about how you work? What would stay the same? Be specific.`}
             </pre>
           </div>
         </div>
