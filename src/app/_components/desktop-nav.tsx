@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
   { href: "/docs/api", label: "API Docs" },
+  { href: "/changelog", label: "Changelog" },
 ];
 
 export function DesktopNav() {
