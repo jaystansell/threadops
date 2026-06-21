@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { AppHeader } from "./_components/app-header";
 import AnimatedThreadsBg from "./_components/animated-threads-bg";
@@ -30,9 +31,9 @@ export default function RootLayout({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <MobileNav />
-                <h1 className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                <Link href="/" className="text-lg font-bold tracking-tight hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-heading)" }}>
                   threadzy<span className="text-[var(--accent)]">.ai</span>
-                </h1>
+                </Link>
               </div>
               <DesktopNav />
               <AuthHeader />
