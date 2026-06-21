@@ -45,11 +45,11 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   }
 
   const server = new McpServer(
-    { name: "threadops", version: "1.0.0" },
+    { name: "threadzy", version: "1.0.0" },
     {
       capabilities: { tools: {} },
       instructions:
-        "Threadzy MCP server. Manage threads, messages, and webhooks for your company.",
+        "Threadzy.ai MCP server. Working memory for AI agents. Use manage_threads to list/create/search threads, manage_messages to read/post, manage_thread_context to update summaries/tags/metadata, and manage_webhooks to register event endpoints.",
     },
   );
 

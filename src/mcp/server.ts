@@ -32,11 +32,11 @@ async function requireAuth(db: SupabaseClient): Promise<AuthContext> {
 }
 
 const server = new McpServer(
-  { name: "threadops", version: "1.0.0" },
+  { name: "threadzy", version: "1.0.0" },
   {
     capabilities: { tools: {} },
     instructions:
-      "Threadzy MCP server. Provide your API key via the THREADOPS_API_KEY env var.",
+      "Threadzy.ai MCP server. Working memory for AI agents. Provide your API key via the THREADOPS_API_KEY env var. Use manage_threads, manage_messages, manage_thread_context, and manage_webhooks.",
   },
 );
 
@@ -47,7 +47,7 @@ registerTools(server, db, () => requireAuth(db));
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  process.stderr.write("Threadzy MCP server running on stdio\n");
+  process.stderr.write("Threadzy.ai MCP server running on stdio\n");
 }
 
 main().catch((err) => {

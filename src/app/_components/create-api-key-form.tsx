@@ -140,8 +140,8 @@ Add to your MCP client config:
 \`\`\`json
 {
   "mcpServers": {
-    "threadops": {
-      "url": "${baseUrl}/api/mcp",
+    "threadzy": {
+      "url": "${baseUrl}/mcp",
       "headers": {
         "Authorization": "Bearer ${key}"
       }
@@ -150,24 +150,16 @@ Add to your MCP client config:
 }
 \`\`\`
 
-No local install needed — the MCP server is hosted at \`${baseUrl}/api/mcp\`.
+No local install needed — the MCP server is hosted at \`${baseUrl}/mcp\`.
 
-### Available MCP Tools
+### Available MCP Tools (4 task-oriented tools)
 
-| Tool | Description |
-|------|-------------|
-| list_threads | List threads (status, search, tags, metadata filter, pagination) |
-| create_thread | Create a thread with title, first message, and optional tags |
-| get_messages | Get messages for a thread |
-| post_message | Post a message to a thread |
-| update_thread_status | Change status (open/archived) |
-| update_thread_summary | Set or update thread summary (logged to history) |
-| list_thread_summaries | List summary history for a thread |
-| update_thread_tags | Add or remove tags on a thread |
-| update_thread_metadata | Set or unset structured metadata fields |
-| search | Full-text search across threads and messages |
-| register_webhook | Register a webhook endpoint for events |
-| list_webhooks | List registered webhook endpoints |`;
+| Tool | Actions | Description |
+|------|---------|-------------|
+| manage_threads | list, create, update_status, search | Browse, create, archive threads and full-text search |
+| manage_messages | list, post | Read and post messages on a thread |
+| manage_thread_context | update_summary, list_summaries, update_tags, update_metadata | Summary history, tags, and structured metadata |
+| manage_webhooks | register, list | Register and list webhook endpoints for events |`;
 }
 
 export function CreateApiKeyForm({ companyId }: Props) {
