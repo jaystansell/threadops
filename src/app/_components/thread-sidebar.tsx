@@ -224,6 +224,7 @@ export function ThreadSidebar({
         if (viewingArchived) {
           router.push("/threads");
         }
+        router.refresh();
       }
     } catch {
       // Silently handle

@@ -52,6 +52,7 @@ export function ThreadStatusActions({
 
       if (newStatus === "archived") {
         router.push("/threads");
+        router.refresh();
       } else {
         router.refresh();
       }
