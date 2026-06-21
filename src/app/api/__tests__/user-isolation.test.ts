@@ -32,8 +32,8 @@ async function createTestAccount(
   companyName: string,
   agentLabel: string,
 ): Promise<TestAccount> {
-  // Create company
-  const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  // Create company (random suffix to avoid unique constraint on reruns)
+  const slug = `${companyName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
   const { data: company, error: companyErr } = await db
     .from("companies")
     .insert({ name: companyName, slug })
