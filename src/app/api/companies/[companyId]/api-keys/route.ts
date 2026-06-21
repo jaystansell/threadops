@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { validateScopes } from "@/core/rules/api-key";
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -11,11 +12,20 @@ export async function GET(
   ctx: RouteContext<"/api/companies/[companyId]/api-keys">,
 ) {
   const { companyId } = await ctx.params;
+
+  const userCompany = await getUserCompany();
+  if (!userCompany || userCompany.companyId !== companyId) {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   const db = createServerClient();
   const apiKeyRepo = createApiKeyRepo(db);
 
   try {
-    const keys = await apiKeyRepo.listByCompany(companyId as CompanyId);
+    const keys = await apiKeyRepo.listByUser(
+      companyId as CompanyId,
+      userCompany.userId,
+    );
     return Response.json(keys);
   } catch (err) {
     return Response.json(
@@ -30,6 +40,12 @@ export async function POST(
   ctx: RouteContext<"/api/companies/[companyId]/api-keys">,
 ) {
   const { companyId } = await ctx.params;
+
+  const userCompany = await getUserCompany();
+  if (!userCompany || userCompany.companyId !== companyId) {
+    return Response.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   const body = await req.json();
 
   if (!body.label || typeof body.label !== "string") {
@@ -53,6 +69,7 @@ export async function POST(
   try {
     const result = await apiKeyRepo.create({
       company_id: companyId as CompanyId,
+      created_by: userCompany.userId,
       label: body.label,
       scopes,
     });

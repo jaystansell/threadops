@@ -5,6 +5,7 @@ export type ApiKeyId = string & { readonly __brand: "ApiKeyId" };
 export interface ApiKey {
   id: ApiKeyId;
   company_id: CompanyId;
+  created_by: string | null;
   label: string;
   key_hash: string;
   key_prefix: string;
