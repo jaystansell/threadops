@@ -5,11 +5,8 @@ import { createMessageRepo } from "@/adapters/supabase/message-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { ThreadId } from "@/core/types";
 import { ThreadDetailClient } from "@/app/_components/thread-detail-client";
-import { ThreadStatusActions } from "@/app/_components/thread-status-actions";
 import { FormattedDate } from "@/app/_components/formatted-date";
-import { ThreadTags } from "@/app/_components/thread-tags";
-import { ThreadMetadata } from "@/app/_components/thread-metadata";
-import { ThreadSummaryEditor } from "@/app/_components/thread-summary-editor";
+import { ThreadActionsPanel } from "@/app/_components/thread-actions-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -68,21 +65,14 @@ export default async function ThreadDetailPage(
             <FormattedDate date={thread.created_at} />
           </span>
         </div>
-        <ThreadTags threadId={threadId} initialTags={tags} />
-        <div className="mt-3">
-          <ThreadStatusActions
-            threadId={threadId}
-            companyId={userCompany.companyId}
-            currentStatus={thread.status}
-          />
-        </div>
+        <ThreadActionsPanel
+          threadId={threadId}
+          companyId={userCompany.companyId}
+          currentStatus={thread.status}
+          initialTags={tags}
+          initialSummary={thread.summary ?? ""}
+        />
       </div>
-
-      {thread.summary !== undefined && (
-        <ThreadSummaryEditor threadId={threadId} initialSummary={thread.summary ?? ""} />
-      )}
-
-      <ThreadMetadata threadId={threadId} initialMetadata={thread.metadata ?? {}} />
 
       <ThreadDetailClient
         messages={messages}
