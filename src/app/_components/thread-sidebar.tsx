@@ -47,6 +47,25 @@ function useStorageSet(key: string) {
   }
 }
 
+function useStorageRecord(key: string): Record<string, string> {
+  const subscribe = useCallback(
+    (cb: () => void) => {
+      const handler = (e: StorageEvent) => { if (e.key === key) cb(); };
+      window.addEventListener("storage", handler);
+      return () => window.removeEventListener("storage", handler);
+    },
+    [key],
+  );
+  const getSnapshot = useCallback(() => localStorage.getItem(key), [key]);
+  const getServerSnapshot = useCallback(() => null, []);
+  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  try {
+    return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
   { value: "archived", label: "Archived" },
@@ -231,17 +250,7 @@ export function ThreadSidebar({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
-  const storedAgentColors = useStorageSet(AGENT_COLORS_KEY);
-  const agentColorOverrides: Record<string, string> = (() => {
-    try {
-      const raw = localStorage.getItem(AGENT_COLORS_KEY);
-      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
-    } catch {
-      return {};
-    }
-  })();
-  // Re-derive when storedAgentColors changes (triggers re-render via useSyncExternalStore)
-  void storedAgentColors;
+  const agentColorOverrides = useStorageRecord(AGENT_COLORS_KEY);
 
   const handleMobileLinkClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
