@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -90,6 +90,9 @@ export function ThreadTimeline({
   threadEvents = [],
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const db = createAuthBrowserClient();
@@ -106,9 +109,60 @@ export function ThreadTimeline({
     return () => sub.unsubscribe();
   }, [threadId]);
 
+  // Close mobile menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (messageId: string) => {
+      if (
+        !window.confirm(
+          "Are you sure you want to delete this message? This cannot be undone.",
+        )
+      ) {
+        return;
+      }
+
+      setDeletedIds((prev) => new Set(prev).add(messageId));
+      setMenuOpenId(null);
+
+      try {
+        const res = await fetch(
+          `/api/threads/${threadId}/messages/${messageId}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) {
+          setDeletedIds((prev) => {
+            const next = new Set(prev);
+            next.delete(messageId);
+            return next;
+          });
+          alert("Failed to delete message. Please try again.");
+        }
+      } catch {
+        setDeletedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+        alert("Failed to delete message. Please try again.");
+      }
+    },
+    [threadId],
+  );
+
   const allIds = new Set(initialMessages.map((m) => m.id));
   const extras = realtimeMessages.filter((m) => !allIds.has(m.id));
-  const combined = [...initialMessages, ...extras];
+  const combined = [...initialMessages, ...extras].filter(
+    (m) => !deletedIds.has(m.id),
+  );
 
   // Build unified timeline items
   const messageItems: TimelineItem[] = combined.map((m) => ({
@@ -183,7 +237,7 @@ export function ThreadTimeline({
         return (
           <div
             key={msg.id}
-            className="rounded-lg border border-[var(--border)] p-3"
+            className="group relative rounded-lg border border-[var(--border)] p-3"
             style={
               msg.id === newestMsgId
                 ? { animation: "border-shimmer 3s ease-in-out infinite" }
@@ -191,6 +245,83 @@ export function ThreadTimeline({
             }
             data-testid="timeline-message"
           >
+            {/* Desktop: trash icon on hover */}
+            <button
+              type="button"
+              onClick={() => handleDelete(msg.id)}
+              className="absolute top-2 right-2 hidden group-hover:md:flex items-center justify-center w-6 h-6 rounded text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              aria-label="Delete message"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+              </svg>
+            </button>
+
+            {/* Mobile: ellipsis menu */}
+            <div className="absolute top-2 right-2 md:hidden">
+              <button
+                type="button"
+                onClick={() =>
+                  setMenuOpenId(menuOpenId === msg.id ? null : msg.id)
+                }
+                className="flex items-center justify-center w-6 h-6 rounded text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                aria-label="Message options"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
+              </button>
+              {menuOpenId === msg.id && (
+                <div
+                  ref={menuRef}
+                  className="absolute right-0 top-7 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[120px]"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(msg.id)}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-red-500"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center gap-2 mb-1">
               {msg.author_kind === "agent" ? (
                 <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)]">
