@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
+import { logThreadRead } from "@/adapters/supabase/usage-log-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
+import type { ApiKeyId, CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +73,29 @@ export async function GET(
     .select("tag")
     .eq("thread_id", threadId);
 
-  return Response.json({
+  const enriched = {
     ...data,
     tags: tagsError ? [] : (tags ?? []).map((t: { tag: string }) => t.tag),
-  });
+  };
+
+  // Log usage for agent reads (fire-and-forget)
+  if (agentKeyId) {
+    const { count } = await db
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("thread_id", threadId);
+
+    logThreadRead(db, {
+      apiKeyId: agentKeyId as ApiKeyId,
+      companyId: companyId as CompanyId,
+      threadId,
+      messageCount: count ?? 0,
+      userAgent: req.headers.get("user-agent"),
+      storedModelTier: null,
+    }).catch(() => {});
+  }
+
+  return Response.json(enriched);
 }
 
 export async function PATCH(
