@@ -48,6 +48,27 @@ printf "NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\nSUPABASE_
 - The test user should be a "member" role in Acme Corp (company_id: `a0000000-0000-0000-0000-000000000001`)
 - Login via the `/login` page in the browser
 
+### Signup Auto-Provisioning Gotcha
+
+**IMPORTANT:** When signing up a new user, the system may auto-provision them into one or more companies (via triggers or onboarding logic). The `getUserCompany()` function uses `.limit(1).maybeSingle()` WITHOUT ordering, so it returns whichever company membership appears first in the database — which may NOT be the demo company.
+
+**Symptoms:** After signup and adding the user to the demo company (`a0000000-...`), threads sidebar shows "No threads found" even though threads exist for that company.
+
+**Fix:** After signup, query `company_members` for the user and DELETE any auto-provisioned memberships that are NOT the demo company:
+```bash
+# Check all memberships
+curl -s "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/company_members?user_id=eq.<USER_ID>" \
+  -H "apikey: ${THREADOPS_SUPABASE_SECRET_KEY}" \
+  -H "Authorization: Bearer ${THREADOPS_SUPABASE_SECRET_KEY}"
+
+# Delete non-demo memberships
+curl -s -X DELETE "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/company_members?id=eq.<MEMBERSHIP_ID>" \
+  -H "apikey: ${THREADOPS_SUPABASE_SECRET_KEY}" \
+  -H "Authorization: Bearer ${THREADOPS_SUPABASE_SECRET_KEY}"
+```
+
+Alternatively, use the "Join Demo Company" button on the `/onboarding` page which sets up the membership correctly. But still check for extra memberships.
+
 ## RLS Policy Considerations
 
 - The `company_members` table has a self-referencing SELECT RLS policy that causes infinite recursion when queried with an auth-aware client (anon key + user JWT). This affects ALL tables because every RLS policy references `company_members` in subqueries.
@@ -106,6 +127,14 @@ The VM display is 1600x1200. Browser window resizing via `xdotool` or `wmctrl` m
 - `sm:hidden` for mobile-only elements
 - `hidden lg:block` for desktop-only sidebar
 
+### CSS Hover Testing Limitation
+
+The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistently. This means `group-hover:*` Tailwind utilities won't become visible during automated testing. Workarounds:
+1. **Verify via DOM inspection**: Check that the button has correct classes (`hidden group-hover:md:flex`)
+2. **Force visibility via JS**: `document.querySelectorAll('[aria-label="..."]')[n].style.display = 'flex'`
+3. **Click via JS**: `btn.click()` — note that `window.confirm()` blocks JS execution so the CDP call will timeout (this is expected behavior)
+4. **Check for dialog**: After JS click times out, take a screenshot to see the browser's native confirm dialog
+
 ### Testing Against Production vs Local
 
 **Recommended: Test against production (https://threadops-jade.vercel.app)**
@@ -143,6 +172,24 @@ The VM display is 1600x1200. Browser window resizing via `xdotool` or `wmctrl` m
 3. Verify only matching threads shown
 4. Verify "All themes" resets filter and removes URL param
 5. Verify empty state for themes with no threads
+
+### Delete Messages (PR #71)
+1. Navigate to a thread with messages
+2. **Desktop**: Trash icon button appears on hover over message card (positioned absolute top-2 right-2, `hidden group-hover:md:flex`)
+3. **Mobile**: Ellipsis (⋯) button always visible (`md:hidden`), opens dropdown with red "Delete" option
+4. Clicking delete triggers `window.confirm("Are you sure you want to delete this message? This cannot be undone.")`
+5. Confirming removes the message immediately (optimistic UI via `deletedIds` state)
+6. If API call fails, message is restored and an alert is shown (rollback)
+7. Deletion is a hard delete from the `messages` table
+8. After page refresh, deleted message stays gone (persisted in DB)
+
+**Testing approach for delete:**
+- Use JS to make the button visible (CDP hover limitation)
+- Click via `btn.click()` — JS will timeout due to `window.confirm()` blocking
+- Screenshot to see the confirm dialog
+- Click OK/Cancel on the dialog via computer tool coordinates
+- Verify message count changes (or stays the same for cancel)
+- Verify with DB query that deletion persisted
 
 ### UI Navigation (Browser)
 1. `/login` — Email/password login form
