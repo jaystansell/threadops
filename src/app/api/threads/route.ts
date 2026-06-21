@@ -290,29 +290,24 @@ export async function POST(req: NextRequest) {
       body: body.message_body.trim(),
     });
 
-    // Only fire thread.created webhook if the thread was NOT created by
-    // the owning agent (prevents echo: agent creates thread → gets pinged).
-    const isOwnAgentThread =
-      authorKind === "agent" &&
-      thread.agent_api_key_id &&
-      authorId === thread.agent_api_key_id;
-
-    if (!isOwnAgentThread) {
-      dispatchOutboundWebhooks(
-        companyId as CompanyId,
-        "thread.created",
-        {
-          thread_id: thread.id,
-          title: thread.title,
-          status: thread.status,
-          company_id: thread.company_id,
-          created_by: thread.created_by,
-          created_at: thread.created_at,
-          current_summary: null,
-        },
-        thread.agent_api_key_id,
-      );
-    }
+    // Echo suppression: exclude the creating agent's endpoint so it
+    // does not receive a webhook for its own thread creation.
+    const excludeId = authorKind === "agent" ? authorId : null;
+    dispatchOutboundWebhooks(
+      companyId as CompanyId,
+      "thread.created",
+      {
+        thread_id: thread.id,
+        title: thread.title,
+        status: thread.status,
+        company_id: thread.company_id,
+        created_by: thread.created_by,
+        created_at: thread.created_at,
+        current_summary: null,
+      },
+      thread.agent_api_key_id,
+      excludeId,
+    );
 
     return Response.json(thread, { status: 201 });
   } catch (err) {

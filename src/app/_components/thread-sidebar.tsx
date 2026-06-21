@@ -9,6 +9,7 @@ import { FormattedDate } from "./formatted-date";
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
 const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
+const AGENT_COLORS_KEY = "threadops-agent-colors";
 
 function readStorageSet(key: string): Set<string> {
   try {
@@ -72,7 +73,60 @@ const AGENT_COLORS = [
   { bg: "#0C6B5F", fg: "#ffffff" },
 ] as const;
 
-function getAgentColor(name: string) {
+const PALETTE: { label: string; bg: string; fg: string }[] = [
+  { label: "Teal", bg: "#14B8A6", fg: "#ffffff" },
+  { label: "Deep Teal", bg: "#0D9488", fg: "#ffffff" },
+  { label: "Cyan", bg: "#0891B2", fg: "#ffffff" },
+  { label: "Ocean", bg: "#0E7490", fg: "#ffffff" },
+  { label: "Blue", bg: "#2563EB", fg: "#ffffff" },
+  { label: "Indigo", bg: "#4F46E5", fg: "#ffffff" },
+  { label: "Purple", bg: "#7C3AED", fg: "#ffffff" },
+  { label: "Violet", bg: "#8B5CF6", fg: "#ffffff" },
+  { label: "Emerald", bg: "#059669", fg: "#ffffff" },
+  { label: "Forest", bg: "#1E6B5A", fg: "#ffffff" },
+  { label: "Amber", bg: "#D97706", fg: "#ffffff" },
+  { label: "Rose", bg: "#E11D48", fg: "#ffffff" },
+  { label: "Slate", bg: "#475569", fg: "#ffffff" },
+  { label: "Charcoal", bg: "#1E293B", fg: "#ffffff" },
+];
+
+function readAgentColorOverrides(): Record<string, string> {
+  try {
+    const stored = localStorage.getItem(AGENT_COLORS_KEY);
+    return stored ? (JSON.parse(stored) as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeAgentColorOverride(agentName: string, bg: string) {
+  try {
+    const current = readAgentColorOverrides();
+    current[agentName] = bg;
+    localStorage.setItem(AGENT_COLORS_KEY, JSON.stringify(current));
+    window.dispatchEvent(new StorageEvent("storage", { key: AGENT_COLORS_KEY }));
+  } catch {
+    // ignore
+  }
+}
+
+function clearAgentColorOverride(agentName: string) {
+  try {
+    const current = readAgentColorOverrides();
+    delete current[agentName];
+    localStorage.setItem(AGENT_COLORS_KEY, JSON.stringify(current));
+    window.dispatchEvent(new StorageEvent("storage", { key: AGENT_COLORS_KEY }));
+  } catch {
+    // ignore
+  }
+}
+
+function getAgentColor(name: string, overrides?: Record<string, string>) {
+  const overrideBg = overrides?.[name];
+  if (overrideBg) {
+    const match = PALETTE.find((p) => p.bg === overrideBg);
+    if (match) return { bg: match.bg, fg: match.fg };
+  }
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = (hash * 31 + name.charCodeAt(i)) | 0;
@@ -171,10 +225,23 @@ export function ThreadSidebar({
   const expandedGroups = localExpandedOverrides ?? storedExpanded;
   const pinnedThreads = storedPins;
   const [menuThreadId, setMenuThreadId] = useState<string | null>(null);
+  const [colorPickerAgent, setColorPickerAgent] = useState<string | null>(null);
   const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const storedAgentColors = useStorageSet(AGENT_COLORS_KEY);
+  const agentColorOverrides: Record<string, string> = (() => {
+    try {
+      const raw = localStorage.getItem(AGENT_COLORS_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    } catch {
+      return {};
+    }
+  })();
+  // Re-derive when storedAgentColors changes (triggers re-render via useSyncExternalStore)
+  void storedAgentColors;
 
   const handleMobileLinkClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -187,6 +254,9 @@ export function ThreadSidebar({
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuThreadId(null);
+      }
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerAgent(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -487,7 +557,7 @@ export function ThreadSidebar({
         ) : (
           grouped.map((group) => {
             const isOpen = effectiveExpanded.has(group.label);
-            const color = isAccordion ? getAgentColor(group.label) : null;
+            const color = isAccordion ? getAgentColor(group.label, agentColorOverrides) : null;
             const sortedThreads = [...group.threads].sort((a, b) => {
               const aPinned = pinnedThreads.has(a.id) ? 0 : 1;
               const bPinned = pinnedThreads.has(b.id) ? 0 : 1;
@@ -503,51 +573,113 @@ export function ThreadSidebar({
             return (
               <div key={group.label}>
                 {isAccordion ? (
-                  <button
-                    type="button"
-                    onClick={() => toggleGroup(group.label)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left transition-colors hover:opacity-90"
+                  <div
+                    className="relative flex items-center transition-colors hover:opacity-90"
                     style={{
                       backgroundColor: color?.bg,
                       color: color?.fg,
                     }}
                   >
-                    <svg
-                      className={`w-3 h-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(group.label)}
+                      className="flex-1 flex items-center gap-2 px-3 py-2 text-left"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                    <span className="text-xs font-semibold truncate">
-                      {group.label}
-                    </span>
-                    {missingWebhook && (
+                      <svg
+                        className={`w-3 h-3 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className="text-xs font-semibold truncate">
+                        {group.label}
+                      </span>
+                      {missingWebhook && (
+                        <span
+                          title="No webhook registered"
+                          className="shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWebhookPromptAgent(group.label);
+                          }}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                        </span>
+                      )}
                       <span
-                        title="No webhook registered"
-                        className="shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setWebhookPromptAgent(group.label);
+                        className="ml-auto text-[10px] font-medium rounded-full px-1.5 py-0.5 shrink-0"
+                        style={{
+                          backgroundColor: color ? `${color.fg}22` : undefined,
+                          color: color?.fg,
                         }}
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
+                        {group.threads.length}
                       </span>
-                    )}
-                    <span
-                      className="ml-auto text-[10px] font-medium rounded-full px-1.5 py-0.5 shrink-0"
-                      style={{
-                        backgroundColor: color ? `${color.fg}22` : undefined,
-                        color: color?.fg,
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setColorPickerAgent(colorPickerAgent === group.label ? null : group.label);
                       }}
+                      className="shrink-0 p-1.5 mr-1 rounded hover:bg-white/20 transition-colors"
+                      title="Change color"
                     >
-                      {group.threads.length}
-                    </span>
-                  </button>
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="1.5" />
+                        <circle cx="12" cy="12" r="1.5" />
+                        <circle cx="12" cy="19" r="1.5" />
+                      </svg>
+                    </button>
+                    {colorPickerAgent === group.label && (
+                      <div
+                        ref={colorPickerRef}
+                        className="absolute right-0 top-full z-30 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-xl py-2 px-2 w-[200px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <p className="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5 px-1">
+                          Header color
+                        </p>
+                        <div className="grid grid-cols-7 gap-1">
+                          {PALETTE.map((p) => {
+                            const isSelected = agentColorOverrides[group.label] === p.bg;
+                            return (
+                              <button
+                                key={p.bg}
+                                type="button"
+                                title={p.label}
+                                onClick={() => {
+                                  writeAgentColorOverride(group.label, p.bg);
+                                  setColorPickerAgent(null);
+                                }}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 ${
+                                  isSelected ? "border-white ring-2 ring-[var(--primary)]" : "border-transparent"
+                                }`}
+                                style={{ backgroundColor: p.bg }}
+                              />
+                            );
+                          })}
+                        </div>
+                        {agentColorOverrides[group.label] && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              clearAgentColorOverride(group.label);
+                              setColorPickerAgent(null);
+                            }}
+                            className="mt-2 w-full text-[10px] text-center py-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                          >
+                            Reset to default
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="sticky top-0 z-10 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] bg-[var(--muted)]">
                     {group.label}
@@ -603,7 +735,7 @@ export function ThreadSidebar({
                             )}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               {!isAccordion && thread.agent_name && (() => {
-                                const agentColor = getAgentColor(thread.agent_name);
+                                const agentColor = getAgentColor(thread.agent_name, agentColorOverrides);
                                 return (
                                   <span
                                     className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
