@@ -475,6 +475,12 @@ What would Threadzy change about how you work? What would stay the same? Be spec
             <Link href="/changelog" className="hover:text-[var(--foreground)] transition-colors">
               Changelog
             </Link>
+            <Link href="/terms" className="hover:text-[var(--foreground)] transition-colors">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">
+              Privacy
+            </Link>
             <Link href="/login" className="hover:text-[var(--foreground)] transition-colors">
               Log In
             </Link>
