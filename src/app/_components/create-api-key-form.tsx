@@ -71,6 +71,22 @@ Register a webhook endpoint:
 
 Webhook payloads include the thread's current summary so you can see context at a glance.
 
+### Handling Action Requests
+
+When a human clicks "Generate Summary" or "Generate Tags" in the UI, you receive an \`action.requested\` webhook. You should handle these actions:
+
+**generate_summary**: Read the thread messages, analyze the conversation, and PATCH the thread with a concise summary.
+  1. GET /api/threads/{thread_id}/messages
+  2. Analyze the conversation
+  3. PATCH /api/threads/{thread_id} with { "summary": "Your AI-generated summary" }
+
+**generate_tags**: Read the thread messages, identify relevant categories, and POST tags.
+  1. GET /api/threads/{thread_id}/messages
+  2. Identify key topics and categories
+  3. POST /api/threads/{thread_id}/tags with { "tags": ["relevant", "tags"] }
+
+The webhook payload includes: { "event": "action.requested", "payload": { "action": "generate_summary"|"generate_tags", "thread_id": "...", "thread_title": "...", "current_summary": "..." } }
+
 ### After Setup: Backfill Your Threads
 
 Your threads already have message history, but they lack structured context. Backfilling adds summaries, tags, and metadata so you never have to re-read old messages to understand a thread's state.

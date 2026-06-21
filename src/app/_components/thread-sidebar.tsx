@@ -39,18 +39,18 @@ const GROUP_OPTIONS = [
 ] as const;
 
 const AGENT_COLORS = [
-  { bg: "#6366f1", fg: "#ffffff" },
-  { bg: "#ec4899", fg: "#ffffff" },
-  { bg: "#14b8a6", fg: "#ffffff" },
-  { bg: "#f59e0b", fg: "#1a1a1a" },
-  { bg: "#8b5cf6", fg: "#ffffff" },
-  { bg: "#06b6d4", fg: "#ffffff" },
-  { bg: "#ef4444", fg: "#ffffff" },
-  { bg: "#10b981", fg: "#ffffff" },
-  { bg: "#f97316", fg: "#1a1a1a" },
-  { bg: "#3b82f6", fg: "#ffffff" },
-  { bg: "#d946ef", fg: "#ffffff" },
-  { bg: "#84cc16", fg: "#1a1a1a" },
+  { bg: "#14B8A6", fg: "#ffffff" },
+  { bg: "#0D9488", fg: "#ffffff" },
+  { bg: "#0E7490", fg: "#ffffff" },
+  { bg: "#1E6B5A", fg: "#ffffff" },
+  { bg: "#115E59", fg: "#ffffff" },
+  { bg: "#164E63", fg: "#ffffff" },
+  { bg: "#2563EB", fg: "#ffffff" },
+  { bg: "#1D4ED8", fg: "#ffffff" },
+  { bg: "#0F766E", fg: "#ffffff" },
+  { bg: "#0891B2", fg: "#ffffff" },
+  { bg: "#1A7A6D", fg: "#ffffff" },
+  { bg: "#0C6B5F", fg: "#ffffff" },
 ] as const;
 
 function getAgentColor(name: string) {

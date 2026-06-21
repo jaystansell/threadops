@@ -29,30 +29,22 @@ function formatLogDate(dateStr: string): string {
 }
 
 export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryEditorProps) {
-  const [summary, setSummary] = useState(initialSummary);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(initialSummary);
-  const [loading, setLoading] = useState(false);
+  const [summary] = useState(initialSummary);
+  const [generating, setGenerating] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<SummaryLogEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  async function saveSummary() {
-    setLoading(true);
+  async function requestGenerate() {
+    setGenerating(true);
     try {
-      const res = await fetch(`/api/threads/${threadId}`, {
-        method: "PATCH",
+      await fetch(`/api/threads/${threadId}/actions`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ summary: draft || null }),
+        body: JSON.stringify({ action: "generate_summary" }),
       });
-      if (res.ok) {
-        setSummary(draft);
-        setEditing(false);
-        // Reset history so it refetches on next open
-        setHistory([]);
-      }
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   }
 
@@ -74,60 +66,38 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
     }
   }, [threadId, showHistory]);
 
-  if (!summary && !editing) {
+  if (!summary) {
     return (
       <button
         type="button"
-        onClick={() => { setEditing(true); setDraft(""); }}
-        className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+        onClick={requestGenerate}
+        disabled={generating}
+        className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
       >
-        + Add summary
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+        </svg>
+        {generating ? "Requesting..." : "Generate Summary"}
       </button>
-    );
-  }
-
-  if (editing) {
-    return (
-      <div className="space-y-2">
-        <label className="text-xs font-medium">Summary</label>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          rows={3}
-          disabled={loading}
-          className="w-full text-sm px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] focus:outline-none focus:border-[var(--primary)] resize-none"
-          placeholder="Write a summary for this thread..."
-        />
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={saveSummary}
-            disabled={loading}
-            className="text-xs px-3 py-1 rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEditing(false); setDraft(summary); }}
-            disabled={loading}
-            className="text-xs px-3 py-1 rounded border border-[var(--border)] hover:bg-[var(--muted)]"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <div
-        className="bg-[var(--muted)] rounded-lg px-3 py-2 cursor-pointer hover:opacity-80 transition-opacity"
-        onClick={() => { setEditing(true); setDraft(summary); }}
-      >
+      <div className="bg-[var(--muted)] rounded-lg px-3 py-2">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-medium text-[var(--muted-foreground)]">Summary</p>
+          <button
+            type="button"
+            onClick={requestGenerate}
+            disabled={generating}
+            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+            </svg>
+            {generating ? "Requesting..." : "Regenerate"}
+          </button>
         </div>
         <p className="text-sm">{summary}</p>
       </div>
