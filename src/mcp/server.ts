@@ -24,7 +24,7 @@ async function requireAuth(db: SupabaseClient): Promise<AuthContext> {
   const apiKey = process.env.THREADOPS_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "Missing THREADOPS_API_KEY env var. Set it to your ThreadOps API key.",
+      "Missing THREADOPS_API_KEY env var. Set it to your Threadzy API key.",
     );
   }
   cachedAuth = await authenticateApiKey(db, apiKey);
@@ -36,7 +36,7 @@ const server = new McpServer(
   {
     capabilities: { tools: {} },
     instructions:
-      "ThreadOps MCP server. Provide your API key via the THREADOPS_API_KEY env var.",
+      "Threadzy MCP server. Provide your API key via the THREADOPS_API_KEY env var.",
   },
 );
 
@@ -47,7 +47,7 @@ registerTools(server, db, () => requireAuth(db));
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  process.stderr.write("ThreadOps MCP server running on stdio\n");
+  process.stderr.write("Threadzy MCP server running on stdio\n");
 }
 
 main().catch((err) => {

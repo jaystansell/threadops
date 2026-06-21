@@ -36,7 +36,7 @@ export default function LoginPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Log in to ThreadOps</h2>
+        <h2 className="text-xl font-bold">Log in to Threadzy</h2>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">
           Enter your credentials to continue.
         </p>

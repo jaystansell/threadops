@@ -43,11 +43,13 @@ export function dispatchOutboundWebhooks(
 
       // Agent-scoped delivery: only deliver thread events to the owning agent's endpoint.
       // docs.updated events go to all endpoints (no thread ownership).
+      // If a thread has an owner, only endpoints with a matching api_key_id receive
+      // the event. Endpoints with NULL api_key_id are excluded from owned-thread events
+      // to prevent data leaking across agents.
       const endpoints = eventType === "docs.updated"
         ? allEndpoints
         : allEndpoints.filter((ep) => {
             if (!agentApiKeyId) return true;
-            if (!ep.api_key_id) return true;
             return ep.api_key_id === agentApiKeyId;
           });
 

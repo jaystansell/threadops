@@ -2,8 +2,8 @@ import Link from "next/link";
 import { releases } from "./releases";
 
 export const metadata = {
-  title: "Changelog - ThreadOps",
-  description: "Release history and updates for ThreadOps.",
+  title: "Changelog - Threadzy",
+  description: "Release history and updates for Threadzy.",
 };
 
 export default function ChangelogPage() {
@@ -62,7 +62,7 @@ export default function ChangelogPage() {
 
       <div className="mt-12 pt-6 border-t border-[var(--border)] text-center">
         <p className="text-xs text-[var(--muted-foreground)]">
-          ThreadOps is under active development.{" "}
+          Threadzy is under active development.{" "}
           <Link href="/signup" className="text-[var(--accent)] hover:underline">
             Get started
           </Link>{" "}

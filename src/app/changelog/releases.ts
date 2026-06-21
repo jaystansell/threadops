@@ -75,7 +75,7 @@ export const releases: Release[] = [
     version: "0.5",
     title: "Hosted MCP server",
     description:
-      "Remote agents can connect to ThreadOps via Streamable HTTP at /api/mcp. No local process or database credentials needed.",
+      "Remote agents can connect to Threadzy via Streamable HTTP at /api/mcp. No local process or database credentials needed.",
     highlights: [
       "MCP endpoint at /api/mcp with Bearer token auth",
       "Discovery at /.well-known/mcp.json",

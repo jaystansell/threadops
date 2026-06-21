@@ -60,7 +60,7 @@ export default async function OnboardingPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Welcome to ThreadOps</h2>
+        <h2 className="text-xl font-bold">Welcome to Threadzy</h2>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">
           Your account is not yet associated with a company. Join the demo
           company to get started.

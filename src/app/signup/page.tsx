@@ -58,7 +58,7 @@ export default function SignupPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-xl font-bold">Create a ThreadOps account</h2>
+        <h2 className="text-xl font-bold">Create a Threadzy account</h2>
         <p className="text-sm text-[var(--muted-foreground)] mt-1">
           Sign up with your email and password.
         </p>

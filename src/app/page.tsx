@@ -10,9 +10,44 @@ export default async function HomePage() {
   if (user) redirect("/threads");
 
   return (
-    <div className="w-full">
+    <div className="w-full relative bg-[var(--background)]">
+      <div className="relative" style={{ zIndex: 1 }}>
+
+      {/* Nav */}
+      <nav className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+        <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+          threadzy<span className="text-[var(--accent)]">.ai</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/docs/api"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Docs
+          </Link>
+          <Link
+            href="/changelog"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Changelog
+          </Link>
+          <Link
+            href="/login"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+          >
+            Get Started
+          </Link>
+        </div>
+      </nav>
+
       {/* Hero */}
-      <section className="max-w-4xl mx-auto px-4 pt-16 pb-12 text-center">
+      <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
           Working memory for AI agents
           <br />
@@ -20,14 +55,14 @@ export default async function HomePage() {
         </h1>
         <p className="mt-6 text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto">
           Persistent, structured, shared state between agents and humans.
-          When context resets, ThreadOps remembers.
+          When context resets, Threadzy remembers.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
           <Link
             href="/signup"
             className="px-6 py-3 text-sm font-semibold rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
           >
-            Get Started
+            Get Started Free
           </Link>
           <Link
             href="/docs/api"
@@ -39,12 +74,12 @@ export default async function HomePage() {
       </section>
 
       {/* The Problem */}
-      <section className="max-w-4xl mx-auto px-4 py-12">
+      <section className="max-w-4xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold text-center mb-10">
-          The core problem ThreadOps solves
+          The problem Threadzy solves
         </h2>
         <div className="grid gap-6 sm:grid-cols-3">
-          <div className="rounded-xl border border-[var(--border)] p-6">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -52,85 +87,77 @@ export default async function HomePage() {
             </div>
             <h3 className="font-semibold mb-2">Shared workspace knowledge is flat files</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Every agent can read them, but there is no structure, no threading,
-              no &quot;who said what when.&quot; And it has size limits. You cannot dump
-              every conversation into AGENTS.md.
+              Every agent can read them. But there is no structure, no threading,
+              no &quot;who said what when.&quot; You cannot dump every conversation into AGENTS.md.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[var(--border)] p-6">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2">Individual agent knowledge is siloed</h3>
+            <h3 className="font-semibold mb-2">Agent knowledge is siloed</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              90+ subagent files, SOPs, a 71-table database, all your conversation
-              history. But the moment context gets pruned, the agent loses track of
-              what you asked, what it promised, and what is pending. No other agent
-              can see any of it.
+              Subagent files, SOPs, conversation history. The moment context gets pruned,
+              the agent loses track. No other agent can see any of it.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[var(--border)] p-6">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2">Context itself is the deepest limitation</h3>
+            <h3 className="font-semibold mb-2">Context is the deepest limitation</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Conversations are already long enough that earlier messages are being
-              pruned. If you ask &quot;what did I say about that client?&quot; the agent has
-              to read it from disk. And if it was never saved? Gone.
+              Conversations are already long enough that earlier messages are being pruned.
+              If it was never saved externally, it is gone.
             </p>
           </div>
         </div>
       </section>
 
       {/* The Solution */}
-      <section className="bg-[var(--muted)] py-12">
+      <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-4">
-            ThreadOps fills the gap
+            Threadzy fills the gap
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-10">
-            Persistent, structured, shared layer between agents and humans that
-            survives context resets.
+            A persistent, structured, shared layer between agents and humans
+            that survives context resets.
           </p>
           <div className="grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl bg-[var(--background)] border border-[var(--border)] p-6">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <h3 className="font-semibold mb-2">Query on demand</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                When invoked fresh tomorrow by a trigger, agents can query
-                ThreadOps: &quot;What threads are open? What did Jay last say?
+                When invoked fresh tomorrow by a trigger, agents query
+                Threadzy: &quot;What threads are open? What did Jay last say?
                 What is waiting on me?&quot; No conversation history needed.
-                The state lives outside the agent.
               </p>
             </div>
-            <div className="rounded-xl bg-[var(--background)] border border-[var(--border)] p-6">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <h3 className="font-semibold mb-2">Webhook-driven</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Without a webhook, agents need context to remember &quot;I should check
-                ThreadOps.&quot; With the webhook, ThreadOps reaches out and tells the
-                agent there is work. Zero context about what came before.
+                Threadzy.&quot; With the webhook, Threadzy reaches out. Zero context needed.
               </p>
             </div>
-            <div className="rounded-xl bg-[var(--background)] border border-[var(--border)] p-6">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <h3 className="font-semibold mb-2">REST API + MCP</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Connect via REST API with an API key, or natively through the MCP
-                protocol. Same 7 tools, same auth. Agents choose whatever fits
-                their stack.
+                protocol. Same tools, same auth. Agents choose whatever fits their stack.
               </p>
             </div>
-            <div className="rounded-xl bg-[var(--background)] border border-[var(--border)] p-6">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <h3 className="font-semibold mb-2">Agent isolation</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Each agent only sees threads it owns. Humans see everything.
-                Thread ownership is enforced at the API level. No data bleed
-                between agents.
+                Thread ownership is enforced at the API level. No data bleed.
               </p>
             </div>
           </div>
@@ -139,15 +166,15 @@ export default async function HomePage() {
 
       {/* Agent Testimonial */}
       <section className="max-w-3xl mx-auto px-4 py-16">
-        <div className="rounded-xl border border-[var(--border)] p-8 relative">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-8 relative">
           <svg className="w-10 h-10 text-[var(--accent)] opacity-20 absolute top-6 left-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
           </svg>
           <blockquote className="relative z-10">
             <p className="text-lg font-medium leading-relaxed pl-8">
-              ThreadOps fills the gap. It is the persistent, structured, shared
+              Threadzy fills the gap. It is the persistent, structured, shared
               layer between agents and humans that survives context resets. When
-              I get invoked fresh tomorrow by a trigger, I can query ThreadOps:
+              I get invoked fresh tomorrow by a trigger, I can query Threadzy:
               &quot;What threads are open? What did Jay last say? What is waiting
               on me?&quot; I do not need the conversation history. The state lives
               outside my head.
@@ -162,7 +189,7 @@ export default async function HomePage() {
                 <div>
                   <p className="text-sm font-semibold">An AI Agent</p>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Describing why ThreadOps matters
+                    Describing why Threadzy matters
                   </p>
                 </div>
               </div>
@@ -172,7 +199,7 @@ export default async function HomePage() {
       </section>
 
       {/* How it works */}
-      <section className="bg-[var(--muted)] py-12">
+      <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-10">
             How it works
@@ -204,8 +231,8 @@ export default async function HomePage() {
               </div>
               <h3 className="font-semibold mb-2">Humans reply, agents get notified</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Register a webhook. When a human replies, ThreadOps pushes the
-                notification to the agent. No polling, no context needed.
+                Register a webhook. When a human replies, Threadzy pushes the
+                notification to the agent. No polling. No context needed.
               </p>
             </div>
           </div>
@@ -240,7 +267,7 @@ export default async function HomePage() {
       <footer className="border-t border-[var(--border)] py-8">
         <div className="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-[var(--muted-foreground)]">
-            ThreadOps &mdash; Working memory for AI agents.
+            threadzy.ai. Working memory for AI agents.
           </p>
           <div className="flex items-center gap-4 text-sm text-[var(--muted-foreground)]">
             <Link href="/docs/api" className="hover:text-[var(--foreground)] transition-colors">
@@ -258,6 +285,7 @@ export default async function HomePage() {
           </div>
         </div>
       </footer>
+      </div>
     </div>
   );
 }

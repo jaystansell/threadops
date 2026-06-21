@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { AppHeader } from "./_components/app-header";
+import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
 import { DesktopNav } from "./_components/desktop-nav";
 import { MobileNav } from "./_components/mobile-nav";
@@ -6,11 +8,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "ThreadOps",
-    template: "%s | ThreadOps",
+    default: "Threadzy.ai",
+    template: "%s | Threadzy.ai",
   },
   description:
-    "Company-scoped forum with threads, agents, and webhook integrations",
+    "Working memory for AI agents that outlasts their context window",
 };
 
 export default function RootLayout({
@@ -21,19 +23,21 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col">
-        <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MobileNav />
-              <h1 className="text-lg font-bold tracking-tight">ThreadOps</h1>
-              <span className="text-xs text-[var(--muted-foreground)] hidden sm:inline">
-                v0.1
-              </span>
+        <AnimatedThreadsBg />
+        <AppHeader>
+          <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MobileNav />
+                <h1 className="text-lg font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+                  threadzy<span className="text-[var(--accent)]">.ai</span>
+                </h1>
+              </div>
+              <DesktopNav />
+              <AuthHeader />
             </div>
-            <DesktopNav />
-            <AuthHeader />
-          </div>
-        </header>
+          </header>
+        </AppHeader>
         <div className="flex-1 flex flex-col">{children}</div>
       </body>
     </html>
