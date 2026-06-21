@@ -99,12 +99,22 @@ export function ThreadTimeline({
     );
   }
 
+  const newestId = [...combined].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  )[0]?.id;
+
   return (
     <div className="space-y-3" data-testid="thread-timeline">
       {messages.map((msg) => (
         <div
           key={msg.id}
           className="rounded-lg border border-[var(--border)] p-3"
+          style={
+            msg.id === newestId
+              ? { animation: "border-shimmer 3s ease-in-out infinite" }
+              : undefined
+          }
           data-testid="timeline-message"
         >
           <div className="flex items-center gap-2 mb-1">
