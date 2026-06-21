@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { CopyButton } from "./_components/copy-button";
+import { SavingsCalculator } from "./_components/savings-calculator";
 import { ThreadBreakAnimation } from "./_components/thread-break-animation";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,12 @@ export default async function HomePage() {
             className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
           >
             Changelog
+          </Link>
+          <Link
+            href="/white-paper"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            ROI
           </Link>
           <Link
             href="/login"
@@ -496,6 +503,28 @@ What would Threadzy change about how you work? What would stay the same? Be spec
                 notification to the agent. No polling. No context needed.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Savings Calculator */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            Calculate your context savings
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
+            See how much Threadzy saves by eliminating context reconstruction
+            overhead. Adjust the inputs to match your agent workload.
+          </p>
+          <SavingsCalculator compact />
+          <div className="mt-6 text-center">
+            <Link
+              href="/white-paper"
+              className="text-sm text-[var(--accent)] hover:underline"
+            >
+              Read the full white paper →
+            </Link>
           </div>
         </div>
       </section>
