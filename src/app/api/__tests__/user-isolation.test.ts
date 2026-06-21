@@ -11,6 +11,9 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { generatePlaintextKey, extractPrefix, hashKey } from "@/core/rules/api-key";
 
+const HAS_ENV =
+  !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 const BASE_URL = process.env.TEST_BASE_URL ?? "https://threadops-jade.vercel.app";
 
 interface TestAccount {
@@ -118,13 +121,12 @@ async function getWebhookEndpoints(
   return res.json();
 }
 
-describe("User Isolation — two accounts cannot see each other's data", () => {
+const describeIfEnv = HAS_ENV ? describe : describe.skip;
+
+describeIfEnv("User Isolation — two accounts cannot see each other's data", () => {
   beforeAll(async () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !serviceKey) {
-      throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
     admin = createClient(supabaseUrl, serviceKey);
 
