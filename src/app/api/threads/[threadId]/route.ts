@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { after, NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { logThreadRead } from "@/adapters/supabase/usage-log-repo";
@@ -22,7 +22,13 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label, modelTier: keyRecord.model_tier };
+  return {
+    kind: "ok",
+    companyId: keyRecord.company_id,
+    keyId: keyRecord.id,
+    keyLabel: keyRecord.label,
+    modelTier: keyRecord.detected_model ? keyRecord.model_tier : null,
+  };
 }
 
 export async function GET(
@@ -78,26 +84,30 @@ export async function GET(
     tags: tagsError ? [] : (tags ?? []).map((t: { tag: string }) => t.tag),
   };
 
-  // Log usage for agent reads (fire-and-forget, non-blocking)
+  // Log usage for agent reads (runs after response is sent)
   if (agentKeyId) {
     const storedTier = apiKeyResult.kind === "ok" ? apiKeyResult.modelTier : null;
     const ua = req.headers.get("user-agent");
-    (async () => {
-      const { count } = await db
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .eq("thread_id", threadId);
-      if (count && count > 0) {
-        await logThreadRead(db, {
-          apiKeyId: agentKeyId as ApiKeyId,
-          companyId: companyId as CompanyId,
-          threadId,
-          messageCount: count,
-          userAgent: ua,
-          storedModelTier: storedTier,
-        });
+    after(async () => {
+      try {
+        const { count } = await db
+          .from("messages")
+          .select("*", { count: "exact", head: true })
+          .eq("thread_id", threadId);
+        if (count && count > 0) {
+          await logThreadRead(db, {
+            apiKeyId: agentKeyId as ApiKeyId,
+            companyId: companyId as CompanyId,
+            threadId,
+            messageCount: count,
+            userAgent: ua,
+            storedModelTier: storedTier,
+          });
+        }
+      } catch {
+        // Usage logging should never break the request
       }
-    })().catch(() => {});
+    });
   }
 
   return Response.json(enriched);

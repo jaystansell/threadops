@@ -141,7 +141,7 @@ export function registerTools(
                 threadId: args.thread_id,
                 messageCount: msgCount,
                 userAgent: null,
-                storedModelTier: auth.apiKey.model_tier,
+                storedModelTier: auth.apiKey.detected_model ? auth.apiKey.model_tier : null,
               }).catch(() => {});
             }
             return toolResult(messages);

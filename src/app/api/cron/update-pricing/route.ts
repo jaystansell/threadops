@@ -24,15 +24,30 @@ export async function GET(req: NextRequest) {
   const errors: string[] = [];
 
   for (const p of Object.values(FALLBACK_PRICING)) {
-    const { error } = await db
+    const { data, error } = await db
       .from("model_pricing")
       .update({
         cost_per_mtok: p.costPerMTok,
         label: p.label,
         updated_at: now,
       })
-      .eq("model_tier", p.tier);
-    if (error) errors.push(`${p.tier}: ${error.message}`);
+      .eq("model_tier", p.tier)
+      .select("id");
+
+    if (error) {
+      errors.push(`${p.tier}: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      const { error: insertErr } = await db
+        .from("model_pricing")
+        .insert({
+          model_pattern: p.tier,
+          model_tier: p.tier,
+          cost_per_mtok: p.costPerMTok,
+          label: p.label,
+          updated_at: now,
+        });
+      if (insertErr) errors.push(`${p.tier} insert: ${insertErr.message}`);
+    }
   }
 
   if (errors.length > 0) {
