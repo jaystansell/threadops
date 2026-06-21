@@ -8,6 +8,7 @@ import { FormattedDate } from "./formatted-date";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
+const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
 
 function loadPinnedThreads(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -146,7 +147,22 @@ export function ThreadSidebar({
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [pinnedThreads, setPinnedThreads] = useState<Set<string>>(() => loadPinnedThreads());
+  const [pinnedThreads, setPinnedThreads] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate client-only state from localStorage after mount to avoid SSR mismatch
+  useEffect(() => {
+    setPinnedThreads(loadPinnedThreads());
+    try {
+      const stored = localStorage.getItem(EXPANDED_GROUPS_KEY);
+      if (stored) {
+        setExpandedGroups(new Set(JSON.parse(stored) as string[]));
+      }
+    } catch {
+      // ignore
+    }
+    setHydrated(true);
+  }, []);
   const [menuThreadId, setMenuThreadId] = useState<string | null>(null);
   const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
@@ -211,6 +227,11 @@ export function ThreadSidebar({
         next.delete(label);
       } else {
         next.add(label);
+      }
+      try {
+        localStorage.setItem(EXPANDED_GROUPS_KEY, JSON.stringify([...next]));
+      } catch {
+        // ignore
       }
       return next;
     });
@@ -367,6 +388,28 @@ export function ThreadSidebar({
   }
 
   const activeThreadId = pathname.match(/\/threads\/([^/]+)/)?.[1];
+
+  // Auto-expand the group containing the active thread
+  useEffect(() => {
+    if (!activeThreadId || !hydrated) return;
+    for (const group of grouped) {
+      if (group.threads.some((t) => t.id === activeThreadId)) {
+        setExpandedGroups((prev) => {
+          if (prev.has(group.label)) return prev;
+          const next = new Set(prev);
+          next.add(group.label);
+          try {
+            localStorage.setItem(EXPANDED_GROUPS_KEY, JSON.stringify([...next]));
+          } catch {
+            // ignore
+          }
+          return next;
+        });
+        break;
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeThreadId, hydrated]);
 
   const isAccordion = groupBy === "agent";
   const hasAnyExpanded = !isAccordion || expandedGroups.size > 0;
