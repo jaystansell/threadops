@@ -135,6 +135,7 @@ export function ThreadSidebar({
   agentsWithoutWebhooks = [],
 }: ThreadSidebarProps) {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
@@ -151,6 +152,13 @@ export function ThreadSidebar({
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleMobileLinkClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("a")) {
+      setMobileOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -343,8 +351,8 @@ export function ThreadSidebar({
   const isAccordion = groupBy === "agent";
   const hasAnyExpanded = !isAccordion || expandedGroups.size > 0;
 
-  return (
-    <aside className="w-80 lg:w-96 border-r border-[var(--border)] flex flex-col bg-[var(--background)] shrink-0 overflow-hidden">
+  const sidebarContent = (
+    <>
       <div className="p-3 border-b border-[var(--border)] space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Threads</h2>
@@ -658,6 +666,54 @@ export function ThreadSidebar({
           </div>
         </div>
       )}
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile toggle button */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] shadow-lg hover:opacity-90 transition-opacity"
+        aria-label="Open threads"
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+        </svg>
+        <span className="text-sm font-medium">Threads</span>
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside
+            className="absolute inset-y-0 left-0 w-[85vw] max-w-sm flex flex-col bg-[var(--background)] shadow-xl z-50"
+            onClick={handleMobileLinkClick}
+          >
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-2 left-2 z-10 p-1.5 rounded-md hover:bg-[var(--muted)] transition-colors"
+              aria-label="Close threads"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar — only render content when mobile overlay is closed to avoid shared ref conflicts */}
+      <aside className="hidden md:flex w-80 lg:w-96 border-r border-[var(--border)] flex-col bg-[var(--background)] shrink-0 overflow-hidden">
+        {!mobileOpen && sidebarContent}
+      </aside>
+    </>
   );
 }
