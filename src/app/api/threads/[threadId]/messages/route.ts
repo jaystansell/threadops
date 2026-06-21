@@ -180,21 +180,30 @@ export async function POST(
         );
       }
 
-      dispatchOutboundWebhooks(
-        thread.company_id as CompanyId,
-        "message.created",
-        {
-          message_id: message.id,
-          thread_id: threadId,
-          author_id: message.author_id,
-          author_kind: message.author_kind,
-          author_name: message.author_name,
-          body: message.body,
-          created_at: message.created_at,
-          current_summary: thread.summary ?? null,
-        },
-        thread.agent_api_key_id,
-      );
+      // Skip webhook when the authoring agent IS the thread's owning agent
+      // to prevent echo loops (agent posts → gets pinged → sees own message).
+      const isOwnAgentMessage =
+        authorKind === "agent" &&
+        thread.agent_api_key_id &&
+        authorId === thread.agent_api_key_id;
+
+      if (!isOwnAgentMessage) {
+        dispatchOutboundWebhooks(
+          thread.company_id as CompanyId,
+          "message.created",
+          {
+            message_id: message.id,
+            thread_id: threadId,
+            author_id: message.author_id,
+            author_kind: message.author_kind,
+            author_name: message.author_name,
+            body: message.body,
+            created_at: message.created_at,
+            current_summary: thread.summary ?? null,
+          },
+          thread.agent_api_key_id,
+        );
+      }
     }
 
     return Response.json(message, { status: 201 });
