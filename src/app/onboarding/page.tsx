@@ -46,6 +46,21 @@ export default async function OnboardingPage() {
 
   if (companyError) throw companyError;
 
+  // Guard against race condition (concurrent tabs/redirects):
+  // Re-check membership before inserting — if another request already
+  // created a workspace, clean up the orphan company and redirect.
+  const { data: raceCheck } = await db2
+    .from("company_members")
+    .select("company_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (raceCheck) {
+    await db2.from("companies").delete().eq("id", company.id);
+    redirect("/api-keys");
+  }
+
   const { error: memberError } = await db2
     .from("company_members")
     .insert({
@@ -54,7 +69,11 @@ export default async function OnboardingPage() {
       role: "owner",
     });
 
-  if (memberError) throw memberError;
+  if (memberError) {
+    // Another concurrent request won — clean up orphan company
+    await db2.from("companies").delete().eq("id", company.id);
+    redirect("/api-keys");
+  }
 
   redirect("/api-keys");
 }
