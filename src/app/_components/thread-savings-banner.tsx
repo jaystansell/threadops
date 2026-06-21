@@ -28,7 +28,7 @@ export function ThreadSavingsBanner({
   modelTier,
   costPerMTok,
 }: ThreadSavingsBannerProps) {
-  if (messageCount === 0) return null;
+  if (messageCount === 0 || readCount === 0) return null;
 
   const tier = modelTier as keyof typeof FALLBACK_PRICING;
   const rate = costPerMTok ?? FALLBACK_PRICING[tier]?.costPerMTok ?? FALLBACK_PRICING.standard.costPerMTok;
@@ -38,11 +38,11 @@ export function ThreadSavingsBanner({
   const tokensWith = SUMMARY_TOKENS;
   const tokensSaved = tokensWithout - tokensWith;
 
-  const totalTokensSaved = tokensSaved * Math.max(readCount, 1);
+  const totalTokensSaved = tokensSaved * readCount;
   const dollarsSaved = totalTokensSaved * costPerToken;
 
   // Human time: estimate 2 min per thread for manual triage/context switching
-  const minutesSaved = Math.max(readCount, 1) * 2;
+  const minutesSaved = readCount * 2;
   const humanDollarsSaved = (minutesSaved / 60) * HOURLY_RATE;
 
   return (
