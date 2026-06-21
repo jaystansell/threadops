@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ALWAYS_ON_EVENTS } from "@/core/types/webhook-endpoint";
 
-const ALWAYS_ON_EVENTS = ["docs.updated"];
+function isAlwaysOn(event: string): boolean {
+  return (ALWAYS_ON_EVENTS as readonly string[]).includes(event);
+}
 
 export function NewEndpointForm({
   eventTypes,
@@ -18,7 +21,7 @@ export function NewEndpointForm({
   const [expanded, setExpanded] = useState(false);
 
   const toggleEvent = (event: string) => {
-    if (ALWAYS_ON_EVENTS.includes(event)) return;
+    if (isAlwaysOn(event)) return;
     setSelectedEvents((prev) =>
       prev.includes(event)
         ? prev.filter((e) => e !== event)
@@ -94,21 +97,21 @@ export function NewEndpointForm({
         <label className="block text-sm font-medium mb-2">Events</label>
         <div className="flex flex-wrap gap-2">
           {eventTypes.map((event) => {
-            const isAlwaysOn = ALWAYS_ON_EVENTS.includes(event);
+            const alwaysOn = isAlwaysOn(event);
             return (
               <label
                 key={event}
-                className={`flex items-center gap-1.5 text-sm ${isAlwaysOn ? "opacity-70" : "cursor-pointer"}`}
+                className={`flex items-center gap-1.5 text-sm ${alwaysOn ? "opacity-70" : "cursor-pointer"}`}
               >
                 <input
                   type="checkbox"
-                  checked={isAlwaysOn || selectedEvents.includes(event)}
+                  checked={alwaysOn || selectedEvents.includes(event)}
                   onChange={() => toggleEvent(event)}
-                  disabled={isAlwaysOn}
+                  disabled={alwaysOn}
                   className="rounded"
                 />
                 {event}
-                {isAlwaysOn && (
+                {alwaysOn && (
                   <span className="text-xs text-[var(--muted-foreground)]">(always on)</span>
                 )}
               </label>

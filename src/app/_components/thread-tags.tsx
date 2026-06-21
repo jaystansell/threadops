@@ -9,29 +9,25 @@ interface ThreadTagsProps {
 
 export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
   const [tags, setTags] = useState<string[]>(initialTags);
-  const [input, setInput] = useState("");
+  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function addTag(e: React.FormEvent) {
-    e.preventDefault();
-    const tag = input.trim().toLowerCase();
-    if (!tag || tags.includes(tag)) {
-      setInput("");
-      return;
-    }
-    setLoading(true);
+  async function requestGenerate() {
+    setGenerating(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/threads/${threadId}/tags`, {
+      const res = await fetch(`/api/threads/${threadId}/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tags: [tag] }),
+        body: JSON.stringify({ action: "generate_tags" }),
       });
-      if (res.ok) {
-        setTags((prev) => [...prev, tag]);
-        setInput("");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Request failed" }));
+        setError(data.error ?? "Request failed");
       }
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   }
 
@@ -54,7 +50,7 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+          className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)]"
         >
           {tag}
           <button
@@ -67,16 +63,18 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
           </button>
         </span>
       ))}
-      <form onSubmit={addTag} className="inline-flex">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Add tag..."
-          disabled={loading}
-          className="text-xs px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--background)] w-24 focus:outline-none focus:border-[var(--primary)]"
-        />
-      </form>
+      <button
+        type="button"
+        onClick={requestGenerate}
+        disabled={generating}
+        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+        </svg>
+        {generating ? "Requesting..." : tags.length > 0 ? "Regenerate Tags" : "Generate Tags"}
+      </button>
+      {error && <p className="text-xs text-[var(--destructive)] mt-1">{error}</p>}
     </div>
   );
 }
