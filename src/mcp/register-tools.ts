@@ -41,7 +41,7 @@ export function registerTools(
       q: z.string().optional().describe("[list] Search by title"),
       tags: z.array(z.string()).optional().describe("[list/create] Filter by or assign tags"),
       metadata_filter: z.record(z.string(), z.string()).optional().describe("[list] Filter by metadata key-value pairs"),
-      limit: z.number().int().min(1).max(200).optional().describe("[list/search] Max results (default 100)"),
+      limit: z.number().int().min(1).max(200).optional().describe("[list] Max results (default 100)"),
       offset: z.number().int().min(0).optional().describe("[list] Pagination offset"),
       // create params
       title: z.string().optional().describe("[create] Thread title (required for create)"),

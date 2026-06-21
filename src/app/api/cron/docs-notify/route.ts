@@ -9,13 +9,10 @@ import openApiSpec from "@/app/api/openapi.json";
 export const dynamic = "force-dynamic";
 
 const MCP_TOOLS = [
-  "list_threads",
-  "create_thread",
-  "get_messages",
-  "post_message",
-  "update_thread_status",
-  "register_webhook",
-  "list_webhooks",
+  "manage_threads",
+  "manage_messages",
+  "manage_thread_context",
+  "manage_webhooks",
 ];
 
 async function signPayload(
@@ -55,7 +52,7 @@ export async function GET(req: NextRequest) {
       path,
       methods: Object.keys(methods as Record<string, unknown>),
     })),
-    mcp_endpoint: "https://threadops-jade.vercel.app/api/mcp",
+    mcp_endpoint: "https://threadops-jade.vercel.app/mcp",
     mcp_tools: MCP_TOOLS,
     discovery_url: "https://threadops-jade.vercel.app/.well-known/mcp.json",
     auth: {
