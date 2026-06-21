@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 interface SummaryLogEntry {
   id: string;
@@ -14,6 +14,9 @@ interface ThreadSummaryEditorProps {
   threadId: string;
   initialSummary: string;
 }
+
+const POLL_INTERVAL = 5000;
+const MAX_POLLS = 60;
 
 function formatLogDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -29,12 +32,53 @@ function formatLogDate(dateStr: string): string {
 }
 
 export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryEditorProps) {
-  const [summary] = useState(initialSummary);
+  const [summary, setSummary] = useState(initialSummary);
   const [generating, setGenerating] = useState(false);
+  const [requested, setRequested] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<SummaryLogEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+
+  // Poll for summary updates after requesting generation
+  useEffect(() => {
+    if (!requested) return;
+
+    const baselineSummary = summary;
+    pollCountRef.current = 0;
+
+    pollRef.current = setInterval(async () => {
+      pollCountRef.current++;
+      if (pollCountRef.current > MAX_POLLS) {
+        setRequested(false);
+        if (pollRef.current) clearInterval(pollRef.current);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/threads/${threadId}/summaries`);
+        if (res.ok) {
+          const data = await res.json();
+          const entries = data.summaries ?? [];
+          if (entries.length > 0) {
+            const latest = entries[0].summary;
+            if (latest && latest !== baselineSummary) {
+              setSummary(latest);
+              setRequested(false);
+              if (pollRef.current) clearInterval(pollRef.current);
+            }
+          }
+        }
+      } catch {
+        // Silently retry on next interval
+      }
+    }, POLL_INTERVAL);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [requested, threadId, summary]);
 
   async function requestGenerate() {
     setGenerating(true);
@@ -48,9 +92,14 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
       if (!res.ok) {
         const data = await res.json().catch(() => ({ error: "Request failed" }));
         setError(data.error ?? "Request failed");
+        setGenerating(false);
+        return;
       }
-    } finally {
       setGenerating(false);
+      setRequested(true);
+    } catch {
+      setGenerating(false);
+      setError("Request failed");
     }
   }
 
@@ -78,13 +127,19 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
         <button
           type="button"
           onClick={requestGenerate}
-          disabled={generating}
+          disabled={generating || requested}
           className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
-          </svg>
-          {generating ? "Requesting..." : "Generate Summary"}
+          {requested ? (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
+              <path d="M21 12a9 9 0 11-6.219-8.56" />
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+            </svg>
+          )}
+          {generating ? "Requesting..." : requested ? "Summary Requested" : "Generate Summary"}
         </button>
         {error && <p className="text-xs text-[var(--destructive)] mt-1">{error}</p>}
       </div>
@@ -99,13 +154,19 @@ export function ThreadSummaryEditor({ threadId, initialSummary }: ThreadSummaryE
           <button
             type="button"
             onClick={requestGenerate}
-            disabled={generating}
+            disabled={generating || requested}
             className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--accent-foreground)] transition-colors disabled:opacity-50"
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
-            </svg>
-            {generating ? "Requesting..." : "Regenerate"}
+            {requested ? (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="animate-spin">
+                <path d="M21 12a9 9 0 11-6.219-8.56" />
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3v3m6.36-.64l-2.12 2.12M21 12h-3M18.36 18.36l-2.12-2.12M12 21v-3M7.76 18.36l-2.12-2.12M3 12h3M5.64 5.64l2.12 2.12" />
+              </svg>
+            )}
+            {generating ? "Requesting..." : requested ? "Summary Requested" : "Regenerate"}
           </button>
         </div>
         <p className="text-sm">{summary}</p>
