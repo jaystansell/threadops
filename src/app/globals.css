@@ -3,37 +3,20 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #F8FAFC;
-  --foreground: #020617;
-  --muted: #E8ECF1;
-  --muted-foreground: #64748B;
-  --border: #E2E8F0;
-  --primary: #0F172A;
-  --primary-foreground: #FFFFFF;
-  --accent: #0D9488;
-  --accent-foreground: #FFFFFF;
-  --accent-secondary: #2563EB;
+  --background: #0A0F1A;
+  --foreground: #F1F5F9;
+  --muted: #141B2D;
+  --muted-foreground: #94A3B8;
+  --border: #1E293B;
+  --primary: #E2E8F0;
+  --primary-foreground: #0A0F1A;
+  --accent: #14B8A6;
+  --accent-foreground: #0A0F1A;
+  --accent-secondary: #3B82F6;
   --accent-secondary-foreground: #FFFFFF;
-  --destructive: #DC2626;
+  --destructive: #EF4444;
   --font-heading: 'Space Grotesk', system-ui, sans-serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0A0F1A;
-    --foreground: #F1F5F9;
-    --muted: #141B2D;
-    --muted-foreground: #94A3B8;
-    --border: #1E293B;
-    --primary: #E2E8F0;
-    --primary-foreground: #0A0F1A;
-    --accent: #14B8A6;
-    --accent-foreground: #0A0F1A;
-    --accent-secondary: #3B82F6;
-    --accent-secondary-foreground: #FFFFFF;
-    --destructive: #EF4444;
-  }
 }
 
 html {
