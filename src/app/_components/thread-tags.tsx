@@ -11,15 +11,21 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
   const [tags, setTags] = useState<string[]>(initialTags);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function requestGenerate() {
     setGenerating(true);
+    setError(null);
     try {
-      await fetch(`/api/threads/${threadId}/actions`, {
+      const res = await fetch(`/api/threads/${threadId}/actions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "generate_tags" }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Request failed" }));
+        setError(data.error ?? "Request failed");
+      }
     } finally {
       setGenerating(false);
     }
@@ -68,6 +74,7 @@ export function ThreadTags({ threadId, initialTags }: ThreadTagsProps) {
         </svg>
         {generating ? "Requesting..." : tags.length > 0 ? "Regenerate Tags" : "Generate Tags"}
       </button>
+      {error && <p className="text-xs text-[var(--destructive)] mt-1">{error}</p>}
     </div>
   );
 }
