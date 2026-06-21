@@ -596,6 +596,17 @@ export function ThreadSidebar({
                               </p>
                             )}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {!isAccordion && thread.agent_name && (() => {
+                                const agentColor = getAgentColor(thread.agent_name);
+                                return (
+                                  <span
+                                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                                    style={{ backgroundColor: agentColor.bg, color: agentColor.fg }}
+                                  >
+                                    {thread.agent_name}
+                                  </span>
+                                );
+                              })()}
                               {thread.last_author_kind === "agent" ? (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
                                   Needs reply
