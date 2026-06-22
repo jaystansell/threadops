@@ -16,6 +16,7 @@ const SUMMARY_TOKENS = 500;
 const TOOL_OVERHEAD = 500;
 const PLATFORM_SUMMARY_TOKENS = 10_000;
 const HOURLY_RATE = 100_000 / 2_080;
+const THREADZY_COST_PER_AGENT_MONTH = 25;
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -41,6 +42,10 @@ interface CalculatorResults {
   humanDollarsSavedAnnual: number;
   totalMonthly: number;
   totalAnnual: number;
+  threadzyPlanMonthly: number;
+  threadzyPlanAnnual: number;
+  netMonthly: number;
+  netAnnual: number;
 }
 
 export function SavingsCalculator({ hideHeader = false }: { hideHeader?: boolean }) {
@@ -78,6 +83,11 @@ export function SavingsCalculator({ hideHeader = false }: { hideHeader?: boolean
     const humanDollarsSavedMonthly = hoursPerMonth * HOURLY_RATE;
     const humanDollarsSavedAnnual = humanDollarsSavedMonthly * 12;
 
+    const threadzyPlanMonthly = agents * THREADZY_COST_PER_AGENT_MONTH;
+    const threadzyPlanAnnual = threadzyPlanMonthly * 12;
+    const totalMonthlyGross = monthlySavings + humanDollarsSavedMonthly;
+    const totalAnnualGross = annualSavings + humanDollarsSavedAnnual;
+
     return {
       tokensWithout: monthlyTokensWithout,
       tokensWith: monthlyTokensWith,
@@ -89,8 +99,12 @@ export function SavingsCalculator({ hideHeader = false }: { hideHeader?: boolean
       humanMinutesSaved: minutesSavedPerDay * 22,
       humanDollarsSavedMonthly,
       humanDollarsSavedAnnual,
-      totalMonthly: monthlySavings + humanDollarsSavedMonthly,
-      totalAnnual: annualSavings + humanDollarsSavedAnnual,
+      totalMonthly: totalMonthlyGross,
+      totalAnnual: totalAnnualGross,
+      threadzyPlanMonthly,
+      threadzyPlanAnnual,
+      netMonthly: totalMonthlyGross - threadzyPlanMonthly,
+      netAnnual: totalAnnualGross - threadzyPlanAnnual,
     };
   }, [agents, threadsPerDay, messagesPerThread, modelTier, interactionsPerThread, baseline, minutesSavedPerDay]);
 
@@ -254,15 +268,29 @@ export function SavingsCalculator({ hideHeader = false }: { hideHeader?: boolean
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <ResultCard
-            label="Total monthly value"
+            label="Gross monthly savings"
             value={formatDollars(results.totalMonthly)}
             sub={`${formatDollars(results.monthlySavings)} tokens + ${formatDollars(results.humanDollarsSavedMonthly)} time`}
             variant="highlight"
           />
           <ResultCard
-            label="Total annual value"
-            value={formatDollars(results.totalAnnual)}
-            sub="gross savings before Threadzy plan cost"
+            label="Threadzy plan cost"
+            value={formatDollars(results.threadzyPlanMonthly)}
+            sub={`${agents} agent${agents !== 1 ? "s" : ""} x $25/mo`}
+            variant="muted"
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 mt-4">
+          <ResultCard
+            label="Net monthly ROI"
+            value={formatDollars(results.netMonthly)}
+            sub="after Threadzy plan cost"
+            variant="highlight"
+          />
+          <ResultCard
+            label="Net annual ROI"
+            value={formatDollars(results.netAnnual)}
+            sub={`${formatDollars(results.totalAnnual)} gross − ${formatDollars(results.threadzyPlanAnnual)} plan`}
             variant="highlight"
           />
         </div>
