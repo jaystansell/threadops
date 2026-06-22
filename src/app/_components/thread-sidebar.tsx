@@ -3,8 +3,9 @@
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ThreadWithLastMessage } from "@/app/threads/layout";
+import type { ThreadWithLastMessage, AgentGroup, AgentKeyInfo } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
+import { ManageGroupsModal, GROUP_COLOR_MAP } from "./manage-groups-modal";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
@@ -74,6 +75,7 @@ const STATUS_OPTIONS = [
 
 const GROUP_OPTIONS = [
   { value: "agent", label: "By agent" },
+  { value: "group", label: "By group" },
   { value: "timeline", label: "By timeline" },
 ] as const;
 
@@ -191,6 +193,8 @@ interface ThreadSidebarProps {
   initialThreads: ThreadWithLastMessage[];
   companyId: string;
   agentsWithoutWebhooks?: string[];
+  agentGroups?: AgentGroup[];
+  agentKeys?: AgentKeyInfo[];
 }
 
 function buildWebhookPrompt(agentName: string): string {
@@ -225,6 +229,8 @@ export function ThreadSidebar({
   initialThreads,
   companyId,
   agentsWithoutWebhooks = [],
+  agentGroups: initialAgentGroups = [],
+  agentKeys = [],
 }: ThreadSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -247,6 +253,8 @@ export function ThreadSidebar({
   const [colorPickerAgent, setColorPickerAgent] = useState<string | null>(null);
   const [webhookPromptAgent, setWebhookPromptAgent] = useState<string | null>(null);
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
+  const [showManageGroups, setShowManageGroups] = useState(false);
+  const [agentGroups, setAgentGroups] = useState<AgentGroup[]>(initialAgentGroups);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -427,7 +435,7 @@ export function ThreadSidebar({
       )
     : threads;
 
-  let grouped: { label: string; threads: ThreadWithLastMessage[] }[];
+  let grouped: { label: string; threads: ThreadWithLastMessage[]; groupColor?: string }[];
 
   if (groupBy === "agent") {
     const agentBuckets = new Map<string, ThreadWithLastMessage[]>();
@@ -449,6 +457,52 @@ export function ThreadSidebar({
     grouped.sort((a, b) => a.label.localeCompare(b.label));
     if (unassigned.length > 0) {
       grouped.push({ label: "Unassigned", threads: unassigned });
+    }
+  } else if (groupBy === "group") {
+    // Build keyId→groupName map
+    const keyIdToGroup = new Map<string, string>();
+    for (const g of agentGroups) {
+      for (const kid of g.agent_key_ids) {
+        keyIdToGroup.set(kid, g.name);
+      }
+    }
+    // Also map agentName→groupName via keyId
+    const agentNameToGroup = new Map<string, string>();
+    for (const k of agentKeys) {
+      const gName = keyIdToGroup.get(k.id);
+      if (gName) agentNameToGroup.set(k.label, gName);
+    }
+
+    const groupBuckets = new Map<string, ThreadWithLastMessage[]>();
+    const ungrouped: ThreadWithLastMessage[] = [];
+    for (const t of filtered) {
+      // Try to match thread to a group via agent_api_key_id or agent_name
+      let gName: string | undefined;
+      if (t.agent_api_key_id) {
+        gName = keyIdToGroup.get(t.agent_api_key_id);
+      }
+      if (!gName && t.agent_name) {
+        gName = agentNameToGroup.get(t.agent_name);
+      }
+      if (gName) {
+        const existing = groupBuckets.get(gName) ?? [];
+        existing.push(t);
+        groupBuckets.set(gName, existing);
+      } else {
+        ungrouped.push(t);
+      }
+    }
+
+    // Maintain sort order from agentGroups
+    grouped = agentGroups
+      .filter((g) => groupBuckets.has(g.name))
+      .map((g) => ({
+        label: g.name,
+        threads: groupBuckets.get(g.name)!,
+        groupColor: g.color,
+      }));
+    if (ungrouped.length > 0) {
+      grouped.push({ label: "Ungrouped", threads: ungrouped });
     }
   } else {
     const buckets = new Map<string, ThreadWithLastMessage[]>();
@@ -483,7 +537,7 @@ export function ThreadSidebar({
     ? new Set([...expandedGroups, activeGroupLabel])
     : expandedGroups;
 
-  const isAccordion = groupBy === "agent";
+  const isAccordion = groupBy === "agent" || groupBy === "group";
   const hasAnyExpanded = !isAccordion || effectiveExpanded.size > 0;
 
   const sidebarContent = (
@@ -533,6 +587,15 @@ export function ThreadSidebar({
             ))}
           </select>
         </div>
+        {groupBy === "group" && (
+          <button
+            type="button"
+            onClick={() => setShowManageGroups(true)}
+            className="w-full px-2 py-1 text-[10px] font-medium rounded border border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Manage Groups
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -558,10 +621,27 @@ export function ThreadSidebar({
           <p className="text-xs text-[var(--muted-foreground)] p-3">
             No threads found.
           </p>
+        ) : groupBy === "group" && agentGroups.length === 0 ? (
+          <div className="p-4 text-center space-y-2">
+            <p className="text-xs text-[var(--muted-foreground)]">
+              No groups created yet.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowManageGroups(true)}
+              className="px-3 py-1.5 text-xs font-medium rounded bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+            >
+              Create Your First Group
+            </button>
+          </div>
         ) : (
           grouped.map((group) => {
             const isOpen = effectiveExpanded.has(group.label);
-            const color = isAccordion ? getAgentColor(group.label, agentColorOverrides) : null;
+            const color = isAccordion
+              ? (group.groupColor
+                  ? (GROUP_COLOR_MAP[group.groupColor] ?? getAgentColor(group.label, agentColorOverrides))
+                  : getAgentColor(group.label, agentColorOverrides))
+              : null;
             const sortedThreads = [...group.threads].sort((a, b) => {
               const aPinned = pinnedThreads.has(a.id) ? 0 : 1;
               const bPinned = pinnedThreads.has(b.id) ? 0 : 1;
@@ -572,7 +652,7 @@ export function ThreadSidebar({
               : isAccordion
                 ? []
                 : sortedThreads;
-            const missingWebhook = isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
+            const missingWebhook = groupBy === "agent" && isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
 
             return (
               <div key={group.label}>
@@ -625,21 +705,23 @@ export function ThreadSidebar({
                         {group.threads.length}
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setColorPickerAgent(colorPickerAgent === group.label ? null : group.label);
-                      }}
-                      className="shrink-0 p-1.5 mr-1 rounded hover:bg-white/20 transition-colors"
-                      title="Change color"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="5" r="1.5" />
-                        <circle cx="12" cy="12" r="1.5" />
-                        <circle cx="12" cy="19" r="1.5" />
-                      </svg>
-                    </button>
+                    {groupBy === "agent" && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setColorPickerAgent(colorPickerAgent === group.label ? null : group.label);
+                        }}
+                        className="shrink-0 p-1.5 mr-1 rounded hover:bg-white/20 transition-colors"
+                        title="Change color"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+                    )}
                     {colorPickerAgent === group.label && (
                       <div
                         ref={colorPickerRef}
@@ -857,6 +939,18 @@ export function ThreadSidebar({
           </div>
         )}
       </div>
+
+      {showManageGroups && (
+        <ManageGroupsModal
+          groups={agentGroups}
+          agentKeys={agentKeys}
+          onClose={() => setShowManageGroups(false)}
+          onSave={(saved) => {
+            setAgentGroups(saved);
+            setShowManageGroups(false);
+          }}
+        />
+      )}
 
       {webhookPromptAgent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

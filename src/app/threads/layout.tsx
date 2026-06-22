@@ -24,6 +24,19 @@ export type ThreadWithLastMessage = Thread & {
   tags?: string[];
 };
 
+export type AgentGroup = {
+  id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  agent_key_ids: string[];
+};
+
+export type AgentKeyInfo = {
+  id: string;
+  label: string;
+};
+
 export default async function ThreadsLayout({
   children,
 }: {
@@ -118,8 +131,8 @@ export default async function ThreadsLayout({
     };
   });
 
-  // Detect agents without webhook endpoints (per-agent check)
-  const [apiKeysResult, webhookEndpointsResult] = await Promise.all([
+  // Detect agents without webhook endpoints + fetch agent groups
+  const [apiKeysResult, webhookEndpointsResult, agentGroupsResult] = await Promise.all([
     db
       .from("api_keys")
       .select("id, label")
@@ -131,6 +144,12 @@ export default async function ThreadsLayout({
       .select("api_key_id")
       .eq("company_id", userCompany.companyId)
       .eq("active", true),
+    db
+      .from("agent_groups")
+      .select("id, name, color, sort_order")
+      .eq("company_id", userCompany.companyId)
+      .eq("user_id", userCompany.userId)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
@@ -143,6 +162,27 @@ export default async function ThreadsLayout({
   const agentsWithoutWebhooks = agentKeys
     .filter((k) => !webhookKeyIds.has(k.id))
     .map((k) => k.label);
+
+  // Build agent groups with members (filtered by user's group IDs only)
+  const groupIds = (agentGroupsResult.data ?? []).map((g: { id: string }) => g.id);
+  const groupMembersMap: Record<string, string[]> = {};
+  if (groupIds.length > 0) {
+    const { data: members } = await db
+      .from("agent_group_members")
+      .select("group_id, api_key_id")
+      .in("group_id", groupIds);
+    for (const m of members ?? []) {
+      const gid = m.group_id as string;
+      if (!groupMembersMap[gid]) groupMembersMap[gid] = [];
+      groupMembersMap[gid].push(m.api_key_id as string);
+    }
+  }
+  const agentGroups: AgentGroup[] = (agentGroupsResult.data ?? []).map(
+    (g: { id: string; name: string; color: string; sort_order: number }) => ({
+      ...g,
+      agent_key_ids: groupMembersMap[g.id] ?? [],
+    }),
+  );
 
   // Back-fill agent_name from api_keys for threads that have agent_api_key_id
   // but no agent message yet (e.g. agent has no webhook and never posted)
@@ -159,6 +199,8 @@ export default async function ThreadsLayout({
         initialThreads={threadsWithLastMsg}
         companyId={userCompany.companyId}
         agentsWithoutWebhooks={agentsWithoutWebhooks}
+        agentGroups={agentGroups}
+        agentKeys={agentKeys}
       />
       <main className="flex-1 overflow-y-auto">
         <MobileMainWrapper>
