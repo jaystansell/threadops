@@ -31,7 +31,7 @@ export function SearchBar({ defaultValue = "" }: { defaultValue?: string }) {
         defaultValue={defaultValue}
         placeholder="Search threads..."
         data-testid="search-input"
-        className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] transition-colors"
+        className="flex-1 px-3 py-2 text-[16px] sm:text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)] transition-colors"
       />
       <button
         type="submit"

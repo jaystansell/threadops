@@ -230,7 +230,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
                       onChange={(e) => updateGroup(group.id, { name: e.target.value })}
                       onClick={(e) => e.stopPropagation()}
                       placeholder="Group name..."
-                      className="flex-1 bg-transparent text-xs font-semibold placeholder:text-white/50 outline-none border-b border-white/30 py-0.5"
+                      className="flex-1 bg-transparent text-[16px] sm:text-xs font-semibold placeholder:text-white/50 outline-none border-b border-white/30 py-0.5"
                       autoFocus={group.isNew}
                     />
                   ) : (
