@@ -55,9 +55,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, color = "teal", agent_key_ids = [] } = body as {
+  const { name, color = "teal", sort_order: sortOrderInput, agent_key_ids = [] } = body as {
     name?: string;
     color?: string;
+    sort_order?: number;
     agent_key_ids?: string[];
   };
 
@@ -77,6 +78,8 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   const nextOrder = ((existing?.[0]?.sort_order as number) ?? -1) + 1;
+  const validSort = typeof sortOrderInput === "number" && Number.isInteger(sortOrderInput) && sortOrderInput >= 0;
+  const finalOrder = validSort ? sortOrderInput : nextOrder;
 
   const { data: group, error } = await db
     .from("agent_groups")
@@ -85,7 +88,7 @@ export async function POST(req: NextRequest) {
       user_id: userCompany.userId,
       name: name.trim(),
       color,
-      sort_order: nextOrder,
+      sort_order: finalOrder,
     })
     .select("id, name, color, sort_order")
     .single();

@@ -52,7 +52,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
         id: tempId,
         name: "",
         color: "teal",
-        sort_order: prev.length,
+        sort_order: Math.max(-1, ...prev.map((g) => g.sort_order)) + 1,
         agent_key_ids: [],
         isNew: true,
       },
@@ -61,7 +61,21 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
   }, []);
 
   const removeGroup = useCallback((id: string) => {
-    setEditGroups((prev) => prev.filter((g) => g.id !== id));
+    setEditGroups((prev) =>
+      prev.filter((g) => g.id !== id).map((g, i) => ({ ...g, sort_order: i })),
+    );
+  }, []);
+
+  const moveGroup = useCallback((id: string, direction: "up" | "down") => {
+    setEditGroups((prev) => {
+      const idx = prev.findIndex((g) => g.id === id);
+      if (idx < 0) return prev;
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
+      return next.map((g, i) => ({ ...g, sort_order: i }));
+    });
   }, []);
 
   const updateGroup = useCallback(
@@ -106,6 +120,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
             body: JSON.stringify({
               name: g.name.trim(),
               color: g.color,
+              sort_order: g.sort_order,
               agent_key_ids: g.agent_key_ids,
             }),
           });
@@ -118,6 +133,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
           const changed =
             original?.name !== g.name.trim() ||
             original?.color !== g.color ||
+            original?.sort_order !== g.sort_order ||
             JSON.stringify([...(original?.agent_key_ids ?? [])].sort()) !==
               JSON.stringify([...g.agent_key_ids].sort());
 
@@ -128,6 +144,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
               body: JSON.stringify({
                 name: g.name.trim(),
                 color: g.color,
+                sort_order: g.sort_order,
                 agent_key_ids: g.agent_key_ids,
               }),
             });
@@ -224,19 +241,49 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
                   <span className="text-[10px] opacity-75">
                     {group.agent_key_ids.length} agent{group.agent_key_ids.length !== 1 ? "s" : ""}
                   </span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeGroup(group.id);
-                    }}
-                    className="shrink-0 p-0.5 rounded hover:bg-white/20 transition-colors"
-                    title="Delete group"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveGroup(group.id, "up");
+                      }}
+                      disabled={editGroups.indexOf(group) === 0}
+                      className="p-0.5 rounded hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Move up"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveGroup(group.id, "down");
+                      }}
+                      disabled={editGroups.indexOf(group) === editGroups.length - 1}
+                      className="p-0.5 rounded hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Move down"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeGroup(group.id);
+                      }}
+                      className="p-0.5 rounded hover:bg-white/20 transition-colors"
+                      title="Delete group"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 {isEditing && (

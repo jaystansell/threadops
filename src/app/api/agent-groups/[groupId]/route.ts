@@ -44,7 +44,9 @@ export async function PATCH(
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name.trim();
   if (color !== undefined) updates.color = color;
-  if (sort_order !== undefined) updates.sort_order = sort_order;
+  if (sort_order !== undefined && typeof sort_order === "number" && Number.isInteger(sort_order) && sort_order >= 0) {
+    updates.sort_order = sort_order;
+  }
 
   if (Object.keys(updates).length > 0) {
     const { error } = await db
