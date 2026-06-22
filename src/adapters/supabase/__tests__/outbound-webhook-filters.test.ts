@@ -6,7 +6,7 @@
  * 2. Cross-agent data bleed (agent-scoped delivery still enforced)
  * 3. Echo suppression + filter interaction (both mechanisms together)
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // We test the filtering logic extracted from dispatchOutboundWebhooks.
 // The function itself uses after() and internal DB clients, so we test
