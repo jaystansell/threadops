@@ -18,15 +18,6 @@ function clamp(value: number): number {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value));
 }
 
-// Read persisted width via useSyncExternalStore (avoids setState-in-effect)
-function subscribeToStorage(cb: () => void) {
-  const handler = (e: StorageEvent) => {
-    if (e.key === STORAGE_KEY) cb();
-  };
-  window.addEventListener("storage", handler);
-  return () => window.removeEventListener("storage", handler);
-}
-
 function getStoredWidth(): number {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -37,27 +28,46 @@ function getStoredWidth(): number {
   return DEFAULT_WIDTH;
 }
 
+// useSyncExternalStore gives us the stored value on the client
+// and DEFAULT_WIDTH on the server — no setState-in-effect needed.
+function subscribeToStorage(cb: () => void) {
+  const handler = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) cb();
+  };
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
+}
+
 function getServerWidth(): number {
   return DEFAULT_WIDTH;
 }
 
 export function ResizableSidebar({ children }: { children: ReactNode }) {
-  const initialWidth = useSyncExternalStore(
+  const storedWidth = useSyncExternalStore(
     subscribeToStorage,
     getStoredWidth,
     getServerWidth,
   );
-  const [width, setWidth] = useState(initialWidth);
+
+  // Track whether the user has dragged in this session.
+  // Only persist width changes that come from user interaction,
+  // not from hydration (which would overwrite the stored value).
+  const hasDraggedRef = useRef(false);
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
+
+  // Effective width: use drag override if user has dragged, otherwise stored
+  const width = dragWidth ?? storedWidth;
 
   const startDrag = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       e.preventDefault();
       setIsDragging(true);
+      hasDraggedRef.current = true;
 
       const startX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const startWidth = width;
+      const startWidth = dragWidth ?? storedWidth;
 
       const onMove = (ev: MouseEvent | TouchEvent) => {
         const currentX =
@@ -65,7 +75,7 @@ export function ResizableSidebar({ children }: { children: ReactNode }) {
             ? (ev as TouchEvent).touches[0].clientX
             : (ev as MouseEvent).clientX;
         const newWidth = clamp(startWidth + (currentX - startX));
-        setWidth(newWidth);
+        setDragWidth(newWidth);
       };
 
       const onEnd = () => {
@@ -74,24 +84,27 @@ export function ResizableSidebar({ children }: { children: ReactNode }) {
         document.removeEventListener("mouseup", onEnd);
         document.removeEventListener("touchmove", onMove);
         document.removeEventListener("touchend", onEnd);
+        document.removeEventListener("touchcancel", onEnd);
       };
 
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onEnd);
       document.addEventListener("touchmove", onMove);
       document.addEventListener("touchend", onEnd);
+      document.addEventListener("touchcancel", onEnd);
     },
-    [width],
+    [dragWidth, storedWidth],
   );
 
-  // Persist width to localStorage on change
+  // Persist width to localStorage only after user drag interaction
   useEffect(() => {
+    if (!hasDraggedRef.current || dragWidth === null) return;
     try {
-      localStorage.setItem(STORAGE_KEY, String(width));
+      localStorage.setItem(STORAGE_KEY, String(dragWidth));
     } catch {
       /* ignore */
     }
-  }, [width]);
+  }, [dragWidth]);
 
   return (
     <aside
