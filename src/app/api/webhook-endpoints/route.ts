@@ -106,6 +106,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Validate filters if provided
+  if (body.filters !== undefined) {
+    if (typeof body.filters !== "object" || body.filters === null || Array.isArray(body.filters)) {
+      return Response.json({ error: "filters must be an object" }, { status: 400 });
+    }
+    if (body.filters.author_kind !== undefined) {
+      if (!["user", "agent"].includes(body.filters.author_kind)) {
+        return Response.json(
+          { error: "filters.author_kind must be 'user' or 'agent'" },
+          { status: 400 },
+        );
+      }
+    }
+  }
+
   const secret = generateSecret();
 
   // Merge user-selected events with always-on events
@@ -123,6 +138,7 @@ export async function POST(req: NextRequest) {
       url: body.url.trim(),
       events: mergedEvents,
       secret,
+      ...(body.filters && { filters: body.filters }),
     });
     return Response.json(endpoint, { status: 201 });
   } catch (err) {

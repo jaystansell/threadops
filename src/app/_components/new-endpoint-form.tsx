@@ -16,6 +16,7 @@ export function NewEndpointForm({
   const router = useRouter();
   const [url, setUrl] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+  const [authorFilter, setAuthorFilter] = useState<"" | "user" | "agent">("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -38,7 +39,11 @@ export function NewEndpointForm({
       const res = await fetch("/api/webhook-endpoints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, events: selectedEvents }),
+        body: JSON.stringify({
+          url,
+          events: selectedEvents,
+          ...(authorFilter && { filters: { author_kind: authorFilter } }),
+        }),
       });
 
       if (!res.ok) {
@@ -48,6 +53,7 @@ export function NewEndpointForm({
 
       setUrl("");
       setSelectedEvents([]);
+      setAuthorFilter("");
       setExpanded(false);
       router.refresh();
     } catch (err) {
@@ -118,6 +124,26 @@ export function NewEndpointForm({
             );
           })}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1" htmlFor="author-filter">
+          Filter by author
+        </label>
+        <select
+          id="author-filter"
+          value={authorFilter}
+          onChange={(e) => setAuthorFilter(e.target.value as "" | "user" | "agent")}
+          data-testid="author-filter-select"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)]"
+        >
+          <option value="">All messages</option>
+          <option value="user">Human messages only</option>
+          <option value="agent">Agent messages only</option>
+        </select>
+        <p className="text-xs text-[var(--muted-foreground)] mt-1">
+          Filter which messages trigger this endpoint based on author type.
+        </p>
       </div>
 
       {error && (

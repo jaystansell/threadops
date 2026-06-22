@@ -2,12 +2,13 @@ import { v4 as uuidv4 } from "uuid";
 import { createWebhookEndpointRepo } from "../../adapters/supabase/webhook-endpoint-repo";
 import type { SupabaseClient } from "../../adapters/supabase/client";
 import type { AuthContext } from "../auth";
-import type { CompanyId } from "../../core/types";
+import type { CompanyId, WebhookEndpointFilters } from "../../core/types";
 import { ALWAYS_ON_EVENTS } from "../../core/types";
 
 export interface RegisterWebhookInput {
   url: string;
   events: string[];
+  filters?: WebhookEndpointFilters;
 }
 
 export async function registerWebhook(
@@ -25,5 +26,6 @@ export async function registerWebhook(
     url: input.url,
     events: mergedEvents,
     secret: uuidv4(),
+    ...(input.filters && { filters: input.filters }),
   });
 }
