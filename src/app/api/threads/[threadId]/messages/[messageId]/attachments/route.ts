@@ -3,6 +3,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAttachmentRepo } from "@/adapters/supabase/attachment-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import { hashKey } from "@/core/rules/api-key";
 import {
   FILE_LIMITS,
@@ -173,6 +174,35 @@ export async function POST(
     content_type: contentType,
     storage_path: storagePath,
   });
+
+  // Generate a signed download URL for the agent (valid 1 hour)
+  const { data: signedUrlData } = await db.storage
+    .from("thread-attachments")
+    .createSignedUrl(storagePath, 3600, { download: filename });
+
+  // Look up thread to get company + owning agent for webhook routing
+  const { data: thread } = await db
+    .from("threads")
+    .select("company_id, agent_api_key_id")
+    .eq("id", threadId)
+    .single();
+
+  if (thread) {
+    dispatchOutboundWebhooks(
+      thread.company_id as CompanyId,
+      "attachment.created",
+      {
+        attachment_id: attachment.id,
+        message_id: messageId,
+        thread_id: threadId,
+        filename,
+        content_type: contentType,
+        file_size: fileSize,
+        download_url: signedUrlData?.signedUrl ?? null,
+      },
+      thread.agent_api_key_id,
+    );
+  }
 
   return Response.json(attachment, { status: 201 });
 }

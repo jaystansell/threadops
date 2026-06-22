@@ -360,7 +360,7 @@ export function ThreadTimeline({
               <Markdown
                 remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
-                  a: ({ children, href, ...props }) => (
+                  a: ({ children, href, node: _node, ...props }) => (
                     <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
                       {children}
                     </a>

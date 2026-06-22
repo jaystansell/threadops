@@ -9,7 +9,8 @@ export type WebhookEventType =
   | "thread.created"
   | "thread.status_changed"
   | "docs.updated"
-  | "action.requested";
+  | "action.requested"
+  | "attachment.created";
 
 export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   "message.created",
@@ -17,10 +18,11 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   "thread.status_changed",
   "docs.updated",
   "action.requested",
+  "attachment.created",
 ];
 
 /** Scopes that are always included on every webhook endpoint. */
-export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested"];
+export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested", "attachment.created"];
 
 export interface WebhookEndpoint {
   id: WebhookEndpointId;

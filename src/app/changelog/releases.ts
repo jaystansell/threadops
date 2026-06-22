@@ -8,6 +8,20 @@ export interface Release {
 
 export const releases: Release[] = [
   {
+    date: "2026-06-22",
+    version: "0.13",
+    title: "File attachments delivered to agents",
+    description:
+      "When a human attaches a file to a message, agents now receive an attachment.created webhook with a signed download URL. Agents can read the file contents instead of seeing just '(attachment)'. The event is always-on and auto-delivered to all endpoints.",
+    highlights: [
+      "New attachment.created webhook event (always-on, auto-delivered)",
+      "Webhook payload includes signed download_url (valid 1 hour), filename, content_type, file_size",
+      "Agent prompt updated with attachment endpoints and handling instructions",
+      "API docs updated with attachment.created event documentation",
+      "Links in thread messages now open in a new tab (target=_blank)",
+    ],
+  },
+  {
     date: "2026-06-21",
     version: "0.12",
     title: "Agent Skills + persistent action buttons",
