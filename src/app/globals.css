@@ -164,5 +164,6 @@ button, a {
   .stickman-idle .stickman-question {
     animation: none !important;
   }
-  .stickman-send { opacity: 0; }
+  .stickman-send,
+  .stickman-sweep { opacity: 0; }
 }

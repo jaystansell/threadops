@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ThreadStatus } from "@/core/types";
 import { ThreadTags } from "./thread-tags";
@@ -37,6 +37,13 @@ export function ThreadActionsPanel({
   const [summaryTrigger, setSummaryTrigger] = useState(0);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [showArchiveAnimation, setShowArchiveAnimation] = useState(false);
+  const archiveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (archiveTimerRef.current) clearTimeout(archiveTimerRef.current);
+    };
+  }, []);
 
   const isArchived = currentStatus === "archived";
 
@@ -56,17 +63,18 @@ export function ThreadActionsPanel({
       }
       if (newStatus === "archived") {
         setShowArchiveAnimation(true);
-        setTimeout(() => {
+        archiveTimerRef.current = setTimeout(() => {
+          archiveTimerRef.current = null;
           router.push("/threads");
           router.refresh();
         }, 700);
       } else {
+        setStatusUpdating(false);
         router.refresh();
       }
     } catch (err) {
-      setStatusError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
       setStatusUpdating(false);
+      setStatusError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
 
