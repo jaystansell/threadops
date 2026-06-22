@@ -640,7 +640,7 @@ export function ThreadSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="flex-1 px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 px-2 py-1 text-[16px] sm:text-xs rounded border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]"
           />
         </form>
 
@@ -648,7 +648,7 @@ export function ThreadSidebar({
           <select
             value={status}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-xs focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-[16px] sm:text-xs focus:outline-none focus:border-[var(--primary)]"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -659,7 +659,7 @@ export function ThreadSidebar({
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-xs focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-[16px] sm:text-xs focus:outline-none focus:border-[var(--primary)]"
           >
             {GROUP_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
