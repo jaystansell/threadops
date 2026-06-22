@@ -43,7 +43,7 @@ interface CalculatorResults {
   totalAnnual: number;
 }
 
-export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
+export function SavingsCalculator({ hideHeader = false }: { hideHeader?: boolean }) {
   const [agents, setAgents] = useState(3);
   const [threadsPerDay, setThreadsPerDay] = useState(20);
   const [messagesPerThread, setMessagesPerThread] = useState(30);
@@ -97,8 +97,8 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
   const barMaxWidth = results.monthlyCostWithout || 1;
 
   return (
-    <div className={`rounded-2xl border border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm ${compact ? "p-6" : "p-8"}`}>
-      {!compact && (
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm p-8">
+      {!hideHeader && (
         <div className="mb-8">
           <h3 className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>
             Savings Calculator
@@ -110,7 +110,7 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
         </div>
       )}
 
-      <div className={`grid gap-6 ${compact ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <SliderInput
           label="Agents"
           value={agents}
@@ -176,18 +176,16 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
 
-      {!compact && (
-        <div className="mt-6">
-          <SliderInput
-            label="Human time saved (min/day on thread management)"
-            value={minutesSavedPerDay}
-            onChange={setMinutesSavedPerDay}
-            min={0}
-            max={120}
-            step={5}
-          />
-        </div>
-      )}
+      <div className="mt-6">
+        <SliderInput
+          label="Human time saved (min/day on thread management)"
+          value={minutesSavedPerDay}
+          onChange={setMinutesSavedPerDay}
+          min={0}
+          max={120}
+          step={5}
+        />
+      </div>
 
       {/* Token savings */}
       <div className="mt-8">
@@ -223,56 +221,52 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       </div>
 
       {/* Human time savings */}
-      {!compact && (
-        <div className="mt-6">
-          <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
-            Human time savings ($100K/yr salary)
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <ResultCard
-              label="Hours saved / month"
-              value={`${(results.humanMinutesSaved / 60).toFixed(1)} hrs`}
-              sub={`${minutesSavedPerDay} min/day x 22 days`}
-              variant="muted"
-            />
-            <ResultCard
-              label="Monthly time value"
-              value={formatDollars(results.humanDollarsSavedMonthly)}
-              sub="at $48.08/hr"
-              variant="accent"
-            />
-            <ResultCard
-              label="Annual time value"
-              value={formatDollars(results.humanDollarsSavedAnnual)}
-              sub="projected yearly"
-              variant="accent"
-            />
-          </div>
+      <div className="mt-6">
+        <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
+          Human time savings ($100K/yr salary)
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <ResultCard
+            label="Hours saved / month"
+            value={`${(results.humanMinutesSaved / 60).toFixed(1)} hrs`}
+            sub={`${minutesSavedPerDay} min/day x 22 days`}
+            variant="muted"
+          />
+          <ResultCard
+            label="Monthly time value"
+            value={formatDollars(results.humanDollarsSavedMonthly)}
+            sub="at $48.08/hr"
+            variant="accent"
+          />
+          <ResultCard
+            label="Annual time value"
+            value={formatDollars(results.humanDollarsSavedAnnual)}
+            sub="projected yearly"
+            variant="accent"
+          />
         </div>
-      )}
+      </div>
 
       {/* Combined total */}
-      {!compact && (
-        <div className="mt-6">
-          <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
-            Combined value (tokens + human time)
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ResultCard
-              label="Total monthly value"
-              value={formatDollars(results.totalMonthly)}
-              sub={`${formatDollars(results.monthlySavings)} tokens + ${formatDollars(results.humanDollarsSavedMonthly)} time`}
-              variant="highlight"
-            />
-            <ResultCard
-              label="Total annual value"
-              value={formatDollars(results.totalAnnual)}
-              sub="gross savings before Threadzy plan cost"
-              variant="highlight"
-            />
-          </div>
+      <div className="mt-6">
+        <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
+          Combined value (tokens + human time)
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ResultCard
+            label="Total monthly value"
+            value={formatDollars(results.totalMonthly)}
+            sub={`${formatDollars(results.monthlySavings)} tokens + ${formatDollars(results.humanDollarsSavedMonthly)} time`}
+            variant="highlight"
+          />
+          <ResultCard
+            label="Total annual value"
+            value={formatDollars(results.totalAnnual)}
+            sub="gross savings before Threadzy plan cost"
+            variant="highlight"
+          />
         </div>
-      )}
+      </div>
 
       {/* Cost comparison bar */}
       <div className="mt-6 space-y-3">
@@ -303,13 +297,6 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
       </div>
-
-      {compact && (
-        <p className="text-xs text-[var(--muted-foreground)] mt-4 text-center">
-          Comparing against {baseline === "raw" ? "raw replay" : "platform summarization (~10K tokens)"}.
-          Includes ~500 token tool call overhead per Threadzy lookup.
-        </p>
-      )}
     </div>
   );
 }
