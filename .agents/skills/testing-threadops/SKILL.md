@@ -492,6 +492,35 @@ Three CSS/SVG stickman animations exist in the app:
 - `.stickman-sweep` — archive broom SVG (appears ~700ms)
 - `.stickman-idle` — empty state SVG (persistent)
 
+### Testing Agent Group Reorder (PR #107+)
+
+Agent groups are per-user (RLS on `user_id = auth.uid()`). When testing group features, the test user may have no groups even if Jay's account does. Create groups via the "Manage Groups" modal (accessible from "By group" dropdown in sidebar).
+
+**Reorder test flow:**
+1. Switch sidebar to "By group" view via dropdown
+2. Click "Manage Groups" to open the modal
+3. Create 3+ groups (needed to test boundary conditions)
+4. Verify first group's UP arrow is disabled, last group's DOWN arrow is disabled
+5. Click DOWN on a group — it should swap with the one below
+6. Save and verify DB: `curl -s "...agent_groups?select=name,sort_order&order=sort_order" ...`
+7. After testing, delete all test groups to clean up
+
+**sort_order normalization test:**
+- Delete a group from the middle, add a new group, then verify DB has sequential sort_order values with no gaps or duplicates
+- Without the fix (pre-PR #107 Devin Review), deleting from the middle would leave gaps and new groups could collide
+
+### Testing Sidebar Scroll Independence (PR #108+)
+
+The sidebar and main pane should scroll independently. To test:
+1. Switch to "By agent" view
+2. Expand an agent accordion with many threads (e.g., FYG REPTAR has 22+)
+3. Scroll the sidebar down until threads near the bottom are visible
+4. Click a thread near the bottom of the scrolled list
+5. **Verify:** sidebar stays at the same scroll position, main pane loads the thread
+6. Scroll the main pane — verify sidebar doesn't move
+
+The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If the header height changes significantly, this value may need adjustment.
+
 ### Stale Session Cookies Cause Extreme Middleware Latency
 
 **CRITICAL:** If Chrome has stale/expired Supabase session cookies, the `supabase.auth.getClaims()` call in `src/adapters/supabase/auth/proxy.ts` (line 35) can hang for **100+ seconds** per request. This affects ALL routes (not just protected ones) because `getClaims()` runs before the route check.
@@ -629,6 +658,62 @@ curl -s -o /tmp/downloaded.txt -w "%{http_code}" "${DOWNLOAD_URL}"
 **Common gotcha:** If testing via Playwright, the script must be in the repo directory (not `/tmp/`) to resolve the `playwright` package from `node_modules`. Use `chromium.connectOverCDP('http://localhost:29229')` and `context.newPage()` (not `context.pages()[0]` which may be closed).
 
 **Vercel preview gotcha:** Preview deployments may have Vercel SSO protection enabled, redirecting to Vercel login. Test against localhost for UI-based upload tests.
+
+### Webhook Isolation / Agent Cross-Bleed Testing (PR #111+)
+
+The webhook delivery system scopes events to the thread-owning agent's endpoint. Testing webhook isolation is shell-only (no browser needed).
+
+**Key concepts:**
+- `agent_api_key_id` on the `threads` table determines which agent owns a thread
+- `outbound-webhook.ts` filters endpoints: only the owning agent's endpoint receives events
+- Echo suppression: the posting agent never gets its own webhook
+- Unowned threads (`agent_api_key_id = NULL`) only fire to legacy endpoints (`api_key_id = NULL`)
+- Auto-assign: when an agent posts in an unowned thread, it claims ownership
+
+**Test API key:** `to_test_agent_bot_key_for_testing_12345678` (id: `aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0001`). This key may be revoked — unrevoke it via:
+```bash
+source .env.local
+curl -s -X PATCH "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/api_keys?id=eq.aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0001" \
+  -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"revoked_at": null}'
+```
+
+**Test flow for cross-agent blocking:**
+```bash
+# Post as Test Agent Bot to another agent's thread — should get 403
+curl -s -X POST "http://localhost:3000/api/threads/<FYG_JET_THREAD_ID>/messages" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: to_test_agent_bot_key_for_testing_12345678" \
+  -d '{"body":"test"}' 
+# Expected: {"error":"This thread belongs to another agent"}
+```
+
+**Test flow for auto-assign ownership:**
+1. Create a thread with `agent_api_key_id = NULL` via Supabase REST API
+2. Post a message as Test Agent Bot via `/api/threads/{id}/messages`
+3. Query the thread — `agent_api_key_id` should now be `aaaaaaaa-bbbb-cccc-dddd-eeeeeeee0001`
+
+**Test flow for webhook scoping:**
+1. Record `webhook_deliveries` count (baseline)
+2. Post a message as Test Agent Bot to its own thread
+3. Wait 5s, check count again
+4. Expected: 0 new deliveries (echo suppression blocks self, ownership filter blocks others)
+5. Compare to old code behavior: unowned threads generated 8+ deliveries per message (broadcast to all)
+
+**Known agent endpoint IDs (may change):**
+- FYG Jet: `c952b98b-ddeb-40cc-b455-69dcde71f977`
+- Tasklet ProdCo: `bbbb38c4-b0da-40ee-a68b-5660fccbe1a9`
+- ExecReps Agent: `31319ded-5df4-4917-8316-54e69c42e5c5`
+
+**Cleanup after testing:** Re-revoke the test API key, delete any test threads/messages created during testing.
+
+**Debugging agent not responding:**
+- If webhooks show `status=succeeded` but the agent doesn't respond, the issue is on the agent platform side (e.g., Tasklet), not Threadzy
+- Check `webhook_endpoints` table to confirm the agent has an active endpoint registered
+- Check `webhook_deliveries` to confirm deliveries are being created for the thread
+- The `webhook_deliveries` table does NOT have an `endpoint_id` column — you cannot directly see which endpoint received a delivery
 
 ## Seed Data for Testing
 
