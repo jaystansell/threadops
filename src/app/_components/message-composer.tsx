@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FILE_LIMITS, isAllowedFile } from "@/core/types";
+import { StickmanSendAnimation } from "./stickman-animations";
 
 interface MessageComposerProps {
   threadId: string;
@@ -44,6 +45,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
   const [error, setError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showSendAnimation, setShowSendAnimation] = useState(false);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const fileArray = Array.from(files);
@@ -194,6 +196,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
       const message = await sendMessage(body.trim() || "(attachment)");
 
       // Upload any pending files
+      let uploadFailed = false;
       const validFiles = pendingFiles.filter((f) => !f.error);
       if (validFiles.length > 0) {
         const results = await Promise.all(
@@ -204,6 +207,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
         );
         const failedCount = results.filter((r) => r === false).length;
         if (failedCount > 0) {
+          uploadFailed = true;
           setError(`${failedCount} file(s) failed to upload`);
         }
       }
@@ -213,6 +217,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
         prev.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
         return [];
       });
+      if (!uploadFailed) setShowSendAnimation(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -330,14 +335,19 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
 
       {error && <p className="text-sm text-red-500">{error}</p>}
       <div className="flex items-center gap-2">
-        <button
-          type="submit"
-          disabled={isBusy || (!body.trim() && pendingFiles.filter((f) => !f.error).length === 0)}
-          data-testid="message-send"
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
-          {sending ? "Sending..." : "Send Message"}
-        </button>
+        <div className="relative">
+          <button
+            type="submit"
+            disabled={isBusy || (!body.trim() && pendingFiles.filter((f) => !f.error).length === 0)}
+            data-testid="message-send"
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {sending ? "Sending..." : "Send Message"}
+          </button>
+          {showSendAnimation && (
+            <StickmanSendAnimation onComplete={() => setShowSendAnimation(false)} />
+          )}
+        </div>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
