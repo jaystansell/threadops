@@ -16,6 +16,7 @@ import { updateThreadTags } from "./tools/update-thread-tags";
 import { updateThreadMetadata } from "./tools/update-thread-metadata";
 import { updateThreadSummary } from "./tools/update-thread-summary";
 import { listThreadSummaries } from "./tools/list-thread-summaries";
+import { submitFeedback } from "./tools/submit-feedback";
 
 function toolResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
@@ -229,7 +230,36 @@ export function registerTools(
     },
   );
 
-  // Tool 4: manage_webhooks — register and list webhook endpoints
+  // Tool 4: submit_feedback — agents submit product feedback
+  server.tool(
+    "submit_feedback",
+    "Submit product feedback or feature requests to the Threadzy team. Your feedback will be reviewed by an admin.",
+    {
+      category: z.enum(["webhook_filter", "api_feature", "payload_field", "bug_report", "general"]).describe(
+        "Feedback category: webhook_filter, api_feature, payload_field, bug_report, or general",
+      ),
+      title: z.string().describe("Short title for the feedback item"),
+      description: z.string().describe("Detailed description of the suggestion or issue"),
+      priority: z.enum(["high", "medium", "low"]).optional().describe("Priority level (default: medium)"),
+    },
+    async (args) => {
+      try {
+        const auth = await getAuth();
+        return toolResult(
+          await submitFeedback(db, auth, {
+            category: args.category,
+            title: args.title,
+            description: args.description,
+            priority: args.priority,
+          }),
+        );
+      } catch (err) {
+        return toolError(err instanceof Error ? err.message : String(err));
+      }
+    },
+  );
+
+  // Tool 5: manage_webhooks — register and list webhook endpoints
   server.tool(
     "manage_webhooks",
     "Manage webhook endpoints: register a new endpoint or list existing ones.",
