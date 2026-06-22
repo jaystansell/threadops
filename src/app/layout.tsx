@@ -44,7 +44,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col">
         <AnimatedThreadsBg />
         <AppHeader>
           <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 sm:px-6 py-3 shrink-0">
@@ -63,7 +63,7 @@ export default async function RootLayout({
           </header>
         </AppHeader>
         <UpdateToast />
-        <div className="flex-1 flex flex-col min-h-0 overflow-auto">{children}</div>
+        <div className="flex-1 flex flex-col">{children}</div>
         <SiteFooter />
         <Analytics />
       </body>
