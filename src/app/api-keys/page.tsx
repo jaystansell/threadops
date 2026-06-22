@@ -24,19 +24,35 @@ export default async function ApiKeysPage() {
 
   const hasKeys = keys.some((k) => !k.revoked_at);
 
-  // Fetch skills for all active keys
+  // Fetch skills and webhook status for all active keys
   const activeKeyIds = keys.filter((k) => !k.revoked_at).map((k) => k.id);
   const skillsMap: Record<string, string[]> = {};
+  const webhookStatusMap: Record<string, boolean> = {};
   if (activeKeyIds.length > 0) {
-    const { data: skillRows } = await db
-      .from("agent_skills")
-      .select("api_key_id, skill_name")
-      .in("api_key_id", activeKeyIds)
-      .order("created_at", { ascending: true });
-    for (const row of skillRows ?? []) {
+    const [skillResult, webhookResult] = await Promise.all([
+      db
+        .from("agent_skills")
+        .select("api_key_id, skill_name")
+        .in("api_key_id", activeKeyIds)
+        .order("created_at", { ascending: true }),
+      db
+        .from("webhook_endpoints")
+        .select("api_key_id")
+        .eq("company_id", userCompany.companyId)
+        .eq("active", true),
+    ]);
+    for (const row of skillResult.data ?? []) {
       const keyId = row.api_key_id as string;
       if (!skillsMap[keyId]) skillsMap[keyId] = [];
       skillsMap[keyId].push(row.skill_name as string);
+    }
+    const webhookKeyIds = new Set(
+      (webhookResult.data ?? [])
+        .map((w: { api_key_id: string | null }) => w.api_key_id)
+        .filter(Boolean),
+    );
+    for (const id of activeKeyIds) {
+      webhookStatusMap[id] = webhookKeyIds.has(id);
     }
   }
 
@@ -61,7 +77,7 @@ export default async function ApiKeysPage() {
 
       <CreateApiKeyForm companyId={userCompany.companyId} />
 
-      <ApiKeyList keys={keys} companyId={userCompany.companyId} skillsMap={skillsMap} />
+      <ApiKeyList keys={keys} companyId={userCompany.companyId} skillsMap={skillsMap} webhookStatusMap={webhookStatusMap} />
     </div>
   );
 }

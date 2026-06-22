@@ -9,9 +9,10 @@ interface Props {
   keys: ApiKey[];
   companyId: string;
   skillsMap?: Record<string, string[]>;
+  webhookStatusMap?: Record<string, boolean>;
 }
 
-export function ApiKeyList({ keys, companyId, skillsMap = {} }: Props) {
+export function ApiKeyList({ keys, companyId, skillsMap = {}, webhookStatusMap = {} }: Props) {
   const [showRevoked, setShowRevoked] = useState(false);
 
   const activeKeys = keys.filter((k) => !k.revoked_at);
@@ -96,6 +97,57 @@ export function ApiKeyList({ keys, companyId, skillsMap = {} }: Props) {
                   </span>
                 ))}
               </div>
+
+              {/* Setup checklist for active keys */}
+              {!key.revoked_at && (() => {
+                const hasWebhook = webhookStatusMap[key.id] ?? false;
+                const hasSkills = (skillsMap[key.id] ?? []).length > 0;
+                const allComplete = hasWebhook && hasSkills;
+                return (
+                  <div className={`mt-3 rounded-lg border p-3 space-y-2 ${
+                    allComplete
+                      ? "border-emerald-700/40 bg-emerald-900/20"
+                      : "border-amber-700/40 bg-amber-900/20"
+                  }`}>
+                    <p className={`text-[10px] uppercase tracking-wider font-semibold ${
+                      allComplete ? "text-emerald-400" : "text-amber-400"
+                    }`}>
+                      {allComplete ? "Setup complete" : "Setup checklist"}
+                    </p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        {hasWebhook ? (
+                          <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                        )}
+                        <span className={`text-xs ${hasWebhook ? "text-emerald-300" : "text-amber-300 font-medium"}`}>
+                          {hasWebhook ? "Webhook registered" : "No webhook — agent is deaf to replies"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {hasSkills ? (
+                          <svg className="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-[var(--muted-foreground)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <circle cx="12" cy="12" r="10" />
+                          </svg>
+                        )}
+                        <span className={`text-xs ${hasSkills ? "text-emerald-300" : "text-[var(--muted-foreground)]"}`}>
+                          {hasSkills ? `${skillsMap[key.id].length} skill(s) reported` : "No skills reported yet"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {!key.revoked_at && skillsMap[key.id] && skillsMap[key.id].length > 0 && (
                 <div className="mt-2">
                   <p className="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
@@ -112,11 +164,6 @@ export function ApiKeyList({ keys, companyId, skillsMap = {} }: Props) {
                     ))}
                   </div>
                 </div>
-              )}
-              {!key.revoked_at && (!skillsMap[key.id] || skillsMap[key.id].length === 0) && (
-                <p className="text-[10px] text-[var(--muted-foreground)] mt-2 italic">
-                  No skills reported yet
-                </p>
               )}
               <p className="text-xs text-[var(--muted-foreground)] mt-2">
                 Created <FormattedDate date={key.created_at} />

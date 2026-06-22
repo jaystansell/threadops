@@ -88,11 +88,28 @@ export default async function ThreadDetailPage(
     .order("created_at", { ascending: true });
   const tags = (tagRows ?? []).map((r: { tag: string }) => r.tag);
 
+  // Fetch agent name for this thread
+  let agentName: string | null = null;
+  if (thread.agent_api_key_id) {
+    const { data: keyRow } = await db
+      .from("api_keys")
+      .select("label")
+      .eq("id", thread.agent_api_key_id)
+      .limit(1)
+      .single();
+    agentName = (keyRow as { label: string } | null)?.label ?? null;
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-xl font-bold">{thread.title}</h2>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {agentName && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-medium">
+              {agentName}
+            </span>
+          )}
           <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
             {thread.status}
           </span>

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { ThreadSidebar } from "@/app/_components/thread-sidebar";
+import { MobileMainWrapper } from "@/app/_components/mobile-main-wrapper";
 import type { Thread } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -117,26 +118,40 @@ export default async function ThreadsLayout({
     };
   });
 
-  // Detect agents without webhook endpoints
+  // Detect agents without webhook endpoints (per-agent check)
   const [apiKeysResult, webhookEndpointsResult] = await Promise.all([
     db
       .from("api_keys")
-      .select("label")
+      .select("id, label")
       .eq("company_id", userCompany.companyId)
       .or(`created_by.eq.${userCompany.userId},created_by.is.null`)
       .is("revoked_at", null),
     db
       .from("webhook_endpoints")
-      .select("id")
+      .select("api_key_id")
       .eq("company_id", userCompany.companyId)
       .eq("active", true),
   ]);
 
-  const agentLabels = (apiKeysResult.data ?? []).map(
-    (k: { label: string }) => k.label,
+  const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
+  const keyLabelMap = new Map(agentKeys.map((k) => [k.id, k.label]));
+  const webhookKeyIds = new Set(
+    (webhookEndpointsResult.data ?? [])
+      .map((w: { api_key_id: string | null }) => w.api_key_id)
+      .filter(Boolean),
   );
-  const hasActiveWebhooks = (webhookEndpointsResult.data ?? []).length > 0;
-  const agentsWithoutWebhooks = hasActiveWebhooks ? [] : agentLabels;
+  const agentsWithoutWebhooks = agentKeys
+    .filter((k) => !webhookKeyIds.has(k.id))
+    .map((k) => k.label);
+
+  // Back-fill agent_name from api_keys for threads that have agent_api_key_id
+  // but no agent message yet (e.g. agent has no webhook and never posted)
+  for (const t of threadsWithLastMsg) {
+    if (!t.agent_name && t.agent_api_key_id) {
+      const label = keyLabelMap.get(t.agent_api_key_id);
+      if (label) t.agent_name = label;
+    }
+  }
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -145,8 +160,10 @@ export default async function ThreadsLayout({
         companyId={userCompany.companyId}
         agentsWithoutWebhooks={agentsWithoutWebhooks}
       />
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {children}
+      <main className="flex-1 overflow-y-auto">
+        <MobileMainWrapper>
+          {children}
+        </MobileMainWrapper>
       </main>
     </div>
   );
