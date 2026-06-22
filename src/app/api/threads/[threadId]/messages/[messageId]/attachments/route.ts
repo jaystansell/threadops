@@ -201,6 +201,7 @@ export async function POST(
         download_url: signedUrlData?.signedUrl ?? null,
       },
       thread.agent_api_key_id,
+      authResult.apiKeyId ?? null,
     );
   }
 
