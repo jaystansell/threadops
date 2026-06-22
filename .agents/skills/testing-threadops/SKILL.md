@@ -453,6 +453,55 @@ To test the action bar, you need a thread with an agent. The flow is:
 2. Create a thread on `/threads/new` — select the agent from the dropdown
 3. Navigate to the thread detail page to see the inline action bar
 
+### Stickman Micro-Animations (PR #95)
+
+Three CSS/SVG stickman animations exist in the app:
+
+1. **Empty state idle** (`StickmanEmptyState`) — Teal stickman with wandering eyes + bobbing `?` on `/threads` when no thread is selected. File: `src/app/threads/page.tsx`, `src/app/threads/[threadId]/not-found.tsx`
+2. **Message send** (`StickmanSendAnimation`) — Stickman sprints with envelope after clicking "Send Message" (800ms). File: `src/app/_components/message-composer.tsx`
+3. **Archive sweep** (`StickmanArchiveAnimation`) — Stickman sweeps with broom on archive (700ms delay before redirect). File: `src/app/_components/thread-actions-panel.tsx`
+
+**Testing fast CSS animations (< 1 second):**
+- Screenshots alone may miss animations that complete in < 1 second. Use Playwright CDP to detect DOM changes:
+  ```javascript
+  const { chromium } = require('playwright');
+  const browser = await chromium.connectOverCDP('http://localhost:29229');
+  const page = browser.contexts()[0].pages()[0];
+  
+  // Set up watcher BEFORE triggering the action
+  const animPromise = page.waitForSelector('.stickman-send', { timeout: 5000 });
+  await page.click('button:has-text("Send Message")');
+  const found = await animPromise; // Confirms element appeared in DOM
+  
+  // Verify auto-removal after animation completes
+  await new Promise(r => setTimeout(r, 1000));
+  const stillInDom = await page.$('.stickman-send');
+  console.log('Auto-removed:', !stillInDom);
+  ```
+- For the archive animation, also verify button disabled state:
+  ```javascript
+  const sweepPromise = page.waitForSelector('.stickman-sweep', { timeout: 5000 });
+  await page.click('button:has-text("Archive")');
+  await sweepPromise;
+  const btn = await page.$('button:has-text("...")');
+  const isDisabled = await btn.isDisabled(); // Should be true during animation
+  ```
+
+**Key CSS classes to watch for:**
+- `.stickman-send` — send runner SVG (appears ~800ms)
+- `.stickman-sweep` — archive broom SVG (appears ~700ms)
+- `.stickman-idle` — empty state SVG (persistent)
+
+### Stale Session Cookies Cause Extreme Middleware Latency
+
+**CRITICAL:** If Chrome has stale/expired Supabase session cookies, the `supabase.auth.getClaims()` call in `src/adapters/supabase/auth/proxy.ts` (line 35) can hang for **100+ seconds** per request. This affects ALL routes (not just protected ones) because `getClaims()` runs before the route check.
+
+**Symptoms:** Dev server logs show `GET /threads 200 in 108s (application-code: 108s)` — the `application-code` time is 100+ seconds.
+
+**Fix:** Use a **fresh Chrome profile** (no stale cookies). If you restart Chrome with `--user-data-dir=/home/ubuntu/.chrome-profile-fresh`, the requests complete in 3-5 seconds.
+
+**Login vs Signup:** The login server action may hang if the middleware is slow. Signup tends to work because it creates a fresh session without needing to validate an existing one. If login hangs, try signing up a new user instead.
+
 ## Key URLs and IDs
 
 - **Demo Company ID:** `a0000000-0000-0000-0000-000000000001`
