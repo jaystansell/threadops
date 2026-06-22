@@ -238,9 +238,15 @@ export function ThreadSidebar({
   revokedKeyIds: revokedKeyIdsProp = [],
 }: ThreadSidebarProps) {
   const revokedKeyIds = new Set(revokedKeyIdsProp);
-  // Build agent name → revoked lookup
+  // Build agent label → revoked lookup (only mark as revoked if ALL keys with that label are revoked)
+  const labelToAllRevoked = new Map<string, boolean>();
+  for (const k of agentKeys) {
+    const prev = labelToAllRevoked.get(k.label);
+    if (prev === false) continue; // already has an active key
+    labelToAllRevoked.set(k.label, revokedKeyIds.has(k.id));
+  }
   const revokedAgentNames = new Set(
-    agentKeys.filter((k) => revokedKeyIds.has(k.id)).map((k) => k.label),
+    [...labelToAllRevoked.entries()].filter(([, allRevoked]) => allRevoked).map(([label]) => label),
   );
   const pathname = usePathname();
   const router = useRouter();

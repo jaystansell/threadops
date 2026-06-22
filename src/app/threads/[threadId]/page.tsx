@@ -152,7 +152,8 @@ export default async function ThreadDetailPage(
         messages={messages}
         threadId={threadId}
         userId={userCompany.userId}
-        isOpen={thread.status === "open" && !isAgentRevoked}
+        isOpen={thread.status === "open"}
+        isAgentRevoked={isAgentRevoked}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
       />
