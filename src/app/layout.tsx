@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
@@ -17,6 +17,19 @@ export const metadata: Metadata = {
   },
   description:
     "Working memory for AI agents that outlasts their context window",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/icon-192x192.png",
+  },
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#14b8a6",
 };
 
 export default async function RootLayout({
