@@ -517,7 +517,7 @@ What would Threadzy change about how you work? What would stay the same? Be spec
             See how much Threadzy saves in token costs and human time.
             Adjust the inputs to match your agent workload.
           </p>
-          <SavingsCalculator compact />
+          <SavingsCalculator hideHeader />
           <div className="mt-6 text-center">
             <Link
               href="/white-paper"
