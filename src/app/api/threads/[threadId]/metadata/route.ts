@@ -1,27 +1,9 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
-import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
-import { hashKey } from "@/core/rules/api-key";
+import { resolveApiKey } from "@/adapters/supabase/api-key-auth";
 
 export const dynamic = "force-dynamic";
-
-type ApiKeyResult =
-  | { kind: "none" }
-  | { kind: "invalid" }
-  | { kind: "ok"; companyId: string; keyId: string };
-
-async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
-  const apiKey = req.headers.get("x-api-key");
-  if (!apiKey) return { kind: "none" };
-  const db = createServerClient();
-  const apiKeyRepo = createApiKeyRepo(db);
-  const keyHash = await hashKey(apiKey);
-  const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
-  if (!keyRecord) return { kind: "invalid" };
-  await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id };
-}
 
 export async function PATCH(
   req: NextRequest,
@@ -31,9 +13,9 @@ export async function PATCH(
   let companyId: string;
   let agentKeyId: string | null = null;
 
-  const apiKeyResult = await resolveApiKeyCompany(req);
-  if (apiKeyResult.kind === "invalid") {
-    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  const apiKeyResult = await resolveApiKey(req);
+  if (apiKeyResult.kind === "invalid" || apiKeyResult.kind === "rate_limited") {
+    return apiKeyResult.response;
   } else if (apiKeyResult.kind === "ok") {
     companyId = apiKeyResult.companyId;
     agentKeyId = apiKeyResult.keyId;

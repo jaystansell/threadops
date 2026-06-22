@@ -1,21 +1,8 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
-import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
-import { hashKey } from "@/core/rules/api-key";
+import { resolveApiKey } from "@/adapters/supabase/api-key-auth";
 
 export const dynamic = "force-dynamic";
-
-async function resolveApiKey(req: NextRequest) {
-  const apiKey = req.headers.get("x-api-key");
-  if (!apiKey) return null;
-  const db = createServerClient();
-  const apiKeyRepo = createApiKeyRepo(db);
-  const keyHash = await hashKey(apiKey);
-  const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
-  if (!keyRecord) return null;
-  await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return keyRecord;
-}
 
 /**
  * PUT /api/agents/skills
@@ -26,10 +13,16 @@ async function resolveApiKey(req: NextRequest) {
  * Auth: X-API-Key header (required)
  */
 export async function PUT(req: NextRequest) {
-  const keyRecord = await resolveApiKey(req);
-  if (!keyRecord) {
-    return Response.json({ error: "Invalid or missing API key" }, { status: 401 });
+  const apiKeyResult = await resolveApiKey(req);
+  if (apiKeyResult.kind === "none" || apiKeyResult.kind === "invalid") {
+    return apiKeyResult.kind === "none"
+      ? Response.json({ error: "Invalid or missing API key" }, { status: 401 })
+      : apiKeyResult.response;
   }
+  if (apiKeyResult.kind === "rate_limited") {
+    return apiKeyResult.response;
+  }
+  const keyRecord = { id: apiKeyResult.keyId, label: apiKeyResult.keyLabel };
 
   const body = await req.json().catch(() => null);
   if (!body || !Array.isArray(body.skills)) {
@@ -88,10 +81,16 @@ export async function PUT(req: NextRequest) {
  * Returns skills for the calling agent (API key auth).
  */
 export async function GET(req: NextRequest) {
-  const keyRecord = await resolveApiKey(req);
-  if (!keyRecord) {
-    return Response.json({ error: "Invalid or missing API key" }, { status: 401 });
+  const apiKeyResult = await resolveApiKey(req);
+  if (apiKeyResult.kind === "none" || apiKeyResult.kind === "invalid") {
+    return apiKeyResult.kind === "none"
+      ? Response.json({ error: "Invalid or missing API key" }, { status: 401 })
+      : apiKeyResult.response;
   }
+  if (apiKeyResult.kind === "rate_limited") {
+    return apiKeyResult.response;
+  }
+  const keyRecord = { id: apiKeyResult.keyId, label: apiKeyResult.keyLabel };
 
   const db = createServerClient();
   const { data, error } = await db

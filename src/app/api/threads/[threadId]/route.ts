@@ -4,6 +4,7 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { logThreadRead } from "@/adapters/supabase/usage-log-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import type { ApiKeyId, CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
+  | { kind: "rate_limited"; retryAfterMs: number }
   | { kind: "ok"; companyId: string; keyId: string; keyLabel: string; modelTier: string | null };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
@@ -21,6 +23,8 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyHash = await hashKey(apiKey);
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
+  const rl = checkRateLimit(keyHash);
+  if (!rl.allowed) return { kind: "rate_limited" as const, retryAfterMs: rl.retryAfterMs! };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
   return { kind: "ok", companyId: keyRecord.company_id, keyId: keyRecord.id, keyLabel: keyRecord.label, modelTier: keyRecord.model_tier };
 }
@@ -36,6 +40,8 @@ export async function GET(
   const apiKeyResult = await resolveApiKeyCompany(req);
   if (apiKeyResult.kind === "invalid") {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "rate_limited") {
+    return rateLimitResponse(apiKeyResult.retryAfterMs);
   } else if (apiKeyResult.kind === "ok") {
     companyId = apiKeyResult.companyId;
     agentKeyId = apiKeyResult.keyId;
@@ -114,6 +120,8 @@ export async function PATCH(
   const apiKeyResult = await resolveApiKeyCompany(req);
   if (apiKeyResult.kind === "invalid") {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
+  } else if (apiKeyResult.kind === "rate_limited") {
+    return rateLimitResponse(apiKeyResult.retryAfterMs);
   } else if (apiKeyResult.kind === "ok") {
     companyId = apiKeyResult.companyId;
     agentKeyId = apiKeyResult.keyId;

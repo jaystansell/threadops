@@ -4,6 +4,7 @@ import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "@/core/types";
 import type { CompanyId, WebhookEventType } from "@/core/types";
 
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 type ApiKeyResult =
   | { kind: "none" }
   | { kind: "invalid" }
+  | { kind: "rate_limited"; retryAfterMs: number }
   | { kind: "ok"; companyId: string; apiKeyId: string };
 
 async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
@@ -22,6 +24,8 @@ async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
   const keyHash = await hashKey(apiKey);
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) return { kind: "invalid" };
+  const rl = checkRateLimit(keyHash);
+  if (!rl.allowed) return { kind: "rate_limited" as const, retryAfterMs: rl.retryAfterMs! };
   await apiKeyRepo.touchLastUsed(keyRecord.id);
   return { kind: "ok", companyId: keyRecord.company_id, apiKeyId: keyRecord.id };
 }
@@ -30,6 +34,9 @@ async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string; 
   const apiKeyResult = await resolveApiKeyCompany(req);
   if (apiKeyResult.kind === "invalid") {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
+  }
+  if (apiKeyResult.kind === "rate_limited") {
+    return rateLimitResponse(apiKeyResult.retryAfterMs);
   }
   if (apiKeyResult.kind === "ok") {
     return { companyId: apiKeyResult.companyId, apiKeyId: apiKeyResult.apiKeyId };

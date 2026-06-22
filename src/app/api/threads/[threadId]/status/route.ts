@@ -6,6 +6,7 @@ import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { canTransition, InvalidStatusTransitionError } from "@/core/rules";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export async function PATCH(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     apiKeyCompanyId = keyRecord.company_id;
     apiKeyId = keyRecord.id;
