@@ -196,6 +196,7 @@ interface ThreadSidebarProps {
   agentsWithoutWebhooks?: string[];
   agentGroups?: AgentGroup[];
   agentKeys?: AgentKeyInfo[];
+  revokedKeyIds?: string[];
 }
 
 function buildWebhookPrompt(agentName: string): string {
@@ -232,7 +233,13 @@ export function ThreadSidebar({
   agentsWithoutWebhooks = [],
   agentGroups: initialAgentGroups = [],
   agentKeys = [],
+  revokedKeyIds: revokedKeyIdsProp = [],
 }: ThreadSidebarProps) {
+  const revokedKeyIds = new Set(revokedKeyIdsProp);
+  // Build agent name → revoked lookup
+  const revokedAgentNames = new Set(
+    agentKeys.filter((k) => revokedKeyIds.has(k.id)).map((k) => k.label),
+  );
   const pathname = usePathname();
   const router = useRouter();
   const isThreadRoot = pathname === "/threads";
@@ -731,12 +738,13 @@ export function ThreadSidebar({
                 ? []
                 : sortedThreads;
             const missingWebhook = groupBy === "agent" && isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
+            const isRevoked = groupBy === "agent" && revokedAgentNames.has(group.label);
 
             return (
               <div key={group.label}>
                 {isAccordion ? (
                   <div
-                    className={`relative flex items-center transition-colors hover:opacity-90 ${colorPickerAgent === group.label ? "z-40" : ""}`}
+                    className={`relative flex items-center transition-colors hover:opacity-90 ${colorPickerAgent === group.label ? "z-40" : ""} ${isRevoked ? "opacity-50" : ""}`}
                     style={{
                       backgroundColor: color?.bg,
                       color: color?.fg,
@@ -756,9 +764,14 @@ export function ThreadSidebar({
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <span className="text-xs font-semibold truncate uppercase">
+                      <span className={`text-xs font-semibold truncate uppercase ${isRevoked ? "line-through" : ""}`}>
                         {group.label}
                       </span>
+                      {isRevoked && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-300 font-medium shrink-0 no-underline">
+                          Disconnected
+                        </span>
+                      )}
                       {missingWebhook && (
                         <span
                           title="No webhook registered"
@@ -879,13 +892,14 @@ export function ThreadSidebar({
                         const subKey = `${group.label}::${sub.label}`;
                         const subOpen = effectiveSubExpanded.has(subKey);
                         const subColor = getAgentColor(sub.label, agentColorOverrides);
+                        const subRevoked = revokedAgentNames.has(sub.label);
                         const subSorted = [...sub.threads].sort((a, b) => {
                           const ap = pinnedThreads.has(a.id) ? 0 : 1;
                           const bp = pinnedThreads.has(b.id) ? 0 : 1;
                           return ap - bp;
                         });
                         return (
-                          <div key={subKey}>
+                          <div key={subKey} className={subRevoked ? "opacity-50" : ""}>
                             <button
                               type="button"
                               onClick={() => toggleSubGroup(subKey)}
@@ -904,9 +918,14 @@ export function ThreadSidebar({
                                 className="w-2 h-2 rounded-full shrink-0"
                                 style={{ backgroundColor: subColor.bg }}
                               />
-                              <span className="text-[11px] font-semibold truncate uppercase text-[var(--foreground)]">
+                              <span className={`text-[11px] font-semibold truncate uppercase text-[var(--foreground)] ${subRevoked ? "line-through" : ""}`}>
                                 {sub.label}
                               </span>
+                              {subRevoked && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-300 font-medium shrink-0">
+                                  Disconnected
+                                </span>
+                              )}
                               <span className="ml-auto text-[10px] text-[var(--muted-foreground)] shrink-0">
                                 {sub.threads.length}
                               </span>
