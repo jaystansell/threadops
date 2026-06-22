@@ -228,7 +228,10 @@ export function ThreadSidebar({
 }: ThreadSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return pathname === "/threads" && window.matchMedia("(max-width: 767px)").matches;
+  });
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
@@ -258,6 +261,19 @@ export function ThreadSidebar({
       setMobileOpen(false);
     }
   }, []);
+
+  // Auto-open sidebar on mobile when on /threads (no thread selected)
+  useEffect(() => {
+    if (pathname !== "/threads") return;
+    const mql = window.matchMedia("(max-width: 767px)");
+    const handler = () => {
+      if (mql.matches) setMobileOpen(true);
+    };
+    mql.addEventListener("change", handler);
+    // Fire once after mount to handle initial load
+    handler();
+    return () => mql.removeEventListener("change", handler);
+  }, [pathname]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
