@@ -241,7 +241,7 @@ type SetupPhase = "created" | "shared" | "monitoring" | "success" | "needs-manua
 export function CreateApiKeyForm({ companyId }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [label, setLabel] = useState("");
-  const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
+  const [selectedScopes, setSelectedScopes] = useState<string[]>([...VALID_SCOPES]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CreateResult | null>(null);
@@ -289,7 +289,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
       setResult(data);
       setCreatedLabel(label);
       setLabel("");
-      setSelectedScopes([]);
+      setSelectedScopes([...VALID_SCOPES]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -555,6 +555,18 @@ export function CreateApiKeyForm({ companyId }: Props) {
 
       <fieldset>
         <legend className="text-sm font-medium mb-2">Scopes</legend>
+        <label className="flex items-center gap-1.5 text-sm mb-2 text-[var(--accent)] font-medium cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selectedScopes.length === VALID_SCOPES.length}
+            onChange={() =>
+              setSelectedScopes(
+                selectedScopes.length === VALID_SCOPES.length ? [] : [...VALID_SCOPES],
+              )
+            }
+          />
+          Select all
+        </label>
         <div className="flex flex-wrap gap-3">
           {VALID_SCOPES.map((scope) => (
             <label key={scope} className="flex items-center gap-1.5 text-sm">
@@ -576,7 +588,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
       <div className="flex items-center gap-2">
         <button
           type="submit"
-          disabled={loading || !label}
+          disabled={loading || !label || selectedScopes.length === 0}
           data-testid="api-key-submit"
           className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >

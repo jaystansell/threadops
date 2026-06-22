@@ -20,6 +20,9 @@ export function SiteFooter() {
           <Link href="/privacy" className="hover:text-[var(--foreground)] transition-colors">
             Privacy
           </Link>
+          <Link href="/security" className="hover:text-[var(--foreground)] transition-colors">
+            Security
+          </Link>
         </div>
       </div>
     </footer>
