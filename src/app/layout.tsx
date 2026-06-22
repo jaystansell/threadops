@@ -8,6 +8,7 @@ import { AuthHeader } from "./_components/auth-header";
 import { DesktopNav } from "./_components/desktop-nav";
 import { MobileNav } from "./_components/mobile-nav";
 import { SiteFooter } from "./_components/site-footer";
+import { UpdateToast } from "./_components/update-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -61,6 +62,7 @@ export default async function RootLayout({
             </div>
           </header>
         </AppHeader>
+        <UpdateToast />
         <div className="flex-1 flex flex-col">{children}</div>
         <SiteFooter />
         <Analytics />
