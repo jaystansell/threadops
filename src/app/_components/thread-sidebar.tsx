@@ -842,7 +842,7 @@ export function ThreadSidebar({
                               </p>
                             )}
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              {!isAccordion && thread.agent_name && (() => {
+                              {(!isAccordion || groupBy === "group") && thread.agent_name && (() => {
                                 const agentColor = getAgentColor(thread.agent_name, agentColorOverrides);
                                 return (
                                   <span
