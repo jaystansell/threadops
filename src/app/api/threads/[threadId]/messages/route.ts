@@ -108,6 +108,15 @@ export async function POST(
       );
     }
 
+    // Auto-assign ownership: if thread has no owner, claim it for this agent.
+    // This prevents future cross-agent webhook broadcasting for legacy threads.
+    if (!thread.agent_api_key_id) {
+      await db
+        .from("threads")
+        .update({ agent_api_key_id: keyRecord.id })
+        .eq("id", threadId);
+    }
+
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     authorId = keyRecord.id;
     authorKind = "agent";
