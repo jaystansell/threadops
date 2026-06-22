@@ -134,6 +134,7 @@ export default async function ThreadsLayout({
   ]);
 
   const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
+  const keyLabelMap = new Map(agentKeys.map((k) => [k.id, k.label]));
   const webhookKeyIds = new Set(
     (webhookEndpointsResult.data ?? [])
       .map((w: { api_key_id: string | null }) => w.api_key_id)
@@ -142,6 +143,15 @@ export default async function ThreadsLayout({
   const agentsWithoutWebhooks = agentKeys
     .filter((k) => !webhookKeyIds.has(k.id))
     .map((k) => k.label);
+
+  // Back-fill agent_name from api_keys for threads that have agent_api_key_id
+  // but no agent message yet (e.g. agent has no webhook and never posted)
+  for (const t of threadsWithLastMsg) {
+    if (!t.agent_name && t.agent_api_key_id) {
+      const label = keyLabelMap.get(t.agent_api_key_id);
+      if (label) t.agent_name = label;
+    }
+  }
 
   return (
     <div className="flex flex-1 overflow-hidden">

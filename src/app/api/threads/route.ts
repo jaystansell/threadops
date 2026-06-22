@@ -187,15 +187,35 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Back-fill agent_name from api_keys for threads assigned to an agent
+    // but where the agent hasn't posted a message yet
+    const missingAgentIds = threads
+      .filter((t: { id: string; agent_api_key_id?: string | null }) =>
+        t.agent_api_key_id && !agentMap.has(t.id))
+      .map((t: { agent_api_key_id: string }) => t.agent_api_key_id);
+    const keyLabelMap = new Map<string, string>();
+    if (missingAgentIds.length > 0) {
+      const { data: keyRows } = await db
+        .from("api_keys")
+        .select("id, label")
+        .in("id", missingAgentIds);
+      for (const row of keyRows ?? []) {
+        keyLabelMap.set(row.id, row.label);
+      }
+    }
+
     const enriched = threads.map((thread) => {
       const lm = lastMsgMap.get(thread.id);
+      const agentName = agentMap.get(thread.id)
+        ?? (thread.agent_api_key_id ? keyLabelMap.get(thread.agent_api_key_id) : null)
+        ?? null;
       return {
         ...thread,
         tags: tagMap.get(thread.id) ?? [],
         last_author_kind: lm?.author_kind ?? null,
         last_author_name: lm?.author_name ?? null,
         last_message_at: lm?.created_at ?? null,
-        agent_name: agentMap.get(thread.id) ?? null,
+        agent_name: agentName,
       };
     });
 
