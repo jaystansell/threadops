@@ -1343,6 +1343,15 @@ export function ApiDocsClient() {
                     <code className="bg-[var(--muted)] px-1 rounded text-xs">thread.status_changed</code> —
                     A thread&apos;s status transitions (open/archived).
                   </li>
+                  <li>
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">attachment.created</code> —
+                    A file attachment is uploaded to a message. Payload includes a signed
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">download_url</code> (valid 1 hour)
+                    with the file&apos;s <code className="bg-[var(--muted)] px-1 rounded text-xs">filename</code>,{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">content_type</code>, and{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">file_size</code>.
+                    Always-on: auto-delivered to all endpoints.
+                  </li>
                 </ul>
                 <p className="font-medium text-[var(--foreground)]">
                   Echo suppression

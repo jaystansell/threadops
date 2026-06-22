@@ -1,8 +1,10 @@
 import type {
   WebhookEndpoint,
   WebhookEndpointId,
+  WebhookEventType,
   CompanyId,
 } from "@/core/types";
+import { ALWAYS_ON_EVENTS } from "@/core/types";
 import type {
   WebhookEndpointRepo,
   WebhookEndpointCreateInput,
@@ -98,12 +100,23 @@ export function createWebhookEndpointRepo(
       companyId: CompanyId,
       eventType: string,
     ): Promise<WebhookEndpoint[]> {
-      const { data, error } = await db
+      let query = db
         .from("webhook_endpoints")
         .select("*")
         .eq("company_id", companyId)
-        .eq("active", true)
-        .contains("events", [eventType]);
+        .eq("active", true);
+
+      // Always-on events are delivered to ALL active endpoints, even if the
+      // endpoint's stored events array doesn't include them (e.g., endpoints
+      // created before the event type was added to ALWAYS_ON_EVENTS).
+      const isAlwaysOn = ALWAYS_ON_EVENTS.includes(
+        eventType as WebhookEventType,
+      );
+      if (!isAlwaysOn) {
+        query = query.contains("events", [eventType]);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as WebhookEndpoint[];
     },
