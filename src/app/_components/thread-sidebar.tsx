@@ -14,6 +14,18 @@ const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
 const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
 const AGENT_COLORS_KEY = "threadops-agent-colors";
+const STATUS_FILTER_KEY = "threadops-status-filter";
+const GROUP_BY_KEY = "threadops-group-by";
+
+function readStorageString(key: string, fallback: string): string {
+  try {
+    return typeof window !== "undefined" ? (localStorage.getItem(key) ?? fallback) : fallback;
+  } catch { return fallback; }
+}
+
+function writeStorageString(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* ignore */ }
+}
 
 function readStorageSet(key: string): Set<string> {
   try {
@@ -255,8 +267,10 @@ export function ThreadSidebar({
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
   const threads = [...(overrideThreads ?? initialThreads), ...extraThreads];
-  const [status, setStatus] = useState("open");
-  const [groupBy, setGroupBy] = useState("agent");
+  const [status, setStatusRaw] = useState(() => readStorageString(STATUS_FILTER_KEY, "open"));
+  const setStatus = useCallback((v: string) => { setStatusRaw(v); writeStorageString(STATUS_FILTER_KEY, v); }, []);
+  const [groupBy, setGroupByRaw] = useState(() => readStorageString(GROUP_BY_KEY, "agent"));
+  const setGroupBy = useCallback((v: string) => { setGroupByRaw(v); writeStorageString(GROUP_BY_KEY, v); }, []);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
