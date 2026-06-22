@@ -1,0 +1,21 @@
+{
+  "name": "Threadzy.ai",
+  "short_name": "Threadzy",
+  "description": "Working memory for AI agents that outlasts their context window",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#14b8a6",
+  "background_color": "#0A0F1A",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
