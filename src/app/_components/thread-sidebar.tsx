@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ThreadWithLastMessage, AgentGroup, AgentKeyInfo } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 import { ManageGroupsModal, GROUP_COLOR_MAP } from "./manage-groups-modal";
 import { ResizableSidebar } from "./resizable-sidebar";
+import { useMobileMenu } from "./mobile-menu-context";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
@@ -242,7 +244,7 @@ export function ThreadSidebar({
   );
   const pathname = usePathname();
   const router = useRouter();
-  const isThreadRoot = pathname === "/threads";
+  const { portalTarget } = useMobileMenu();
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
@@ -1250,16 +1252,18 @@ export function ThreadSidebar({
 
   return (
     <>
-      {/* Mobile: inline full-width thread list (visible only on /threads root) */}
-      {isThreadRoot && (
-        <section className="md:hidden flex-1 flex flex-col overflow-hidden">
-          {sidebarContent}
-        </section>
-      )}
+      {/* Mobile: portal thread list into hamburger drawer */}
+      {portalTarget &&
+        createPortal(
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {sidebarContent}
+          </div>,
+          portalTarget,
+        )}
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar (skip rendering content when portal is active to avoid shared ref conflicts) */}
       <ResizableSidebar>
-        {sidebarContent}
+        {!portalTarget && sidebarContent}
       </ResizableSidebar>
     </>
   );

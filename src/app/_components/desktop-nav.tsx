@@ -11,7 +11,7 @@ const NAV_LINKS = [
 
 export function DesktopNav() {
   return (
-    <nav className="hidden sm:flex items-center gap-1">
+    <nav className="hidden md:flex items-center gap-1">
       {NAV_LINKS.map((link) => (
         <Link
           key={link.href}
