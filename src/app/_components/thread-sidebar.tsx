@@ -259,7 +259,19 @@ export function ThreadSidebar({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const savedScrollRef = useRef(0);
   const agentColorOverrides = useStorageRecord(AGENT_COLORS_KEY);
+
+  // Preserve sidebar scroll position across thread navigations
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    // Restore saved scroll position after route change renders
+    requestAnimationFrame(() => {
+      el.scrollTop = savedScrollRef.current;
+    });
+  }, [pathname]);
 
 
 
@@ -599,7 +611,11 @@ export function ThreadSidebar({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto"
+        onScroll={(e) => { savedScrollRef.current = e.currentTarget.scrollTop; }}
+      >
         {searchResults && searchResults.length > 0 && (
           <div className="border-b border-[var(--border)]">
             <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] bg-[var(--muted)]">
