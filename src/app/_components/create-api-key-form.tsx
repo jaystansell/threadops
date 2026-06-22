@@ -581,7 +581,7 @@ export function CreateApiKeyForm({ companyId }: Props) {
       <div className="flex items-center gap-2">
         <button
           type="submit"
-          disabled={loading || !label}
+          disabled={loading || !label || selectedScopes.length === 0}
           data-testid="api-key-submit"
           className="px-3 py-1.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity disabled:opacity-50"
         >
