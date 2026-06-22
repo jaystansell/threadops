@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ThreadWithLastMessage, AgentGroup, AgentKeyInfo } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 import { ManageGroupsModal, GROUP_COLOR_MAP } from "./manage-groups-modal";
+import { ResizableSidebar } from "./resizable-sidebar";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
@@ -1019,9 +1020,9 @@ export function ThreadSidebar({
       )}
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-80 lg:w-96 border-r border-[var(--border)] flex-col bg-[var(--background)] shrink-0 overflow-hidden">
+      <ResizableSidebar>
         {sidebarContent}
-      </aside>
+      </ResizableSidebar>
     </>
   );
 }
