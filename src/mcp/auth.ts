@@ -1,4 +1,5 @@
 import { hashKey } from "../core/rules/api-key";
+import { checkRateLimit } from "../core/rules/rate-limit";
 import { createApiKeyRepo } from "../adapters/supabase/api-key-repo";
 import type { SupabaseClient } from "../adapters/supabase/client";
 import type { ApiKey } from "../core/types";
@@ -19,6 +20,10 @@ export async function authenticateApiKey(
   const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
   if (!keyRecord) {
     throw new Error("Invalid API key");
+  }
+  const rl = checkRateLimit(keyHash);
+  if (!rl.allowed) {
+    throw new Error("Rate limit exceeded");
   }
   await apiKeyRepo.touchLastUsed(keyRecord.id);
   return {

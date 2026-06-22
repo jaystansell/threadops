@@ -37,10 +37,12 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   let auth: AuthContext;
   try {
     auth = await authenticateApiKey(db, apiKey);
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Invalid API key";
+    const status = message === "Rate limit exceeded" ? 429 : 401;
     return new Response(
-      JSON.stringify({ error: "Invalid API key" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: message }),
+      { status, headers: { "Content-Type": "application/json" } },
     );
   }
 

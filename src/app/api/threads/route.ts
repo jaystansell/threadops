@@ -2,46 +2,23 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createThreadRepo } from "@/adapters/supabase/thread-repo";
 import { createMessageRepo } from "@/adapters/supabase/message-repo";
-import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
-import { hashKey } from "@/core/rules/api-key";
+import { resolveApiKey } from "@/adapters/supabase/api-key-auth";
 import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
 const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
-type ApiKeyResult =
-  | { kind: "none" }
-  | { kind: "invalid" }
-  | { kind: "ok"; companyId: string; keyLabel: string; keyId: string };
-
-async function resolveApiKeyCompany(req: NextRequest): Promise<ApiKeyResult> {
-  const apiKey = req.headers.get("x-api-key");
-  if (!apiKey) return { kind: "none" };
-  const db = createServerClient();
-  const apiKeyRepo = createApiKeyRepo(db);
-  const keyHash = await hashKey(apiKey);
-  const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
-  if (!keyRecord) return { kind: "invalid" };
-  await apiKeyRepo.touchLastUsed(keyRecord.id);
-  return {
-    kind: "ok",
-    companyId: keyRecord.company_id,
-    keyLabel: keyRecord.label,
-    keyId: keyRecord.id,
-  };
-}
-
 export async function GET(req: NextRequest) {
   let companyId: string;
   let agentKeyId: string | null = null;
 
-  const apiKeyResult = await resolveApiKeyCompany(req);
-  if (apiKeyResult.kind === "invalid") {
-    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  const apiKeyResult = await resolveApiKey(req);
+  if (apiKeyResult.kind === "invalid" || apiKeyResult.kind === "rate_limited") {
+    return apiKeyResult.response;
   } else if (apiKeyResult.kind === "ok") {
     companyId = apiKeyResult.companyId;
     agentKeyId = apiKeyResult.keyId;
@@ -234,9 +211,9 @@ export async function POST(req: NextRequest) {
   let authorName: string | null = null;
   let apiKeyCompanyId: string | null = null;
 
-  const apiKeyResult = await resolveApiKeyCompany(req);
-  if (apiKeyResult.kind === "invalid") {
-    return Response.json({ error: "Invalid API key" }, { status: 401 });
+  const apiKeyResult = await resolveApiKey(req);
+  if (apiKeyResult.kind === "invalid" || apiKeyResult.kind === "rate_limited") {
+    return apiKeyResult.response;
   } else if (apiKeyResult.kind === "ok") {
     authorId = apiKeyResult.keyId;
     authorKind = "agent";
