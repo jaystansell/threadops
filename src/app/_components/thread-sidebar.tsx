@@ -303,8 +303,6 @@ export function ThreadSidebar({
     });
   }, [pathname]);
 
-
-
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -473,6 +471,17 @@ export function ThreadSidebar({
     },
     [companyId],
   );
+
+  // On mount, if persisted status differs from server default ("open"), fetch matching threads
+  const mountFetchedRef = useRef(false);
+  useEffect(() => {
+    if (mountFetchedRef.current) return;
+    mountFetchedRef.current = true;
+    if (status !== "open") {
+      fetchThreads(status, search);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleStatusChange(newStatus: string) {
     setStatus(newStatus);
