@@ -194,7 +194,7 @@ export default async function ThreadsLayout({
   }
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 min-h-0 max-h-[calc(100dvh-3.25rem)] overflow-hidden">
       <ThreadSidebar
         initialThreads={threadsWithLastMsg}
         companyId={userCompany.companyId}
