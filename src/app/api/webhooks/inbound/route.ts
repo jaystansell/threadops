@@ -3,6 +3,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createWebhookRepo } from "@/adapters/supabase/webhook-repo";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import { verifySignature, SIGNATURE_HEADER } from "@/core/rules/webhook";
 import type { CompanyId } from "@/core/types";
 
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
   if (!keyRecord) {
     return Response.json({ error: "Invalid API key" }, { status: 401 });
   }
+  const rl = checkRateLimit(keyHash);
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
 
   await apiKeyRepo.touchLastUsed(keyRecord.id);
 

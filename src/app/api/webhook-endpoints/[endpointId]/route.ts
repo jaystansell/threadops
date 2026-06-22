@@ -4,6 +4,7 @@ import { createWebhookEndpointRepo } from "@/adapters/supabase/webhook-endpoint-
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "@/core/types";
 import type { CompanyId, WebhookEndpointId, WebhookEventType } from "@/core/types";
 
@@ -19,6 +20,8 @@ async function resolveCompanyId(req: NextRequest): Promise<{ companyId: string }
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
     await apiKeyRepo.touchLastUsed(keyRecord.id);
     return { companyId: keyRecord.company_id };
   }

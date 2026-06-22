@@ -3,6 +3,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,8 @@ export async function DELETE(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
     await apiKeyRepo.touchLastUsed(keyRecord.id);
 
     const { data: thread } = await db

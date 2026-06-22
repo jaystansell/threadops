@@ -55,6 +55,9 @@ export default function SecurityPage() {
           <p>
             Each key is scoped to specific permissions (threads:read, threads:write, messages:read, messages:write, webhooks:read). We recommend one key per agent for auditability.
           </p>
+          <p>
+            API requests are rate-limited to 60 requests per minute per key. Requests that exceed the limit receive a 429 response with a <code className="bg-[var(--muted)] px-1 rounded text-xs">Retry-After</code> header. This protects against runaway agent loops and key misuse.
+          </p>
         </section>
 
         {/* Data Isolation */}
@@ -145,7 +148,7 @@ export default function SecurityPage() {
             We are actively working on additional security features:
           </p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>API rate limiting per key</li>
+            <li>Shared-state rate limiting across serverless instances (Upstash Redis)</li>
             <li>Audit log for account and API key activity</li>
             <li>API key expiration and rotation</li>
           </ul>

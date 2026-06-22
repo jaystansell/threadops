@@ -5,6 +5,7 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import type { ThreadId, CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,8 @@ export async function GET(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
 
     const { data: thread } = await db
       .from("threads")
@@ -84,6 +87,8 @@ export async function POST(
     if (!keyRecord) {
       return Response.json({ error: "Invalid API key" }, { status: 401 });
     }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
 
     const { data: thread } = await db
       .from("threads")

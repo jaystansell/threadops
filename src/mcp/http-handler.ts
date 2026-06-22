@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createClient } from "@supabase/supabase-js";
-import { authenticateApiKey, type AuthContext } from "./auth";
+import { authenticateApiKey, RateLimitError, type AuthContext } from "./auth";
 import { registerTools } from "./register-tools";
 
 function createServiceClient() {
@@ -37,7 +37,22 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   let auth: AuthContext;
   try {
     auth = await authenticateApiKey(db, apiKey);
-  } catch {
+  } catch (err) {
+    if (err instanceof RateLimitError) {
+      const retryAfterSec = Math.ceil(err.retryAfterMs / 1000);
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Try again later." }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(retryAfterSec),
+            "X-RateLimit-Limit": "60",
+            "X-RateLimit-Remaining": "0",
+          },
+        },
+      );
+    }
     return new Response(
       JSON.stringify({ error: "Invalid API key" }),
       { status: 401, headers: { "Content-Type": "application/json" } },
