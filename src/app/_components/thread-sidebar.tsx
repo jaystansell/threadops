@@ -256,6 +256,7 @@ export function ThreadSidebar({
   const [webhookPromptCopied, setWebhookPromptCopied] = useState(false);
   const [showManageGroups, setShowManageGroups] = useState(false);
   const [agentGroups, setAgentGroups] = useState<AgentGroup[]>(initialAgentGroups);
+  const [expandedSubGroups, setExpandedSubGroups] = useState<Set<string>>(new Set());
   const sentinelRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
@@ -336,6 +337,18 @@ export function ThreadSidebar({
     writeStorageSet(EXPANDED_GROUPS_KEY, current);
     setLocalExpandedOverrides(new Set(current));
     window.dispatchEvent(new StorageEvent("storage", { key: EXPANDED_GROUPS_KEY }));
+  }, []);
+
+  const toggleSubGroup = useCallback((key: string) => {
+    setExpandedSubGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -448,7 +461,7 @@ export function ThreadSidebar({
       )
     : threads;
 
-  let grouped: { label: string; threads: ThreadWithLastMessage[]; groupColor?: string }[];
+  let grouped: { label: string; threads: ThreadWithLastMessage[]; groupColor?: string; subGroups?: { label: string; threads: ThreadWithLastMessage[] }[] }[];
 
   if (groupBy === "agent") {
     const agentBuckets = new Map<string, ThreadWithLastMessage[]>();
@@ -506,16 +519,45 @@ export function ThreadSidebar({
       }
     }
 
-    // Maintain sort order from agentGroups
+    // Maintain sort order from agentGroups, build per-agent sub-groups
+    function buildSubGroups(threads: ThreadWithLastMessage[]): { label: string; threads: ThreadWithLastMessage[] }[] {
+      const agentBuckets = new Map<string, ThreadWithLastMessage[]>();
+      const noAgent: ThreadWithLastMessage[] = [];
+      for (const t of threads) {
+        const agentName = t.agent_name ?? (t.agent_api_key_id ? agentKeys.find((k) => k.id === t.agent_api_key_id)?.label : undefined);
+        if (agentName) {
+          const existing = agentBuckets.get(agentName) ?? [];
+          existing.push(t);
+          agentBuckets.set(agentName, existing);
+        } else {
+          noAgent.push(t);
+        }
+      }
+      const subs: { label: string; threads: ThreadWithLastMessage[] }[] = [];
+      for (const [agent, agentThreads] of agentBuckets) {
+        subs.push({ label: agent, threads: agentThreads });
+      }
+      subs.sort((a, b) => a.label.localeCompare(b.label));
+      if (noAgent.length > 0) {
+        subs.push({ label: "Unassigned", threads: noAgent });
+      }
+      return subs;
+    }
+
     grouped = agentGroups
       .filter((g) => groupBuckets.has(g.name))
-      .map((g) => ({
-        label: g.name,
-        threads: groupBuckets.get(g.name)!,
-        groupColor: g.color,
-      }));
+      .map((g) => {
+        const threads = groupBuckets.get(g.name)!;
+        return {
+          label: g.name,
+          threads,
+          groupColor: g.color,
+          subGroups: buildSubGroups(threads),
+        };
+      });
     if (ungrouped.length > 0) {
-      grouped.push({ label: "Ungrouped", threads: ungrouped });
+      const ug = ungrouped;
+      grouped.push({ label: "Ungrouped", threads: ug, subGroups: buildSubGroups(ug) });
     }
   } else {
     const buckets = new Map<string, ThreadWithLastMessage[]>();
@@ -549,6 +591,25 @@ export function ThreadSidebar({
   const effectiveExpanded = activeGroupLabel && !expandedGroups.has(activeGroupLabel)
     ? new Set([...expandedGroups, activeGroupLabel])
     : expandedGroups;
+
+  // Auto-expand sub-group containing active thread (derived, no setState)
+  let activeSubKey: string | null = null;
+  if (activeThreadId && groupBy === "group") {
+    for (const group of grouped) {
+      if (group.subGroups) {
+        for (const sub of group.subGroups) {
+          if (sub.threads.some((t) => t.id === activeThreadId)) {
+            activeSubKey = `${group.label}::${sub.label}`;
+            break;
+          }
+        }
+      }
+      if (activeSubKey) break;
+    }
+  }
+  const effectiveSubExpanded = activeSubKey && !expandedSubGroups.has(activeSubKey)
+    ? new Set([...expandedSubGroups, activeSubKey])
+    : expandedSubGroups;
 
   const isAccordion = groupBy === "agent" || groupBy === "group";
   const hasAnyExpanded = !isAccordion || effectiveExpanded.size > 0;
@@ -695,7 +756,7 @@ export function ThreadSidebar({
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <span className="text-xs font-semibold truncate">
+                      <span className="text-xs font-semibold truncate uppercase">
                         {group.label}
                       </span>
                       {missingWebhook && (
@@ -813,7 +874,148 @@ export function ThreadSidebar({
 
                 {(isAccordion ? isOpen : true) && (
                   <div>
-                    {visibleThreads.map((thread) => {
+                    {groupBy === "group" && group.subGroups ? (
+                      group.subGroups.map((sub) => {
+                        const subKey = `${group.label}::${sub.label}`;
+                        const subOpen = effectiveSubExpanded.has(subKey);
+                        const subColor = getAgentColor(sub.label, agentColorOverrides);
+                        const subSorted = [...sub.threads].sort((a, b) => {
+                          const ap = pinnedThreads.has(a.id) ? 0 : 1;
+                          const bp = pinnedThreads.has(b.id) ? 0 : 1;
+                          return ap - bp;
+                        });
+                        return (
+                          <div key={subKey}>
+                            <button
+                              type="button"
+                              onClick={() => toggleSubGroup(subKey)}
+                              className="w-full flex items-center gap-2 px-4 py-1.5 text-left border-b border-[var(--border)] hover:bg-[var(--muted)] transition-colors"
+                            >
+                              <svg
+                                className={`w-2.5 h-2.5 shrink-0 transition-transform ${subOpen ? "rotate-90" : ""}`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                              </svg>
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: subColor.bg }}
+                              />
+                              <span className="text-[11px] font-semibold truncate uppercase text-[var(--foreground)]">
+                                {sub.label}
+                              </span>
+                              <span className="ml-auto text-[10px] text-[var(--muted-foreground)] shrink-0">
+                                {sub.threads.length}
+                              </span>
+                            </button>
+                            {subOpen && subSorted.map((thread) => {
+                              const isActive = thread.id === activeThreadId;
+                              const isPinned = pinnedThreads.has(thread.id);
+                              return (
+                                <div key={thread.id} className="relative group">
+                                  <Link
+                                    href={`/threads/${thread.id}`}
+                                    className={`block pl-6 pr-3 py-2 border-b border-[var(--border)] transition-colors ${
+                                      isActive
+                                        ? "bg-[var(--accent)]/15 border-l-2 border-l-[var(--accent)] text-[var(--foreground)]"
+                                        : "hover:bg-[var(--muted)]"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-1">
+                                      {isPinned && (
+                                        <svg className="w-3 h-3 shrink-0 mt-0.5 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                                        </svg>
+                                      )}
+                                      <h3 className={`text-sm leading-tight flex-1 ${isActive ? "font-semibold" : "font-medium"}`}>
+                                        {thread.title}
+                                      </h3>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setMenuThreadId(menuThreadId === thread.id ? null : thread.id);
+                                        }}
+                                        className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--muted)] transition-opacity"
+                                      >
+                                        <svg className="w-4 h-4 text-[var(--muted-foreground)]" fill="currentColor" viewBox="0 0 24 24">
+                                          <circle cx="12" cy="5" r="1.5" />
+                                          <circle cx="12" cy="12" r="1.5" />
+                                          <circle cx="12" cy="19" r="1.5" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                    {thread.summary && (
+                                      <p className="text-[10px] text-[var(--muted-foreground)] mt-0.5 line-clamp-1">
+                                        {thread.summary}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                      {thread.last_author_kind === "agent" ? (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium">
+                                          Needs reply
+                                        </span>
+                                      ) : thread.last_author_kind === "user" ? (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                          Replied
+                                        </span>
+                                      ) : null}
+                                      {thread.tags && thread.tags.length > 0 && thread.tags.slice(0, 3).map((tag) => (
+                                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                      {thread.tags && thread.tags.length > 3 && (
+                                        <span className="text-[10px] text-[var(--muted-foreground)]">
+                                          +{thread.tags.length - 3}
+                                        </span>
+                                      )}
+                                      <span className="text-[10px] text-[var(--muted-foreground)]">
+                                        <FormattedDate date={thread.last_message_at ?? thread.created_at} />
+                                      </span>
+                                    </div>
+                                  </Link>
+                                  {menuThreadId === thread.id && (
+                                    <div
+                                      ref={menuRef}
+                                      className="absolute right-2 top-8 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]"
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePin(thread.id); }}
+                                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill={isPinned ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={isPinned ? 0 : 2}>
+                                          <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                                        </svg>
+                                        {isPinned ? "Unpin thread" : "Pin to top"}
+                                      </button>
+                                      {thread.status === "open" && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); archiveThread(thread.id); }}
+                                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-amber-400"
+                                        >
+                                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                          </svg>
+                                          Archive
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })
+                    ) : (
+                    visibleThreads.map((thread) => {
                       const isActive = thread.id === activeThreadId;
                       const isPinned = pinnedThreads.has(thread.id);
                       return (
@@ -935,7 +1137,8 @@ export function ThreadSidebar({
                           )}
                         </div>
                       );
-                    })}
+                    })
+                    )}
                   </div>
                 )}
               </div>
