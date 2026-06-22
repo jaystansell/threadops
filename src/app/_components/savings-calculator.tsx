@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 
 type ModelTier = "budget" | "standard" | "premium";
+type Baseline = "raw" | "platform";
 
 const MODEL_PRICING: Record<ModelTier, { label: string; costPerMTok: number; models: string }> = {
   budget:   { label: "Budget",   costPerMTok: 3,  models: "Haiku 4.5 / GPT-5.4 mini" },
@@ -12,6 +13,9 @@ const MODEL_PRICING: Record<ModelTier, { label: string; costPerMTok: number; mod
 
 const TOKENS_PER_MESSAGE = 500;
 const SUMMARY_TOKENS = 500;
+const TOOL_OVERHEAD = 500;
+const PLATFORM_SUMMARY_TOKENS = 10_000;
+const HOURLY_RATE = 100_000 / 2_080;
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -32,19 +36,31 @@ interface CalculatorResults {
   monthlySavings: number;
   annualSavings: number;
   percentReduction: number;
+  humanMinutesSaved: number;
+  humanDollarsSavedMonthly: number;
+  humanDollarsSavedAnnual: number;
+  totalMonthly: number;
+  totalAnnual: number;
 }
 
 export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
-  const [agents, setAgents] = useState(5);
-  const [threadsPerDay, setThreadsPerDay] = useState(50);
-  const [messagesPerThread, setMessagesPerThread] = useState(50);
+  const [agents, setAgents] = useState(3);
+  const [threadsPerDay, setThreadsPerDay] = useState(20);
+  const [messagesPerThread, setMessagesPerThread] = useState(30);
   const [modelTier, setModelTier] = useState<ModelTier>("standard");
-  const [interactionsPerThread, setInteractionsPerThread] = useState(10);
+  const [interactionsPerThread, setInteractionsPerThread] = useState(2);
+  const [baseline, setBaseline] = useState<Baseline>("platform");
+  const [minutesSavedPerDay, setMinutesSavedPerDay] = useState(30);
 
   const results: CalculatorResults = useMemo(() => {
-    const rawTokensPerThread = messagesPerThread * TOKENS_PER_MESSAGE;
-    const dailyTokensWithout = threadsPerDay * rawTokensPerThread * interactionsPerThread * agents;
-    const dailyTokensWith = threadsPerDay * SUMMARY_TOKENS * interactionsPerThread * agents;
+    const baselineTokens = baseline === "raw"
+      ? messagesPerThread * TOKENS_PER_MESSAGE
+      : PLATFORM_SUMMARY_TOKENS;
+
+    const threadzyTokens = SUMMARY_TOKENS + TOOL_OVERHEAD;
+
+    const dailyTokensWithout = threadsPerDay * baselineTokens * interactionsPerThread * agents;
+    const dailyTokensWith = threadsPerDay * threadzyTokens * interactionsPerThread * agents;
 
     const monthlyTokensWithout = dailyTokensWithout * 30;
     const monthlyTokensWith = dailyTokensWith * 30;
@@ -58,6 +74,10 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       ? ((monthlyTokensWithout - monthlyTokensWith) / monthlyTokensWithout) * 100
       : 0;
 
+    const hoursPerMonth = (minutesSavedPerDay * 22) / 60;
+    const humanDollarsSavedMonthly = hoursPerMonth * HOURLY_RATE;
+    const humanDollarsSavedAnnual = humanDollarsSavedMonthly * 12;
+
     return {
       tokensWithout: monthlyTokensWithout,
       tokensWith: monthlyTokensWith,
@@ -66,8 +86,13 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       monthlySavings,
       annualSavings,
       percentReduction,
+      humanMinutesSaved: minutesSavedPerDay * 22,
+      humanDollarsSavedMonthly,
+      humanDollarsSavedAnnual,
+      totalMonthly: monthlySavings + humanDollarsSavedMonthly,
+      totalAnnual: annualSavings + humanDollarsSavedAnnual,
     };
-  }, [agents, threadsPerDay, messagesPerThread, modelTier, interactionsPerThread]);
+  }, [agents, threadsPerDay, messagesPerThread, modelTier, interactionsPerThread, baseline, minutesSavedPerDay]);
 
   const barMaxWidth = results.monthlyCostWithout || 1;
 
@@ -76,15 +101,16 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="mb-8">
           <h3 className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>
-            Context Reconstruction Savings
+            Savings Calculator
           </h3>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">
-            See how much Threadzy saves by eliminating context reconstruction overhead.
+            Model your setup to see projected token and human time savings.
+            Includes tool call overhead on the Threadzy side.
           </p>
         </div>
       )}
 
-      <div className={`grid gap-6 ${compact ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-5"}`}>
+      <div className={`grid gap-6 ${compact ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         <SliderInput
           label="Agents"
           value={agents}
@@ -101,14 +127,16 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
           max={500}
           step={1}
         />
-        <SliderInput
-          label="Messages / thread"
-          value={messagesPerThread}
-          onChange={setMessagesPerThread}
-          min={5}
-          max={200}
-          step={5}
-        />
+        {baseline === "raw" && (
+          <SliderInput
+            label="Messages / thread"
+            value={messagesPerThread}
+            onChange={setMessagesPerThread}
+            min={5}
+            max={200}
+            step={5}
+          />
+        )}
         <div>
           <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-2">
             Model Tier
@@ -130,43 +158,129 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
           value={interactionsPerThread}
           onChange={setInteractionsPerThread}
           min={1}
-          max={50}
+          max={20}
           step={1}
         />
+        <div>
+          <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-2">
+            Compare against
+          </label>
+          <select
+            value={baseline}
+            onChange={(e) => setBaseline(e.target.value as Baseline)}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--muted)] text-[var(--foreground)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+          >
+            <option value="platform">Platform summarization (~10K tok)</option>
+            <option value="raw">Raw replay (no summarization)</option>
+          </select>
+        </div>
       </div>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <ResultCard
-          label="Reconstruction cost without"
-          value={formatDollars(results.monthlyCostWithout)}
-          sub={`${formatNumber(results.tokensWithout)} tokens`}
-          variant="muted"
-        />
-        <ResultCard
-          label="Reconstruction cost with Threadzy"
-          value={formatDollars(results.monthlyCostWith)}
-          sub={`${formatNumber(results.tokensWith)} tokens`}
-          variant="accent"
-        />
-        <ResultCard
-          label="Monthly savings"
-          value={formatDollars(results.monthlySavings)}
-          sub={`${results.percentReduction.toFixed(0)}% reduction`}
-          variant="accent"
-        />
-        <ResultCard
-          label="Annual savings"
-          value={formatDollars(results.annualSavings)}
-          sub="projected yearly"
-          variant="highlight"
-        />
+      {!compact && (
+        <div className="mt-6">
+          <SliderInput
+            label="Human time saved (min/day on thread management)"
+            value={minutesSavedPerDay}
+            onChange={setMinutesSavedPerDay}
+            min={0}
+            max={120}
+            step={5}
+          />
+        </div>
+      )}
+
+      {/* Token savings */}
+      <div className="mt-8">
+        <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
+          Token savings
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ResultCard
+            label={baseline === "raw" ? "Raw replay cost" : "Platform summary cost"}
+            value={formatDollars(results.monthlyCostWithout)}
+            sub={`${formatNumber(results.tokensWithout)} tokens/mo`}
+            variant="muted"
+          />
+          <ResultCard
+            label="Threadzy cost (incl. overhead)"
+            value={formatDollars(results.monthlyCostWith)}
+            sub={`${formatNumber(results.tokensWith)} tokens/mo`}
+            variant="accent"
+          />
+          <ResultCard
+            label="Monthly token savings"
+            value={formatDollars(results.monthlySavings)}
+            sub={`${results.percentReduction.toFixed(0)}% reduction`}
+            variant="accent"
+          />
+          <ResultCard
+            label="Annual token savings"
+            value={formatDollars(results.annualSavings)}
+            sub="projected yearly"
+            variant="accent"
+          />
+        </div>
       </div>
+
+      {/* Human time savings */}
+      {!compact && (
+        <div className="mt-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
+            Human time savings ($100K/yr salary)
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <ResultCard
+              label="Hours saved / month"
+              value={`${(results.humanMinutesSaved / 60).toFixed(1)} hrs`}
+              sub={`${minutesSavedPerDay} min/day x 22 days`}
+              variant="muted"
+            />
+            <ResultCard
+              label="Monthly time value"
+              value={formatDollars(results.humanDollarsSavedMonthly)}
+              sub="at $48.08/hr"
+              variant="accent"
+            />
+            <ResultCard
+              label="Annual time value"
+              value={formatDollars(results.humanDollarsSavedAnnual)}
+              sub="projected yearly"
+              variant="accent"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Combined total */}
+      {!compact && (
+        <div className="mt-6">
+          <p className="text-xs uppercase tracking-widest text-[var(--muted-foreground)] mb-4 font-mono">
+            Combined value (tokens + human time)
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ResultCard
+              label="Total monthly value"
+              value={formatDollars(results.totalMonthly)}
+              sub={`${formatDollars(results.monthlySavings)} tokens + ${formatDollars(results.humanDollarsSavedMonthly)} time`}
+              variant="highlight"
+            />
+            <ResultCard
+              label="Total annual value"
+              value={formatDollars(results.totalAnnual)}
+              sub="gross savings before Threadzy plan cost"
+              variant="highlight"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Cost comparison bar */}
       <div className="mt-6 space-y-3">
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[var(--muted-foreground)]">Reconstruction cost without Threadzy</span>
+            <span className="text-[var(--muted-foreground)]">
+              {baseline === "raw" ? "Reconstruction cost (raw replay)" : "Reconstruction cost (platform summary)"}
+            </span>
             <span className="font-mono text-[var(--foreground)]">{formatDollars(results.monthlyCostWithout)}/mo</span>
           </div>
           <div className="h-6 rounded-lg bg-[var(--muted)] overflow-hidden">
@@ -178,17 +292,24 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
         </div>
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[var(--muted-foreground)]">Reconstruction cost with Threadzy</span>
+            <span className="text-[var(--muted-foreground)]">With Threadzy (incl. ~500 tok tool overhead)</span>
             <span className="font-mono text-[var(--accent)]">{formatDollars(results.monthlyCostWith)}/mo</span>
           </div>
           <div className="h-6 rounded-lg bg-[var(--muted)] overflow-hidden">
             <div
               className="h-full rounded-lg bg-[var(--accent)] transition-all duration-500"
-              style={{ width: `${(results.monthlyCostWith / barMaxWidth) * 100}%` }}
+              style={{ width: `${Math.max((results.monthlyCostWith / barMaxWidth) * 100, 1)}%` }}
             />
           </div>
         </div>
       </div>
+
+      {compact && (
+        <p className="text-xs text-[var(--muted-foreground)] mt-4 text-center">
+          Comparing against {baseline === "raw" ? "raw replay" : "platform summarization (~10K tokens)"}.
+          Includes ~500 token tool call overhead per Threadzy lookup.
+        </p>
+      )}
     </div>
   );
 }
