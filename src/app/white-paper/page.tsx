@@ -779,11 +779,11 @@ export default function WhitePaperPage() {
             {[
               {
                 label: "Solo operator",
-                desc: "1-2 agents, 10 threads/day",
-                agents: 2,
+                desc: "1 agent, 10 threads/day",
+                agents: 1,
                 timeSavings: humanTimeDollars(15),
                 tokenSavings: standardScenarios[0].annualSavingsVsPlatform,
-                planCost: 2 * 25 * 12,
+                planCost: 1 * 25 * 12,
               },
               {
                 label: "Small team",
