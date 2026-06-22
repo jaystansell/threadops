@@ -422,7 +422,7 @@ export default function WhitePaperPage() {
                 Token savings: ~90% vs platform summaries
               </p>
               <p className="text-xs text-[var(--accent)] font-mono">
-                Time savings: The bigger win. One UI, auto-tags, instant status.
+                Time savings: The bigger win. One UI, tags, instant status.
               </p>
             </div>
           </div>
@@ -430,7 +430,7 @@ export default function WhitePaperPage() {
           <p>
             For both segments, the human time savings tend to be the larger
             dollar value. A $100K/year employee spending 30 minutes a day on
-            thread management costs $12K/year in lost productivity. That dwarfs
+            thread management costs ~$6.3K/year in lost productivity. That dwarfs
             most token savings for small-to-medium teams.
           </p>
         </div>

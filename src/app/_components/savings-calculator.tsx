@@ -127,14 +127,16 @@ export function SavingsCalculator({ compact = false }: { compact?: boolean }) {
           max={500}
           step={1}
         />
-        <SliderInput
-          label="Messages / thread"
-          value={messagesPerThread}
-          onChange={setMessagesPerThread}
-          min={5}
-          max={200}
-          step={5}
-        />
+        {baseline === "raw" && (
+          <SliderInput
+            label="Messages / thread"
+            value={messagesPerThread}
+            onChange={setMessagesPerThread}
+            min={5}
+            max={200}
+            step={5}
+          />
+        )}
         <div>
           <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-2">
             Model Tier
