@@ -61,7 +61,15 @@ export function dispatchOutboundWebhooks(
             return ep.api_key_id === agentApiKeyId;
           });
 
-      for (const endpoint of endpoints) {
+      // Author-kind filter: skip delivery if endpoint has an author_kind filter
+      // that doesn't match the event payload's author_kind.
+      const filtered = endpoints.filter((ep) => {
+        const authorKindFilter = ep.filters?.author_kind;
+        if (!authorKindFilter) return true;
+        return eventPayload.author_kind === authorKindFilter;
+      });
+
+      for (const endpoint of filtered) {
         const idempotencyKey = uuidv4();
         const body = JSON.stringify({
           event: eventType,

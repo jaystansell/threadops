@@ -24,6 +24,10 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
 /** Scopes that are always included on every webhook endpoint. */
 export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested", "attachment.created"];
 
+export interface WebhookEndpointFilters {
+  author_kind?: "user" | "agent";
+}
+
 export interface WebhookEndpoint {
   id: WebhookEndpointId;
   company_id: CompanyId;
@@ -32,6 +36,7 @@ export interface WebhookEndpoint {
   events: WebhookEventType[];
   secret: string;
   active: boolean;
+  filters: WebhookEndpointFilters;
   created_at: string;
   updated_at: string;
 }

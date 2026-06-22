@@ -11,6 +11,7 @@ export type {
 } from "./webhook";
 export type {
   WebhookEndpoint,
+  WebhookEndpointFilters,
   WebhookEndpointId,
   WebhookEventType,
 } from "./webhook-endpoint";
