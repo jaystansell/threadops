@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
@@ -26,9 +26,10 @@ export const metadata: Metadata = {
     apple: "/icon-192x192.png",
   },
   manifest: "/manifest.json",
-  other: {
-    "theme-color": "#14b8a6",
-  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#14b8a6",
 };
 
 export default async function RootLayout({
