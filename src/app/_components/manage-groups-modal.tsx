@@ -118,7 +118,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
           const changed =
             original?.name !== g.name.trim() ||
             original?.color !== g.color ||
-            JSON.stringify(original?.agent_key_ids?.sort()) !==
+            JSON.stringify([...(original?.agent_key_ids ?? [])].sort()) !==
               JSON.stringify([...g.agent_key_ids].sort());
 
           if (changed) {
@@ -143,7 +143,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
       }
 
       // Delete removed groups
-      const savedIds = new Set(editGroups.filter((g) => !g.isNew).map((g) => g.id));
+      const savedIds = new Set(editGroups.filter((g) => !g.isNew && g.name.trim()).map((g) => g.id));
       for (const og of groups) {
         if (!savedIds.has(og.id)) {
           await fetch(`/api/agent-groups/${og.id}`, { method: "DELETE" });

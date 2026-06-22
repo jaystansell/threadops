@@ -132,7 +132,7 @@ export default async function ThreadsLayout({
   });
 
   // Detect agents without webhook endpoints + fetch agent groups
-  const [apiKeysResult, webhookEndpointsResult, agentGroupsResult, agentGroupMembersResult] = await Promise.all([
+  const [apiKeysResult, webhookEndpointsResult, agentGroupsResult] = await Promise.all([
     db
       .from("api_keys")
       .select("id, label")
@@ -150,9 +150,6 @@ export default async function ThreadsLayout({
       .eq("company_id", userCompany.companyId)
       .eq("user_id", userCompany.userId)
       .order("sort_order", { ascending: true }),
-    db
-      .from("agent_group_members")
-      .select("group_id, api_key_id"),
   ]);
 
   const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
@@ -166,12 +163,19 @@ export default async function ThreadsLayout({
     .filter((k) => !webhookKeyIds.has(k.id))
     .map((k) => k.label);
 
-  // Build agent groups with members
+  // Build agent groups with members (filtered by user's group IDs only)
+  const groupIds = (agentGroupsResult.data ?? []).map((g: { id: string }) => g.id);
   const groupMembersMap: Record<string, string[]> = {};
-  for (const m of agentGroupMembersResult.data ?? []) {
-    const gid = m.group_id as string;
-    if (!groupMembersMap[gid]) groupMembersMap[gid] = [];
-    groupMembersMap[gid].push(m.api_key_id as string);
+  if (groupIds.length > 0) {
+    const { data: members } = await db
+      .from("agent_group_members")
+      .select("group_id, api_key_id")
+      .in("group_id", groupIds);
+    for (const m of members ?? []) {
+      const gid = m.group_id as string;
+      if (!groupMembersMap[gid]) groupMembersMap[gid] = [];
+      groupMembersMap[gid].push(m.api_key_id as string);
+    }
   }
   const agentGroups: AgentGroup[] = (agentGroupsResult.data ?? []).map(
     (g: { id: string; name: string; color: string; sort_order: number }) => ({

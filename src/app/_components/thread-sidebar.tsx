@@ -705,21 +705,23 @@ export function ThreadSidebar({
                         {group.threads.length}
                       </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setColorPickerAgent(colorPickerAgent === group.label ? null : group.label);
-                      }}
-                      className="shrink-0 p-1.5 mr-1 rounded hover:bg-white/20 transition-colors"
-                      title="Change color"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                        <circle cx="12" cy="5" r="1.5" />
-                        <circle cx="12" cy="12" r="1.5" />
-                        <circle cx="12" cy="19" r="1.5" />
-                      </svg>
-                    </button>
+                    {groupBy === "agent" && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setColorPickerAgent(colorPickerAgent === group.label ? null : group.label);
+                        }}
+                        className="shrink-0 p-1.5 mr-1 rounded hover:bg-white/20 transition-colors"
+                        title="Change color"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+                    )}
                     {colorPickerAgent === group.label && (
                       <div
                         ref={colorPickerRef}
