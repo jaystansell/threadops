@@ -118,26 +118,30 @@ export default async function ThreadsLayout({
     };
   });
 
-  // Detect agents without webhook endpoints
+  // Detect agents without webhook endpoints (per-agent check)
   const [apiKeysResult, webhookEndpointsResult] = await Promise.all([
     db
       .from("api_keys")
-      .select("label")
+      .select("id, label")
       .eq("company_id", userCompany.companyId)
       .or(`created_by.eq.${userCompany.userId},created_by.is.null`)
       .is("revoked_at", null),
     db
       .from("webhook_endpoints")
-      .select("id")
+      .select("api_key_id")
       .eq("company_id", userCompany.companyId)
       .eq("active", true),
   ]);
 
-  const agentLabels = (apiKeysResult.data ?? []).map(
-    (k: { label: string }) => k.label,
+  const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
+  const webhookKeyIds = new Set(
+    (webhookEndpointsResult.data ?? [])
+      .map((w: { api_key_id: string | null }) => w.api_key_id)
+      .filter(Boolean),
   );
-  const hasActiveWebhooks = (webhookEndpointsResult.data ?? []).length > 0;
-  const agentsWithoutWebhooks = hasActiveWebhooks ? [] : agentLabels;
+  const agentsWithoutWebhooks = agentKeys
+    .filter((k) => !webhookKeyIds.has(k.id))
+    .map((k) => k.label);
 
   return (
     <div className="flex flex-1 overflow-hidden">
