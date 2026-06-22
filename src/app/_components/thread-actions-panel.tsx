@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ThreadStatus } from "@/core/types";
 import { ThreadTags } from "./thread-tags";
 import { ThreadSummaryEditor } from "./thread-summary-editor";
+import { StickmanArchiveAnimation } from "./stickman-animations";
 
 interface ThreadActionsPanelProps {
   threadId: string;
@@ -35,6 +36,7 @@ export function ThreadActionsPanel({
   const [summaryRequested, setSummaryRequested] = useState(false);
   const [summaryTrigger, setSummaryTrigger] = useState(0);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [showArchiveAnimation, setShowArchiveAnimation] = useState(false);
 
   const isArchived = currentStatus === "archived";
 
@@ -53,8 +55,11 @@ export function ThreadActionsPanel({
         throw new Error(data.error || "Failed to update status");
       }
       if (newStatus === "archived") {
-        router.push("/threads");
-        router.refresh();
+        setShowArchiveAnimation(true);
+        setTimeout(() => {
+          router.push("/threads");
+          router.refresh();
+        }, 700);
       } else {
         router.refresh();
       }
@@ -149,6 +154,9 @@ export function ThreadActionsPanel({
           )}
           {statusUpdating ? "..." : isArchived ? "Reopen" : "Archive"}
         </button>
+        {showArchiveAnimation && (
+          <StickmanArchiveAnimation onComplete={() => setShowArchiveAnimation(false)} />
+        )}
 
         {/* Generate Tags */}
         <button

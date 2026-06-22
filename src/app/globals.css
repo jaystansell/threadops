@@ -55,3 +55,114 @@ button, a {
     border-color: var(--border);
   }
 }
+
+/* ── Stickman micro-animations ────────────────────────────── */
+
+/* Send: stickman runs left-to-right carrying envelope */
+@keyframes stickman-run {
+  0%   { transform: translateX(-10%); opacity: 0; }
+  10%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translateX(110%); opacity: 0; }
+}
+
+@keyframes stickman-legs {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(15deg); }
+  75%      { transform: rotate(-15deg); }
+}
+
+.stickman-send {
+  animation: stickman-run 0.8s ease-in-out forwards;
+}
+
+.stickman-send .stickman-leg-front {
+  transform-origin: 18px 26px;
+  animation: stickman-legs 0.2s ease-in-out infinite;
+}
+
+.stickman-send .stickman-leg-back {
+  transform-origin: 18px 26px;
+  animation: stickman-legs 0.2s ease-in-out infinite reverse;
+}
+
+/* Sweep: broom swings side-to-side */
+@keyframes stickman-sweep-in {
+  0%   { opacity: 0; transform: scale(0.8); }
+  15%  { opacity: 1; transform: scale(1); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+
+@keyframes stickman-broom-swing {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-8deg); }
+}
+
+.stickman-sweep {
+  animation: stickman-sweep-in 0.8s ease-in-out forwards;
+}
+
+.stickman-sweep .stickman-broom {
+  transform-origin: 30px 22px;
+  animation: stickman-broom-swing 0.25s ease-in-out infinite;
+}
+
+/* Dust particles float up */
+@keyframes stickman-dust-float {
+  0%   { opacity: 0.4; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(3px, -6px); }
+}
+
+.stickman-dust {
+  animation: stickman-dust-float 0.6s ease-out infinite;
+}
+.stickman-dust-2 { animation-delay: 0.15s; }
+.stickman-dust-3 { animation-delay: 0.3s; }
+
+/* Idle: eyes look around, question mark bobs */
+@keyframes stickman-idle-fade {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stickman-look {
+  0%, 40%  { transform: translateX(0); }
+  50%, 70% { transform: translateX(2px); }
+  80%, 100% { transform: translateX(-2px); }
+}
+
+@keyframes stickman-question-bob {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(-3px); opacity: 0.7; }
+}
+
+.stickman-idle {
+  animation: stickman-idle-fade 0.4s ease-out;
+}
+
+.stickman-idle .stickman-eye-l,
+.stickman-idle .stickman-eye-r {
+  animation: stickman-look 3s ease-in-out infinite;
+}
+
+.stickman-idle .stickman-question {
+  animation: stickman-question-bob 2s ease-in-out infinite;
+}
+
+/* Accessibility: disable all stickman motion for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .stickman-send,
+  .stickman-send .stickman-leg-front,
+  .stickman-send .stickman-leg-back,
+  .stickman-sweep,
+  .stickman-sweep .stickman-broom,
+  .stickman-dust,
+  .stickman-idle,
+  .stickman-idle .stickman-eye-l,
+  .stickman-idle .stickman-eye-r,
+  .stickman-idle .stickman-question {
+    animation: none !important;
+  }
+  .stickman-send { opacity: 0; }
+}
