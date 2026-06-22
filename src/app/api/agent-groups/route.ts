@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
     .limit(1);
 
   const nextOrder = ((existing?.[0]?.sort_order as number) ?? -1) + 1;
-  const finalOrder = sortOrderInput !== undefined ? sortOrderInput : nextOrder;
+  const validSort = typeof sortOrderInput === "number" && Number.isInteger(sortOrderInput) && sortOrderInput >= 0;
+  const finalOrder = validSort ? sortOrderInput : nextOrder;
 
   const { data: group, error } = await db
     .from("agent_groups")

@@ -52,7 +52,7 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
         id: tempId,
         name: "",
         color: "teal",
-        sort_order: prev.length,
+        sort_order: Math.max(-1, ...prev.map((g) => g.sort_order)) + 1,
         agent_key_ids: [],
         isNew: true,
       },
@@ -61,7 +61,9 @@ export function ManageGroupsModal({ groups, agentKeys, onClose, onSave }: Props)
   }, []);
 
   const removeGroup = useCallback((id: string) => {
-    setEditGroups((prev) => prev.filter((g) => g.id !== id));
+    setEditGroups((prev) =>
+      prev.filter((g) => g.id !== id).map((g, i) => ({ ...g, sort_order: i })),
+    );
   }, []);
 
   const moveGroup = useCallback((id: string, direction: "up" | "down") => {
