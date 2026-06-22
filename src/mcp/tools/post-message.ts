@@ -26,6 +26,14 @@ export async function postMessage(
     throw new Error("This thread belongs to another agent");
   }
 
+  // Auto-assign ownership: if thread has no owner, claim it for this agent.
+  if (!thread.agent_api_key_id) {
+    await db
+      .from("threads")
+      .update({ agent_api_key_id: auth.keyId })
+      .eq("id", input.thread_id);
+  }
+
   const messageRepo = createMessageRepo(db);
   return messageRepo.create({
     thread_id: input.thread_id as ThreadId,
