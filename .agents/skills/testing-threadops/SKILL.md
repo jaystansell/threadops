@@ -586,6 +586,50 @@ The white paper (`/white-paper`) has 9 sections:
 
 Test against production (`https://threadops-jade.vercel.app`) since no auth is required for the calculator or white paper pages.
 
+### Attachment Webhook Testing (PR #96)
+
+The `attachment.created` webhook fires when a user uploads a file to a thread message. It delivers a signed download URL to the owning agent's webhook endpoint.
+
+**Key behavior:**
+- `attachment.created` is an ALWAYS_ON event — delivered to all active endpoints regardless of their stored `events` array
+- Echo suppression: if the uploader IS the agent (API key auth), the agent's own endpoint is excluded
+- Agent-scoped delivery: only the thread's owning agent receives the webhook (via `agent_api_key_id` on the thread)
+
+**Test setup:**
+1. Create a test API key via Supabase REST API (generate key with `crypto.createHash('sha256')`, insert into `api_keys`)
+2. Register a webhook endpoint for that key: `POST /api/webhook-endpoints` with `x-api-key` header
+3. Create a thread owned by the test agent: `POST /api/threads` with `x-api-key` header and `{"title":"...", "message_body":"..."}`
+4. To test the human→agent flow, log in as a human user in the browser and upload a file to the agent's thread
+
+**Testing the webhook payload:**
+```bash
+# Query webhook_deliveries for attachment.created events
+source .env.local
+curl -s "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/webhook_deliveries?event_type=eq.attachment.created&order=created_at.desc&limit=5" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" | python3 -m json.tool
+```
+
+**Expected payload fields:**
+- `attachment_id` (UUID), `message_id` (UUID), `thread_id` (UUID)
+- `filename` (string), `content_type` (string), `file_size` (int > 0)
+- `download_url` (signed Supabase Storage URL, valid 1 hour)
+
+**Verify the download URL works:**
+```bash
+# Extract download_url from payload, then:
+curl -s -o /tmp/downloaded.txt -w "%{http_code}" "${DOWNLOAD_URL}"
+# Should return 200 with original file content
+```
+
+**Echo suppression test:**
+- Upload a file AS the agent (via `x-api-key`) → zero `webhook_deliveries` rows (agent doesn't webhook itself)
+- Upload a file AS a human (cookie auth) to the same thread → 1 `webhook_deliveries` row delivered to the agent's endpoint
+
+**Common gotcha:** If testing via Playwright, the script must be in the repo directory (not `/tmp/`) to resolve the `playwright` package from `node_modules`. Use `chromium.connectOverCDP('http://localhost:29229')` and `context.newPage()` (not `context.pages()[0]` which may be closed).
+
+**Vercel preview gotcha:** Preview deployments may have Vercel SSO protection enabled, redirecting to Vercel login. Test against localhost for UI-based upload tests.
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
