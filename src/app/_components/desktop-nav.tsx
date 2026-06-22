@@ -17,7 +17,7 @@ export function DesktopNav({ userEmail }: { userEmail?: string | null }) {
     : NAV_LINKS;
 
   return (
-    <nav className="hidden sm:flex items-center gap-1">
+    <nav className="hidden md:flex items-center gap-1">
       {links.map((link) => (
         <Link
           key={link.href}

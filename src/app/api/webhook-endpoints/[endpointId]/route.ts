@@ -95,6 +95,21 @@ export async function PATCH(
     update.active = body.active;
   }
 
+  if (body.filters !== undefined) {
+    if (typeof body.filters !== "object" || body.filters === null || Array.isArray(body.filters)) {
+      return Response.json({ error: "filters must be an object" }, { status: 400 });
+    }
+    if (body.filters.author_kind !== undefined) {
+      if (!["user", "agent"].includes(body.filters.author_kind)) {
+        return Response.json(
+          { error: "filters.author_kind must be 'user' or 'agent'" },
+          { status: 400 },
+        );
+      }
+    }
+    update.filters = body.filters;
+  }
+
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
 

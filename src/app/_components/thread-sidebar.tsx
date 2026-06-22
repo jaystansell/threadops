@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ThreadWithLastMessage, AgentGroup, AgentKeyInfo } from "@/app/threads/layout";
 import { FormattedDate } from "./formatted-date";
 import { ManageGroupsModal, GROUP_COLOR_MAP } from "./manage-groups-modal";
 import { ResizableSidebar } from "./resizable-sidebar";
+import { useMobileMenu } from "./mobile-menu-context";
 
 const BATCH_SIZE = 100;
 const PINNED_STORAGE_KEY = "threadops-pinned-threads";
@@ -196,6 +198,7 @@ interface ThreadSidebarProps {
   agentsWithoutWebhooks?: string[];
   agentGroups?: AgentGroup[];
   agentKeys?: AgentKeyInfo[];
+  revokedKeyIds?: string[];
 }
 
 function buildWebhookPrompt(agentName: string): string {
@@ -232,10 +235,22 @@ export function ThreadSidebar({
   agentsWithoutWebhooks = [],
   agentGroups: initialAgentGroups = [],
   agentKeys = [],
+  revokedKeyIds: revokedKeyIdsProp = [],
 }: ThreadSidebarProps) {
+  const revokedKeyIds = new Set(revokedKeyIdsProp);
+  // Build agent label → revoked lookup (only mark as revoked if ALL keys with that label are revoked)
+  const labelToAllRevoked = new Map<string, boolean>();
+  for (const k of agentKeys) {
+    const prev = labelToAllRevoked.get(k.label);
+    if (prev === false) continue; // already has an active key
+    labelToAllRevoked.set(k.label, revokedKeyIds.has(k.id));
+  }
+  const revokedAgentNames = new Set(
+    [...labelToAllRevoked.entries()].filter(([, allRevoked]) => allRevoked).map(([label]) => label),
+  );
   const pathname = usePathname();
   const router = useRouter();
-  const isThreadRoot = pathname === "/threads";
+  const { portalTarget } = useMobileMenu();
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
@@ -633,7 +648,7 @@ export function ThreadSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="flex-1 px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 px-2 py-1 text-[16px] sm:text-xs rounded border border-[var(--border)] bg-[var(--background)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:border-[var(--primary)]"
           />
         </form>
 
@@ -641,7 +656,7 @@ export function ThreadSidebar({
           <select
             value={status}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-xs focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-[16px] sm:text-xs focus:outline-none focus:border-[var(--primary)]"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -652,7 +667,7 @@ export function ThreadSidebar({
           <select
             value={groupBy}
             onChange={(e) => setGroupBy(e.target.value)}
-            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-xs focus:outline-none focus:border-[var(--primary)]"
+            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-[16px] sm:text-xs focus:outline-none focus:border-[var(--primary)]"
           >
             {GROUP_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -731,12 +746,13 @@ export function ThreadSidebar({
                 ? []
                 : sortedThreads;
             const missingWebhook = groupBy === "agent" && isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
+            const isRevoked = groupBy === "agent" && revokedAgentNames.has(group.label);
 
             return (
               <div key={group.label}>
                 {isAccordion ? (
                   <div
-                    className={`relative flex items-center transition-colors hover:opacity-90 ${colorPickerAgent === group.label ? "z-40" : ""}`}
+                    className={`relative flex items-center transition-colors hover:opacity-90 ${colorPickerAgent === group.label ? "z-40" : ""} ${isRevoked ? "opacity-50" : ""}`}
                     style={{
                       backgroundColor: color?.bg,
                       color: color?.fg,
@@ -756,9 +772,14 @@ export function ThreadSidebar({
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <span className="text-xs font-semibold truncate uppercase">
+                      <span className={`text-xs font-semibold truncate uppercase ${isRevoked ? "line-through" : ""}`}>
                         {group.label}
                       </span>
+                      {isRevoked && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-300 font-medium shrink-0 no-underline">
+                          Disconnected
+                        </span>
+                      )}
                       {missingWebhook && (
                         <span
                           title="No webhook registered"
@@ -879,13 +900,14 @@ export function ThreadSidebar({
                         const subKey = `${group.label}::${sub.label}`;
                         const subOpen = effectiveSubExpanded.has(subKey);
                         const subColor = getAgentColor(sub.label, agentColorOverrides);
+                        const subRevoked = revokedAgentNames.has(sub.label);
                         const subSorted = [...sub.threads].sort((a, b) => {
                           const ap = pinnedThreads.has(a.id) ? 0 : 1;
                           const bp = pinnedThreads.has(b.id) ? 0 : 1;
                           return ap - bp;
                         });
                         return (
-                          <div key={subKey}>
+                          <div key={subKey} className={subRevoked ? "opacity-50" : ""}>
                             <button
                               type="button"
                               onClick={() => toggleSubGroup(subKey)}
@@ -904,9 +926,14 @@ export function ThreadSidebar({
                                 className="w-2 h-2 rounded-full shrink-0"
                                 style={{ backgroundColor: subColor.bg }}
                               />
-                              <span className="text-[11px] font-semibold truncate uppercase text-[var(--foreground)]">
+                              <span className={`text-[11px] font-semibold truncate uppercase text-[var(--foreground)] ${subRevoked ? "line-through" : ""}`}>
                                 {sub.label}
                               </span>
+                              {subRevoked && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-900/60 text-red-300 font-medium shrink-0">
+                                  Disconnected
+                                </span>
+                              )}
                               <span className="ml-auto text-[10px] text-[var(--muted-foreground)] shrink-0">
                                 {sub.threads.length}
                               </span>
@@ -1231,16 +1258,18 @@ export function ThreadSidebar({
 
   return (
     <>
-      {/* Mobile: inline full-width thread list (visible only on /threads root) */}
-      {isThreadRoot && (
-        <section className="md:hidden flex-1 flex flex-col overflow-hidden">
-          {sidebarContent}
-        </section>
-      )}
+      {/* Mobile: portal thread list into hamburger drawer */}
+      {portalTarget &&
+        createPortal(
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {sidebarContent}
+          </div>,
+          portalTarget,
+        )}
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar (skip rendering content when portal is active to avoid shared ref conflicts) */}
       <ResizableSidebar>
-        {sidebarContent}
+        {!portalTarget && sidebarContent}
       </ResizableSidebar>
     </>
   );

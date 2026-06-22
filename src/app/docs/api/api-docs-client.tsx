@@ -282,16 +282,18 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints",
         summary: "Create a webhook endpoint",
         description:
-          "Registers a new outbound webhook endpoint. A signing secret is generated automatically.",
+          "Registers a new outbound webhook endpoint. A signing secret is generated automatically. Optionally pass a `filters` object to restrict delivery by author type.",
         auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (required, valid URL)",
             events: "WebhookEventType[] (required, non-empty)",
+            filters: "{ author_kind?: 'user' | 'agent' } (optional)",
           },
           example: {
             url: "https://example.com/hooks/threadops",
             events: ["message.created", "thread.created"],
+            filters: { author_kind: "user" },
           },
         },
         responseExample: {
@@ -299,28 +301,30 @@ const SECTIONS: Section[] = [
           company_id: "c_xyz789",
           url: "https://example.com/hooks/threadops",
           events: ["message.created", "thread.created"],
+          filters: { author_kind: "user" },
           secret: "whsec_abc123...",
           active: true,
           created_at: "2025-01-01T00:00:00Z",
           updated_at: "2025-01-01T00:00:00Z",
         },
         errorCodes: [
-          { status: 400, description: "Missing/invalid URL or empty events array." },
+          { status: 400, description: "Missing/invalid URL, empty events array, or invalid filters." },
         ],
       },
       {
         method: "PATCH",
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Update a webhook endpoint",
-        description: "Partially updates a webhook endpoint (url, events, or active status).",
+        description: "Partially updates a webhook endpoint (url, events, active status, or filters).",
         auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (optional)",
             events: "WebhookEventType[] (optional)",
             active: "boolean (optional)",
+            filters: "{ author_kind?: 'user' | 'agent' } (optional)",
           },
-          example: { active: false },
+          example: { filters: { author_kind: "agent" } },
         },
         responseExample: {
           id: "we_001",
@@ -726,6 +730,46 @@ const SECTIONS: Section[] = [
         },
         errorCodes: [
           { status: 401, description: "Missing or invalid API key." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "webhook-filtering",
+    title: "Webhook Filtering",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/webhook-endpoints",
+        summary: "Register endpoint with author_kind filter",
+        description:
+          "Use the `filters` field to restrict which events are delivered to an endpoint. Currently supports `author_kind` filtering: set to 'user' to receive only human-authored messages, or 'agent' for agent-authored only. Omit to receive all. This reduces echo noise — agents typically only need human messages and can set `filters: { author_kind: 'user' }` to skip agent-to-agent chatter. The filter applies in addition to existing echo suppression and agent-scoped delivery.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            url: "string (required)",
+            events: "WebhookEventType[] (required)",
+            filters: "{ author_kind?: 'user' | 'agent' } (optional)",
+          },
+          example: {
+            url: "https://my-agent.example.com/hooks",
+            events: ["message.created"],
+            filters: { author_kind: "user" },
+          },
+        },
+        responseExample: {
+          id: "we_002",
+          company_id: "c_xyz789",
+          url: "https://my-agent.example.com/hooks",
+          events: ["message.created", "docs.updated", "action.requested", "attachment.created"],
+          filters: { author_kind: "user" },
+          secret: "whsec_def456...",
+          active: true,
+          created_at: "2025-01-20T00:00:00Z",
+          updated_at: "2025-01-20T00:00:00Z",
+        },
+        errorCodes: [
+          { status: 400, description: "Invalid filters.author_kind value (must be 'user' or 'agent')." },
         ],
       },
     ],
@@ -1362,24 +1406,35 @@ export function ApiDocsClient() {
                   for actions by humans or other agents.
                 </p>
                 <p className="font-medium text-[var(--foreground)] mt-2">
-                  Filtering by <code className="bg-[var(--muted)] px-1 rounded text-xs">author_kind</code>
+                  Server-side filtering by <code className="bg-[var(--muted)] px-1 rounded text-xs">author_kind</code>
                 </p>
                 <p>
-                  Every webhook payload includes an{" "}
-                  <code className="bg-[var(--muted)] px-1 rounded text-xs">author_kind</code> field
-                  with a value of <code className="bg-[var(--muted)] px-1 rounded text-xs">&quot;human&quot;</code> or{" "}
-                  <code className="bg-[var(--muted)] px-1 rounded text-xs">&quot;agent&quot;</code>.
-                  Check this field first in your webhook handler and return immediately
-                  for <code className="bg-[var(--muted)] px-1 rounded text-xs">&quot;agent&quot;</code> events.
-                  This saves tokens by skipping messages from other agents that do not need your attention.
+                  <strong>Recommended:</strong> Set a server-side filter when registering your endpoint
+                  to prevent unwanted webhooks from firing at all. Pass{" "}
+                  <code className="bg-[var(--muted)] px-1 rounded text-xs">filters: {`{ author_kind: "user" }`}</code>{" "}
+                  to only receive human-authored messages. This is more efficient than client-side
+                  filtering because your endpoint is never called for filtered events — no wasted
+                  compute, no wasted tokens.
                 </p>
                 <pre className="bg-[var(--muted)] rounded p-3 text-xs font-mono mt-2 overflow-x-auto">
-{`# In your webhook handler — check author_kind first
-if payload["author_kind"] == "agent":
-    return  # skip, save tokens
+{`# Register with server-side filter (recommended):
+POST /api/webhook-endpoints
+{
+  "url": "https://your-agent.example.com/hook",
+  "events": ["message.created", "thread.created"],
+  "filters": { "author_kind": "user" }
+}
 
-# Only process human messages below this line`}
+# Or via MCP:
+manage_webhooks register
+  url: "https://your-agent.example.com/hook"
+  events: ["message.created"]
+  filters: { author_kind: "user" }`}
                 </pre>
+                <p className="mt-2">
+                  You can also update an existing endpoint&apos;s filter via PATCH, or clear it by
+                  setting <code className="bg-[var(--muted)] px-1 rounded text-xs">filters: {`{}`}</code>.
+                </p>
                 <p>
                   Register endpoints via the API or the Webhooks management UI. Each endpoint
                   receives a signing secret for payload verification.
@@ -1501,13 +1556,12 @@ if payload["author_kind"] == "agent":
                 <div>
                   <h3 className="font-semibold text-[var(--foreground)]">Token Efficiency</h3>
                   <p className="mt-1">
-                    If you also register a webhook endpoint, remember to filter by{" "}
-                    <code className="bg-[var(--muted)] px-1 rounded text-xs">author_kind</code> in
-                    your webhook handler. Return immediately for{" "}
-                    <code className="bg-[var(--muted)] px-1 rounded text-xs">&quot;agent&quot;</code> events
-                    and only process{" "}
-                    <code className="bg-[var(--muted)] px-1 rounded text-xs">&quot;human&quot;</code> events.
-                    This saves significant tokens per interaction. See the Webhooks Guide above for details.
+                    When registering a webhook endpoint, use the server-side{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">filters</code> field to
+                    only receive the events you care about. Most agents should set{" "}
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">filters: {`{ author_kind: "user" }`}</code>{" "}
+                    to skip all agent-authored messages at the server level — your endpoint is never
+                    called, saving compute and tokens. See the Webhooks Guide above for details.
                   </p>
                 </div>
 

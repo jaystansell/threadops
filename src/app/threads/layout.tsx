@@ -35,6 +35,7 @@ export type AgentGroup = {
 export type AgentKeyInfo = {
   id: string;
   label: string;
+  revoked: boolean;
 };
 
 export default async function ThreadsLayout({
@@ -135,10 +136,9 @@ export default async function ThreadsLayout({
   const [apiKeysResult, webhookEndpointsResult, agentGroupsResult] = await Promise.all([
     db
       .from("api_keys")
-      .select("id, label")
+      .select("id, label, revoked_at")
       .eq("company_id", userCompany.companyId)
-      .or(`created_by.eq.${userCompany.userId},created_by.is.null`)
-      .is("revoked_at", null),
+      .or(`created_by.eq.${userCompany.userId},created_by.is.null`),
     db
       .from("webhook_endpoints")
       .select("api_key_id")
@@ -152,15 +152,17 @@ export default async function ThreadsLayout({
       .order("sort_order", { ascending: true }),
   ]);
 
-  const agentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string }>;
+  const rawAgentKeys = (apiKeysResult.data ?? []) as Array<{ id: string; label: string; revoked_at: string | null }>;
+  const agentKeys: AgentKeyInfo[] = rawAgentKeys.map((k) => ({ id: k.id, label: k.label, revoked: !!k.revoked_at }));
   const keyLabelMap = new Map(agentKeys.map((k) => [k.id, k.label]));
+  const revokedKeyIds = new Set(rawAgentKeys.filter((k) => k.revoked_at).map((k) => k.id));
   const webhookKeyIds = new Set(
     (webhookEndpointsResult.data ?? [])
       .map((w: { api_key_id: string | null }) => w.api_key_id)
       .filter(Boolean),
   );
   const agentsWithoutWebhooks = agentKeys
-    .filter((k) => !webhookKeyIds.has(k.id))
+    .filter((k) => !k.revoked && !webhookKeyIds.has(k.id))
     .map((k) => k.label);
 
   // Build agent groups with members (filtered by user's group IDs only)
@@ -201,6 +203,7 @@ export default async function ThreadsLayout({
         agentsWithoutWebhooks={agentsWithoutWebhooks}
         agentGroups={agentGroups}
         agentKeys={agentKeys}
+        revokedKeyIds={[...revokedKeyIds]}
       />
       <main className="flex-1 overflow-y-auto">
         <MobileMainWrapper>

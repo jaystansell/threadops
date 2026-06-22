@@ -272,7 +272,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
           placeholder="Type your message... (⌘/Ctrl+Enter to send)"
           rows={3}
           data-testid="message-input"
-          className="w-full rounded-lg bg-[var(--background)] px-3 py-2 text-sm focus:outline-none resize-none border-none"
+          className="w-full rounded-lg bg-[var(--background)] px-3 py-2 text-[16px] sm:text-sm focus:outline-none resize-none border-none"
           disabled={isBusy}
         />
         {isDragOver && (

@@ -270,6 +270,12 @@ export function registerTools(
         .array(z.enum(["message.created", "thread.created", "thread.status_changed", "action.requested", "docs.updated"]))
         .optional()
         .describe("[register] Events to subscribe to (required for register). docs.updated is always included automatically."),
+      filters: z
+        .object({
+          author_kind: z.enum(["user", "agent"]).optional().describe("Only deliver events matching this author type. Omit for all."),
+        })
+        .optional()
+        .describe("[register] Optional filters to restrict which events are delivered (e.g., only human or agent messages)."),
     },
     async (args) => {
       try {
@@ -283,6 +289,7 @@ export function registerTools(
               await registerWebhook(db, auth, {
                 url: args.url,
                 events: args.events,
+                ...(args.filters && { filters: args.filters }),
               }),
             );
           }

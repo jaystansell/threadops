@@ -88,25 +88,41 @@ export default async function ThreadDetailPage(
     .order("created_at", { ascending: true });
   const tags = (tagRows ?? []).map((r: { tag: string }) => r.tag);
 
-  // Fetch agent name for this thread
+  // Fetch agent name and revocation status for this thread
   let agentName: string | null = null;
+  let isAgentRevoked = false;
   if (thread.agent_api_key_id) {
     const { data: keyRow } = await db
       .from("api_keys")
-      .select("label")
+      .select("label, revoked_at")
       .eq("id", thread.agent_api_key_id)
       .limit(1)
       .single();
-    agentName = (keyRow as { label: string } | null)?.label ?? null;
+    agentName = (keyRow as { label: string; revoked_at: string | null } | null)?.label ?? null;
+    isAgentRevoked = !!(keyRow as { revoked_at: string | null } | null)?.revoked_at;
   }
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-xl font-bold">{thread.title}</h2>
+        {isAgentRevoked && (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/30 px-3 py-2">
+            <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <p className="text-xs text-red-300">
+              This agent has been disconnected. No new messages will be delivered to it.
+            </p>
+          </div>
+        )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {agentName && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--accent)]/15 text-[var(--accent)] font-medium">
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              isAgentRevoked
+                ? "bg-red-900/30 text-red-400 line-through"
+                : "bg-[var(--accent)]/15 text-[var(--accent)]"
+            }`}>
               {agentName}
             </span>
           )}
@@ -137,6 +153,7 @@ export default async function ThreadDetailPage(
         threadId={threadId}
         userId={userCompany.userId}
         isOpen={thread.status === "open"}
+        isAgentRevoked={isAgentRevoked}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
       />

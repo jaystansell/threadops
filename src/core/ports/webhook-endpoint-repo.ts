@@ -1,5 +1,6 @@
 import type {
   WebhookEndpoint,
+  WebhookEndpointFilters,
   WebhookEndpointId,
 } from "../types/webhook-endpoint";
 import type { CompanyId } from "../types";
@@ -29,10 +30,12 @@ export interface WebhookEndpointCreateInput {
   url: string;
   events: string[];
   secret: string;
+  filters?: WebhookEndpointFilters;
 }
 
 export interface WebhookEndpointUpdateInput {
   url?: string;
   events?: string[];
   active?: boolean;
+  filters?: WebhookEndpointFilters;
 }
