@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { ThreadSidebar } from "@/app/_components/thread-sidebar";
+import { MobileMainWrapper } from "@/app/_components/mobile-main-wrapper";
 import type { Thread } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -145,8 +146,10 @@ export default async function ThreadsLayout({
         companyId={userCompany.companyId}
         agentsWithoutWebhooks={agentsWithoutWebhooks}
       />
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-        {children}
+      <main className="flex-1 overflow-y-auto">
+        <MobileMainWrapper>
+          {children}
+        </MobileMainWrapper>
       </main>
     </div>
   );

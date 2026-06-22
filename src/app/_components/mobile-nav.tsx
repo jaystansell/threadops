@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 
 const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
@@ -13,9 +14,18 @@ const NAV_LINKS = [
   { href: "/changelog", label: "Changelog" },
 ];
 
-export function MobileNav() {
+export function MobileNav({ userEmail }: { userEmail?: string | null }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createAuthBrowserClient();
+    await supabase.auth.signOut();
+    setOpen(false);
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <div className="sm:hidden">
@@ -65,6 +75,17 @@ export function MobileNav() {
               {link.label}
             </Link>
           ))}
+          {userEmail && (
+            <div className="border-t border-[var(--border)] mt-2 pt-2 px-3 space-y-2">
+              <p className="text-xs text-[var(--muted-foreground)] truncate">{userEmail}</p>
+              <button
+                onClick={handleSignOut}
+                className="block w-full text-left text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors py-1"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </nav>
       )}
     </div>
