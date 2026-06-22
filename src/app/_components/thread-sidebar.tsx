@@ -237,6 +237,7 @@ export function ThreadSidebar({
 }: ThreadSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { portalTarget } = useMobileMenu();
 
   const [extraThreads, setExtraThreads] = useState<ThreadWithLastMessage[]>([]);
   const [overrideThreads, setOverrideThreads] = useState<ThreadWithLastMessage[] | null>(null);
@@ -1230,8 +1231,6 @@ export function ThreadSidebar({
     </>
   );
 
-  const { portalTarget } = useMobileMenu();
-
   return (
     <>
       {/* Mobile: portal thread list into hamburger drawer */}
@@ -1243,9 +1242,9 @@ export function ThreadSidebar({
           portalTarget,
         )}
 
-      {/* Desktop sidebar */}
+      {/* Desktop sidebar (skip rendering content when portal is active to avoid shared ref conflicts) */}
       <ResizableSidebar>
-        {sidebarContent}
+        {!portalTarget && sidebarContent}
       </ResizableSidebar>
     </>
   );
