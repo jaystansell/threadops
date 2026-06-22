@@ -357,7 +357,18 @@ export function ThreadTimeline({
               <AttachmentBadge count={attachmentCounts[msg.id] ?? 0} />
             </div>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-              <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}>{msg.body}</Markdown>
+              <Markdown
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+                components={{
+                  a: ({ children, href, ...props }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                      {children}
+                    </a>
+                  ),
+                }}
+              >
+                {msg.body}
+              </Markdown>
             </div>
             {(attachmentCounts[msg.id] ?? 0) > 0 && (
               <MessageAttachments
