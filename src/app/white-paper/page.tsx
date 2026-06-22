@@ -765,39 +765,44 @@ export default function WhitePaperPage() {
 
         <div className="space-y-4 text-[var(--muted-foreground)] leading-relaxed">
           <p>
-            Real ROI requires knowing what Threadzy costs. Pricing is not
-            finalized yet. It will be plan-based with per-agent pricing (for
-            example, Plan A includes 2 agents, Plan B includes 5, and so on).
+            Real ROI requires knowing what Threadzy costs. Plans start at
+            $25/agent/month, with volume discounts for larger teams.
           </p>
 
           <p>
-            What we can say: the savings below are the gross value Threadzy
-            delivers. Subtract your eventual plan cost to get net ROI. All
-            figures use standard tier ($9/MTok) and $100K/year salary.
+            The savings below show both gross value and net ROI after
+            Threadzy plan cost. All figures use standard tier ($9/MTok),
+            $100K/year salary, and $25/agent/month.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-3 my-6">
             {[
               {
                 label: "Solo operator",
-                desc: "1-2 agents, 10 threads/day",
+                desc: "1 agent, 10 threads/day",
+                agents: 1,
                 timeSavings: humanTimeDollars(15),
                 tokenSavings: standardScenarios[0].annualSavingsVsPlatform,
+                planCost: 1 * 25 * 12,
               },
               {
                 label: "Small team",
                 desc: "3-5 agents, 30 threads/day",
+                agents: 5,
                 timeSavings: humanTimeDollars(30),
                 tokenSavings: standardScenarios[1].annualSavingsVsPlatform,
+                planCost: 5 * 25 * 12,
               },
               {
                 label: "Scaling team",
                 desc: "10-15 agents, 100 threads/day",
+                agents: 15,
                 timeSavings: humanTimeDollars(45),
                 tokenSavings: standardScenarios[2].annualSavingsVsPlatform,
+                planCost: 15 * 25 * 12,
               },
             ].map((s) => {
-              const totalAnnual = s.timeSavings.annual + s.tokenSavings;
+              const totalAnnual = s.timeSavings.annual + s.tokenSavings - s.planCost;
               return (
                 <div key={s.label} className="rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 p-6 text-center">
                   <p className="text-xs uppercase tracking-widest text-[var(--accent)] mb-1 font-mono">
@@ -812,7 +817,7 @@ export default function WhitePaperPage() {
                       : `$${Math.round(totalAnnual)}`}
                   </p>
                   <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                    total annual value (gross)
+                    net annual ROI
                   </p>
                   <div className="mt-3 pt-3 border-t border-[var(--accent)]/30 text-xs">
                     <p className="text-[var(--accent)]">
@@ -820,6 +825,9 @@ export default function WhitePaperPage() {
                     </p>
                     <p className="text-[var(--muted-foreground)]">
                       + ${Math.round(s.tokenSavings).toLocaleString()} token savings
+                    </p>
+                    <p className="text-[var(--muted-foreground)]">
+                      − ${Math.round(s.planCost).toLocaleString()} Threadzy plan
                     </p>
                   </div>
                 </div>
@@ -845,8 +853,8 @@ export default function WhitePaperPage() {
                 <span>scaling. Value grows with every agent and thread you add.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-[var(--accent)] font-bold shrink-0">Free</span>
-                <span>during early access. Plan-based pricing (per agent) coming later.</span>
+                <span className="text-[var(--accent)] font-bold shrink-0">$25</span>
+                <span>/agent/month. Free during early access, then plan-based pricing.</span>
               </li>
             </ul>
           </div>
@@ -863,8 +871,8 @@ export default function WhitePaperPage() {
         </h2>
         <p className="text-[var(--muted-foreground)] mb-6">
           Adjust the inputs to model your own setup. The calculator includes
-          tool call overhead on the Threadzy side and compares against platform
-          summarization, not raw replay.
+          tool call overhead on the Threadzy side, compares against platform
+          summarization, and shows net ROI after the $25/agent/month plan cost.
         </p>
         <SavingsCalculator />
       </section>
