@@ -497,6 +497,46 @@ ON CONFLICT (id) DO NOTHING;
 Then POST to this thread with the demo company's API key — should get 403.
 
 
+## Savings Calculator and White Paper Testing
+
+The savings calculator (`src/app/_components/savings-calculator.tsx`) appears on both the homepage (`/`) and the white paper page (`/white-paper`, Section 9). Both should render identically.
+
+### Calculator Default Values
+- 3 agents, 20 threads/day, 2 interactions, Standard tier ($9/MTok), Platform summarization baseline, 30 min/day human time
+- Expected Combined Value cards: Gross $820.45, Plan $75.00 (3 x $25), Net $745.45, Net annual $8.9K
+
+### Key Things to Test
+1. **4 Combined Value cards present**: Gross monthly savings, Threadzy plan cost, Net monthly ROI, Net annual ROI
+2. **Plan cost scales with agents**: `agents x $25/mo`. Change slider to verify (e.g., 10 agents = $250)
+3. **Negative net ROI edge case**: Set agents high (50), threads low (1). Plan cost ($1,250/mo) should exceed gross savings. Verify negative values display as `-$X.XX` or `-$X.XK` (sign before dollar sign), NOT `$-X.XX`
+4. **White paper Section 8**: Contains "Plans start at $25/agent/month" text and 3 scenario cards (Solo, Small team, Scaling) each showing plan cost deduction line items
+5. **Calculator consistency**: White paper Section 9 calculator should match homepage calculator exactly (same cards, same defaults, same values)
+
+### Calculator Slider Interaction Tips
+- Sliders are `<input type="range">` elements. Use the number input next to each slider for precise values (triple-click to select, then type new value)
+- The "Human time saved" slider controls human time savings. It does NOT scale with agent count (intentional: one manager's time is bounded)
+- The "Compare against" dropdown toggles between Platform summarization (~10K tokens) and Raw replay baselines
+
+### formatDollars Function
+The `formatDollars` function in `savings-calculator.tsx` handles display formatting:
+- Values >= 1000 display as `$X.XK` (e.g., $8.9K)
+- Negative values prepend `-` before `$` (e.g., `-$478.15`, `-$5.7K`)
+- If negative values ever show as `$-X.XX`, that is a bug in the formatDollars function
+
+### White Paper Structure
+The white paper (`/white-paper`) has 9 sections:
+1. The Human Problem
+2. The Agent Problem
+3. How Threadzy Solves Both
+4. Who Benefits Most
+5. Human Time Savings
+6. Token Savings Model
+7. Information Fidelity
+8. ROI Summary (pricing copy and scenario cards)
+9. Interactive Calculator (same component as homepage)
+
+Test against production (`https://threadops-jade.vercel.app`) since no auth is required for the calculator or white paper pages.
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
