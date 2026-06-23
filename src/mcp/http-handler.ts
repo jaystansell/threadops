@@ -90,27 +90,29 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
     );
   }
 
-  const server = new McpServer(
-    { name: "threadzy", version: "1.0.0" },
-    {
-      capabilities: { tools: {} },
-      instructions:
-        "Threadzy.ai MCP server. Working memory for AI agents. Use manage_threads to list/create/search threads, manage_messages to read/post, manage_thread_context to update summaries/tags/metadata, and manage_webhooks to register event endpoints.",
-    },
-  );
-
-  registerTools(server, db, async () => auth);
-
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
-
-  await server.connect(transport);
+  let server: McpServer | undefined;
+  let transport: WebStandardStreamableHTTPServerTransport | undefined;
 
   try {
+    server = new McpServer(
+      { name: "threadzy", version: "1.0.0" },
+      {
+        capabilities: { tools: {} },
+        instructions:
+          "Threadzy.ai MCP server. Working memory for AI agents. Use manage_threads to list/create/search threads, manage_messages to read/post, manage_thread_context to update summaries/tags/metadata, and manage_webhooks to register event endpoints.",
+      },
+    );
+
+    registerTools(server, db, async () => auth);
+
+    transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+
+    await server.connect(transport);
+
     const response = await transport.handleRequest(req);
-    // Add CORS headers to MCP transport responses
     const corsResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -120,8 +122,16 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
       corsResponse.headers.set(k, v);
     }
     return corsResponse;
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      },
+    );
   } finally {
-    await transport.close();
-    await server.close();
+    if (transport) await transport.close().catch(() => {});
+    if (server) await server.close().catch(() => {});
   }
 }
