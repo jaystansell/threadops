@@ -4,6 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 import { authenticateApiKey, RateLimitError, type AuthContext } from "./auth";
 import { registerTools } from "./register-tools";
 
+const BASE_URL =
+  process.env.NEXT_PUBLIC_APP_URL || "https://threadzy.ai";
+
+const RESOURCE_METADATA_URL = `${BASE_URL}/mcp/.well-known/oauth-protected-resource`;
+
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,7 +33,13 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   if (!apiKey) {
     return new Response(
       JSON.stringify({ error: "Missing Authorization: Bearer <api_key> header" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
+      {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
+        },
+      },
     );
   }
 
@@ -55,7 +66,13 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
     }
     return new Response(
       JSON.stringify({ error: "Invalid API key" }),
-      { status: 401, headers: { "Content-Type": "application/json" } },
+      {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
+        },
+      },
     );
   }
 

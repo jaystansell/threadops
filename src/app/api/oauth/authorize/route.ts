@@ -48,8 +48,34 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Verify the user owns this API key
   const db = createServerClient();
+
+  // Validate registered client and redirect_uri
+  const { data: oauthClient } = await db
+    .from("oauth_clients")
+    .select("redirect_uris")
+    .eq("client_id", client_id)
+    .maybeSingle();
+
+  if (!oauthClient) {
+    return Response.json(
+      { error: "invalid_client", error_description: "Unknown client_id" },
+      { status: 400 },
+    );
+  }
+
+  const registeredUris = oauthClient.redirect_uris as string[];
+  if (!registeredUris.includes(redirect_uri)) {
+    return Response.json(
+      {
+        error: "invalid_request",
+        error_description: "redirect_uri does not match registered URIs",
+      },
+      { status: 400 },
+    );
+  }
+
+  // Verify the user owns this API key
   const { data: membership } = await db
     .from("company_members")
     .select("company_id")
