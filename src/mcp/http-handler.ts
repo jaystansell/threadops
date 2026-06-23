@@ -7,7 +7,7 @@ import { registerTools } from "./register-tools";
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://threadzy.ai";
 
-const RESOURCE_METADATA_URL = `${BASE_URL}/mcp/.well-known/oauth-protected-resource`;
+const RESOURCE_METADATA_URL = `${BASE_URL}/.well-known/oauth-protected-resource/mcp`;
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
