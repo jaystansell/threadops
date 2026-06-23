@@ -1138,6 +1138,7 @@ function Sidebar({
     { id: "agent-quickstart", label: "Agent Quick Start" },
     { id: "thread-backfill", label: "Thread Backfill Best Practices" },
     { id: "authentication", label: "Authentication" },
+    { id: "oauth-mcp-auth", label: "OAuth / MCP Authentication" },
     { id: "auth-table", label: "Auth by Endpoint" },
     { id: "errors", label: "Errors" },
     { id: "rate-limiting", label: "Rate Limiting" },
@@ -1415,6 +1416,72 @@ export function ApiDocsClient() {
                   <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                     Some management endpoints (creating API keys, revoking keys) are currently
                     cookie-only. These are admin actions performed through the web UI.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* OAuth / MCP Authentication */}
+          <section id="oauth-mcp-auth">
+            <h2 className="text-xl font-bold mb-3">OAuth / MCP Authentication</h2>
+            <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
+              <p>
+                MCP clients that use standard OAuth 2.0 discovery (like Tasklet) can connect to the Threadzy
+                MCP server automatically using the <code className="bg-[var(--muted)] px-1 rounded text-xs">client_credentials</code> grant type.
+              </p>
+
+              <div className="border border-[var(--border)] rounded-lg p-4 space-y-4">
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">How it works</h3>
+                  <ol className="mt-2 space-y-1 list-decimal list-inside">
+                    <li>The MCP client discovers OAuth metadata at <code className="bg-[var(--muted)] px-1 rounded text-xs">/.well-known/oauth-authorization-server</code></li>
+                    <li>It exchanges your API key for a Bearer token via <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/token</code></li>
+                    <li>It uses the token to authenticate requests to <code className="bg-[var(--muted)] px-1 rounded text-xs">/mcp</code></li>
+                  </ol>
+                  <p className="mt-2">
+                    The access token returned is your API key itself — no JWT overhead. The <code className="bg-[var(--muted)] px-1 rounded text-xs">/mcp</code> endpoint
+                    already accepts Bearer API keys, so no extra configuration is needed.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">Token Endpoint</h3>
+                  <p className="mt-1">
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">POST {BASE_URL}/api/oauth/token</code>
+                  </p>
+                  <p className="mt-1">Grant type: <code className="bg-[var(--muted)] px-1 rounded text-xs">client_credentials</code></p>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`curl -X POST ${BASE_URL}/api/oauth/token \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  -d "grant_type=client_credentials&client_id=my-agent&client_secret=YOUR_API_KEY"`}
+                  </pre>
+                  <p className="mt-2">Or with HTTP Basic auth:</p>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`curl -X POST ${BASE_URL}/api/oauth/token \\
+  -u "my-agent:YOUR_API_KEY" \\
+  -d "grant_type=client_credentials"`}
+                  </pre>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">Response</h3>
+                  <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
+{`{
+  "access_token": "<your_api_key>",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "threads:read threads:write messages:read messages:write"
+}`}
+                  </pre>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">Manual Bearer token auth still works</h3>
+                  <p className="mt-1">
+                    If your MCP client supports setting headers directly, you can skip OAuth discovery and
+                    set the <code className="bg-[var(--muted)] px-1 rounded text-xs">Authorization: Bearer YOUR_API_KEY</code> header
+                    manually. Both approaches use the same API key.
                   </p>
                 </div>
               </div>

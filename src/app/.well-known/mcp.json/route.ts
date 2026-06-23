@@ -14,6 +14,7 @@ export async function GET() {
         header: "Authorization",
         description:
           "Use your Threadzy API key as the Bearer token. Generate one at /api-keys after signing up.",
+        oauth_discovery: `${BASE_URL}/.well-known/oauth-authorization-server`,
       },
       tools: [
         {
