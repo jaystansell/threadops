@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   }
 
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app";
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai";
 
   return Response.json({
     agent: keyLabel,

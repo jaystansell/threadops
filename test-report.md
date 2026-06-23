@@ -10,7 +10,7 @@ Tested the full ThreadOps scaffold end-to-end: UI navigation, message posting, A
 
 ## Escalations
 
-- **Vercel deployment failing** — The Vercel deployment at https://threadops-jade.vercel.app/ is failing because Supabase env vars are not configured in the Vercel project settings. This is a config issue, not a code issue. The user needs to add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in Vercel Project Settings > Environment Variables.
+- **Vercel deployment failing** — The Vercel deployment at https://threadzy.ai/ is failing because Supabase env vars are not configured in the Vercel project settings. This is a config issue, not a code issue. The user needs to add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in Vercel Project Settings > Environment Variables.
 - **Realtime messages not appearing without refresh** — After posting a message via the composer, the new message does not appear in the timeline until a page refresh. The Supabase Realtime subscription may require enabling Realtime on the `messages` table in the Supabase dashboard (Database > Replication > Enable for `messages` table). This is not a code bug — the subscription code is correct, but Realtime must be explicitly enabled per-table in Supabase.
 
 ## Test Results

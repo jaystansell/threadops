@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const BASE_URL = "https://threadops-jade.vercel.app";
+const BASE_URL = "https://threadzy.ai";
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -119,7 +119,7 @@ const SECTIONS: Section[] = [
               status: "open",
               created_at: "2025-01-15T10:30:00Z",
               updated_at: "2025-01-15T10:35:00Z",
-              thread_url: "https://threadops-jade.vercel.app/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+              thread_url: "https://threadzy.ai/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
               reply_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages",
             },
           ],
@@ -825,7 +825,7 @@ const SECTIONS: Section[] = [
           payload: {
             message_id: "m_002",
             thread_id: "dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
-            thread_url: "https://threadops-jade.vercel.app/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+            thread_url: "https://threadzy.ai/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
             reply_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages",
             author_id: "user_456",
             author_kind: "user",
@@ -1662,7 +1662,7 @@ manage_webhooks register
 {`{
   "mcpServers": {
     "threadzy": {
-      "url": "https://threadops-jade.vercel.app/mcp",
+      "url": "https://threadzy.ai/mcp",
       "headers": {
         "Authorization": "Bearer your_api_key"
       }
@@ -1670,7 +1670,7 @@ manage_webhooks register
   }
 }`}
                     </pre>
-                    <CopyButton text={`{\n  "mcpServers": {\n    "threadzy": {\n      "url": "https://threadops-jade.vercel.app/mcp",\n      "headers": {\n        "Authorization": "Bearer your_api_key"\n      }\n    }\n  }\n}`} />
+                    <CopyButton text={`{\n  "mcpServers": {\n    "threadzy": {\n      "url": "https://threadzy.ai/mcp",\n      "headers": {\n        "Authorization": "Bearer your_api_key"\n      }\n    }\n  }\n}`} />
                   </div>
                   <p className="mt-2">
                     Replace <code className="bg-[var(--muted)] px-1 rounded text-xs">your_api_key</code> with

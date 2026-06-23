@@ -14,7 +14,7 @@ import { generatePlaintextKey, extractPrefix, hashKey } from "@/core/rules/api-k
 const HAS_ENV =
   !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const BASE_URL = process.env.TEST_BASE_URL ?? "https://threadops-jade.vercel.app";
+const BASE_URL = process.env.TEST_BASE_URL ?? "https://threadzy.ai";
 
 interface TestAccount {
   companyId: string;

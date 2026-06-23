@@ -55,7 +55,7 @@ export async function POST(
     {
       action,
       thread_id: threadId,
-      thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${threadId}`,
+      thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai"}/threads/${threadId}`,
       reply_endpoint: `POST /api/threads/${threadId}/messages`,
       thread_title: thread.title,
       current_summary: thread.summary ?? null,

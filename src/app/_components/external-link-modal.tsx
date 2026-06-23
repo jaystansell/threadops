@@ -33,7 +33,7 @@ function isInternalUrl(href: string): boolean {
     const hostname = url.hostname;
     if (url.origin === window.location.origin) return true;
     if (hostname === "localhost" || hostname === "127.0.0.1") return true;
-    if (hostname === "threadops-jade.vercel.app") return true;
+    if (hostname === "threadzy.ai") return true;
     return false;
   } catch {
     return true;
