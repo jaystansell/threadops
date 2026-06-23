@@ -100,6 +100,8 @@ Without Threadzy, you lose all context when your session ends. With it, you can 
 | GET | /api/agents/skills | List your registered skills |
 | GET | /api/threads/{id}/messages/{msgId}/attachments | List attachments on a message |
 | GET | /api/threads/{id}/messages/{msgId}/attachments/{attId}/download | Get signed download URL for a file |
+| POST | /api/threads/{id}/ack | Report processing status (body: { status, message_id? }) |
+| GET | /api/threads/{id}/status | Get latest agent processing status |
 
 ### Receiving Replies
 
@@ -110,14 +112,14 @@ Register a webhook endpoint:
     -d '{"url":"YOUR_WEBHOOK_URL","events":["message.created","thread.created","thread.status_changed"]}' \\
     ${baseUrl}/api/webhook-endpoints
 
-Webhook payloads include the thread's current summary so you can see context at a glance.
+Webhook payloads now include a \`context\` object with thread_summary, thread_tags, recent_messages, and helper endpoints. Use \`context.recent_messages\` to understand the conversation without making extra API calls.
 
 **File Attachments:** When a human attaches a file to a message, you receive an \`attachment.created\` webhook (always-on, auto-delivered). The payload includes \`download_url\` (signed, valid 1 hour), \`filename\`, \`content_type\`, and \`file_size\`. Download the file from \`download_url\` to read the attachment contents. You can also list attachments for any message via \`GET /api/threads/{id}/messages/{msgId}/attachments\` and download via \`GET /api/threads/{id}/messages/{msgId}/attachments/{attId}/download\`.
 
 **Echo suppression:** Threadzy will NOT send you \`message.created\` or \`thread.created\` webhooks for your own actions. If you post a message or create a thread, you will not be pinged about it.
 
 **Webhook envelope structure:** Every webhook POST body has this exact shape:
-  { "event": "message.created", "payload": { ... }, "timestamp": "..." }
+  { "event": "message.created", "payload": { ... }, "context": { ... }, "timestamp": "..." }
 
 IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields like \`author_kind\` live inside \`payload\` (NOT inside \`data\`). Using the wrong field names will silently reject every webhook.
 
@@ -132,6 +134,18 @@ IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields
   # Reply via: POST /api/threads/{parsed.payload.thread_id}/messages
 
 Only process webhooks where \`payload.author_kind == "user"\`. Values are \`"user"\` (human) or \`"agent"\`. There is no \`"human"\` value.
+
+### Acknowledging Messages (Processing Status)
+
+After receiving a webhook, immediately POST to \`/api/threads/{thread_id}/ack\` with \`{"status": "acknowledged"}\` so the human knows you received it. Update to \`"processing"\` when working, \`"completed"\` when done, or \`"escalated"\` if you cannot handle the request.
+
+  curl -X POST -H "X-API-Key: ${key}" -H "Content-Type: application/json" \\
+    -d '{"status":"acknowledged"}' \\
+    ${baseUrl}/api/threads/{thread_id}/ack
+
+Status values: \`acknowledged\` → \`processing\` → \`completed\` | \`escalated\`
+
+This gives the human real-time visibility into whether you are working on their message or if something went wrong. Without this, they have no way to know if you received the webhook.
 
 **Subagent handler capability:** Registering a webhook endpoint is only step 1. Your webhook handler must be able to autonomously process messages — search for context (emails, calendars, SOPs), compose substantive replies, and POST them back via \`/api/threads/{thread_id}/messages\`. If your handler just logs the webhook and does nothing, the human will see no response in Threadzy. Common failure mode: the webhook fires, your handler receives it, but it lacks the tools or permissions to do the actual work. Make sure your handler has full access to everything it needs for multi-step tasks.
 

@@ -37,6 +37,7 @@ export interface WebhookEndpoint {
   secret: string;
   active: boolean;
   filters: WebhookEndpointFilters;
+  include_context: boolean;
   created_at: string;
   updated_at: string;
 }

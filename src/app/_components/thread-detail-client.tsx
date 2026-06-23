@@ -14,6 +14,7 @@ interface ThreadDetailClientProps {
   isOpen: boolean;
   isAgentRevoked?: boolean;
   agentName?: string | null;
+  agentApiKeyId?: string | null;
   threadEvents?: ThreadEvent[];
   attachmentCounts?: Record<string, number>;
 }
@@ -25,6 +26,7 @@ export function ThreadDetailClient({
   isOpen,
   isAgentRevoked = false,
   agentName = null,
+  agentApiKeyId = null,
   threadEvents = [],
   attachmentCounts = {},
 }: ThreadDetailClientProps) {
@@ -89,6 +91,7 @@ export function ThreadDetailClient({
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
         agentName={agentName}
+        agentApiKeyId={agentApiKeyId}
       />
 
       {sortOrder === "old-first" && composer}

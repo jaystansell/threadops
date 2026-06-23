@@ -14,6 +14,7 @@ import { MessageAttachments, AttachmentBadge } from "./message-attachments";
 import { MessageDetailsPanel } from "./message-details-panel";
 import { AwaitingResponseIndicator } from "./awaiting-response-indicator";
 import { UnresponsiveAgentHint } from "./unresponsive-agent-hint";
+import { AgentProcessingStatus } from "./agent-processing-status";
 import { buildDiagnosticPrompt } from "./thread-debug-panel";
 import {
   ExternalLinkModal,
@@ -21,6 +22,7 @@ import {
   getTrustedDomains,
   extractDomain,
 } from "./external-link-modal";
+import { PromptPicker } from "./prompt-picker";
 import { SourceIcon, resolveSourceType } from "./source-icon";
 
 function relativeTime(dateStr: string): string {
@@ -96,6 +98,7 @@ interface ThreadTimelineProps {
   threadEvents?: ThreadEvent[];
   attachmentCounts?: Record<string, number>;
   agentName?: string | null;
+  agentApiKeyId?: string | null;
 }
 
 export function ThreadTimeline({
@@ -105,6 +108,7 @@ export function ThreadTimeline({
   threadEvents = [],
   attachmentCounts = {},
   agentName = null,
+  agentApiKeyId = null,
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -233,6 +237,7 @@ export function ThreadTimeline({
 
     return (
       <>
+        <AgentProcessingStatus threadId={threadId} isAwaiting={true} />
         <AwaitingResponseIndicator agentName={agentName} />
         <UnresponsiveAgentHint
           lastUserMessageAt={lastMsg.created_at}
@@ -490,6 +495,8 @@ export function ThreadTimeline({
               <span>
                 Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
               </span>
+              <span className="mx-0.5">&middot;</span>
+              <PromptPicker apiKeyId={agentApiKeyId} />
             </div>
             {msg.metadata && (
               <MessageDetailsPanel

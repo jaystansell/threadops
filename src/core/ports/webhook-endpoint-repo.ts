@@ -31,6 +31,7 @@ export interface WebhookEndpointCreateInput {
   events: string[];
   secret: string;
   filters?: WebhookEndpointFilters;
+  include_context?: boolean;
 }
 
 export interface WebhookEndpointUpdateInput {
@@ -38,4 +39,5 @@ export interface WebhookEndpointUpdateInput {
   events?: string[];
   active?: boolean;
   filters?: WebhookEndpointFilters;
+  include_context?: boolean;
 }
