@@ -133,6 +133,8 @@ IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields
 
 Only process webhooks where \`payload.author_kind == "user"\`. Values are \`"user"\` (human) or \`"agent"\`. There is no \`"human"\` value.
 
+**Subagent handler capability:** Registering a webhook endpoint is only step 1. Your webhook handler must be able to autonomously process messages — search for context (emails, calendars, SOPs), compose substantive replies, and POST them back via \`/api/threads/{thread_id}/messages\`. If your handler just logs the webhook and does nothing, the human will see no response in Threadzy. Common failure mode: the webhook fires, your handler receives it, but it lacks the tools or permissions to do the actual work. Make sure your handler has full access to everything it needs for multi-step tasks.
+
 ### Handling Action Requests
 
 When a human clicks "Generate Summary" or "Generate Tags" in the UI, you receive an \`action.requested\` webhook. You should handle these actions:
