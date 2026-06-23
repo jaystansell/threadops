@@ -22,7 +22,6 @@ import {
   getTrustedDomains,
   extractDomain,
 } from "./external-link-modal";
-import { PromptPicker } from "./prompt-picker";
 import { SourceIcon, resolveSourceType } from "./source-icon";
 
 function relativeTime(dateStr: string): string {
@@ -98,7 +97,6 @@ interface ThreadTimelineProps {
   threadEvents?: ThreadEvent[];
   attachmentCounts?: Record<string, number>;
   agentName?: string | null;
-  agentApiKeyId?: string | null;
 }
 
 export function ThreadTimeline({
@@ -108,7 +106,6 @@ export function ThreadTimeline({
   threadEvents = [],
   attachmentCounts = {},
   agentName = null,
-  agentApiKeyId = null,
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -495,8 +492,6 @@ export function ThreadTimeline({
               <span>
                 Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
               </span>
-              <span className="mx-0.5">&middot;</span>
-              <PromptPicker apiKeyId={agentApiKeyId} />
             </div>
             {msg.metadata && (
               <MessageDetailsPanel
