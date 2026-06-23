@@ -13,6 +13,7 @@ const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key",
+  "Access-Control-Expose-Headers": "WWW-Authenticate",
 };
 
 function createServiceClient() {
