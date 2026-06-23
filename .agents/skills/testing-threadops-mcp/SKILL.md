@@ -96,6 +96,13 @@ API key auth is validated once on first tool call and cached for the MCP server'
 ### Invalid API Key
 Setting `THREADOPS_API_KEY` to an invalid value produces `isError: true, "Invalid API key"` on any tool call.
 
+### OAuth Access Token Auth (authorization_code flow)
+The MCP auth middleware (`src/mcp/auth.ts`) accepts two token formats:
+- Direct API key (prefix `to_`) → validated via `api_keys` table hash lookup
+- OAuth access token (prefix `to_at_`) → resolved via `oauth_access_tokens` table → linked `api_keys` record
+
+To test OAuth token auth, you need a valid `to_at_` token in the `oauth_access_tokens` table. This requires the `033_oauth_authorization_codes.sql` migration to be applied. Without it, `to_at_` tokens will always fail with "Invalid access token".
+
 ### Webhook Auto-Events
 `register_webhook` automatically includes `docs.updated` and `action.requested` events in addition to what was requested.
 

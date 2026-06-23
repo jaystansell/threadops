@@ -68,12 +68,32 @@ This creates a verified user immediately, bypassing email confirmation and rate 
 - While logged in, navigate to `/login`
 - **Expected**: Proxy redirects to `/threads` (or `/onboarding`)
 
+### 8. OAuth Consent Page (authorization_code flow)
+- Navigate to `/oauth/authorize?response_type=code&client_id=test-app&redirect_uri=http://localhost:9999/callback&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256&scope=threads:read+threads:write&state=test123`
+- **Expected**: Page shows "Authorize Application", client_id, requested scopes, and a list of user's active (non-revoked) API keys as radio buttons
+- Select an API key → "Authorize" button becomes enabled
+- Click "Deny" → redirects to `redirect_uri?error=access_denied&error_description=...&state=test123`
+- Click "Authorize" → generates authorization code and redirects to `redirect_uri?code=...&state=test123` (requires `oauth_authorization_codes` table to exist)
+
+### 9. OAuth Consent Page — Validation Errors
+- Navigate to `/oauth/authorize?response_type=invalid&client_id=test&redirect_uri=http://localhost/cb&code_challenge=abc`
+- **Expected**: Shows "Authorization Error" with "Invalid request: response_type must be 'code'"
+- Missing required params (client_id, redirect_uri, code_challenge) also show validation errors
+
+### 10. OAuth Login Redirect with ?next= Parameter
+- While signed out, navigate to `/oauth/authorize?response_type=code&client_id=test&...`
+- **Expected**: Redirects to `/login?next=%2Foauth%2Fauthorize%3F...` with all OAuth params encoded in the `next` parameter
+- After logging in, should redirect back to `/oauth/authorize` with all OAuth params preserved (NOT to `/threads`)
+
 ## Known Issues / Workarounds
 
 - **Vercel Deployment Protection**: The Vercel preview may be SSO-protected. If testing against the deployed version, you might need the team owner to temporarily disable Deployment Protection in Vercel project settings (Settings → Deployment Protection → toggle off).
 - **Supabase email rate limits**: Use the Admin API approach above to create test users instead of the signup form.
 - **Wrong Supabase credentials**: If the env vars point to a different project, auth pages (login, signup, sign-out, proxy redirects) still work because they only need the Supabase Auth API. Data-dependent pages (threads, onboarding "Join") will fail with "No company found" or similar errors.
 - **Email confirmation**: The signup page handles both cases: if email confirmation is disabled, it redirects immediately; if enabled, it shows "Check your email" UI. Use Admin API with `email_confirm: true` to bypass.
+- **Shell env vars may conflict**: The org-level Devin secrets may set `NEXT_PUBLIC_SUPABASE_URL` etc. pointing to the wrong Supabase project. Before starting the dev server, run `unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY` so the `.env.local` file values are used instead.
+- **OAuth authorization_code flow requires migration**: The full code exchange flow (POST /api/oauth/authorize → code → POST /api/oauth/token) requires the `oauth_authorization_codes` and `oauth_access_tokens` tables to exist. Check if migration `infra/migrations/033_oauth_authorization_codes.sql` has been applied. Without it, the consent page UI still renders but clicking "Authorize" will fail at the DB insert step.
+- **Supabase MCP is read-only for DDL**: You cannot create tables via `apply_migration` or `execute_sql` on the Supabase MCP — both fail with read-only errors. Migrations must be applied manually via the Supabase Dashboard SQL Editor.
 
 ## Cleanup
 
