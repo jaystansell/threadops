@@ -28,6 +28,8 @@ function addTrustedDomain(domain: string) {
 function isInternalUrl(href: string): boolean {
   try {
     const url = new URL(href, window.location.origin);
+    const protocol = url.protocol;
+    if (protocol !== "http:" && protocol !== "https:") return true;
     const hostname = url.hostname;
     if (url.origin === window.location.origin) return true;
     if (hostname === "localhost" || hostname === "127.0.0.1") return true;
