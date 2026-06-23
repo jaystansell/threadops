@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FILE_LIMITS, isAllowedFile } from "@/core/types";
 import { StickmanSendAnimation } from "./stickman-animations";
 import { PromptPicker } from "./prompt-picker";
+import { ActionPalette } from "./action-palette";
 
 interface MessageComposerProps {
   threadId: string;
@@ -396,6 +397,7 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
           apiKeyId={agentApiKeyId}
           onSelect={(text) => setBody((prev) => prev ? `${prev}\n${text}` : text)}
         />
+        <ActionPalette threadId={threadId} />
       </div>
       {pendingFiles.length > 0 && (
         <p className="text-[10px] text-[var(--muted-foreground)]">

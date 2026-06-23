@@ -25,3 +25,4 @@ export type {
   AgentFeedbackPriority,
   AgentFeedbackStatus,
 } from "./agent-feedback";
+export type { AgentAction, AgentActionId } from "./agent-action";
