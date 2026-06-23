@@ -4,10 +4,12 @@ import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FILE_LIMITS, isAllowedFile } from "@/core/types";
 import { StickmanSendAnimation } from "./stickman-animations";
+import { PromptPicker } from "./prompt-picker";
 
 interface MessageComposerProps {
   threadId: string;
   userId: string;
+  agentApiKeyId?: string | null;
 }
 
 interface PendingFile {
@@ -35,7 +37,7 @@ function fileTypeIcon(contentType: string): string {
   return "📎";
 }
 
-export function MessageComposer({ threadId, userId }: MessageComposerProps) {
+export function MessageComposer({ threadId, userId, agentApiKeyId = null }: MessageComposerProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -390,6 +392,7 @@ export function MessageComposer({ threadId, userId }: MessageComposerProps) {
         >
           {requestingContext ? "Requesting..." : "Ask for More Context"}
         </button>
+        <PromptPicker apiKeyId={agentApiKeyId} />
       </div>
       {pendingFiles.length > 0 && (
         <p className="text-[10px] text-[var(--muted-foreground)]">

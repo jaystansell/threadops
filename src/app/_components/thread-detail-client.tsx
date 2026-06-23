@@ -50,7 +50,7 @@ export function ThreadDetailClient({
           Replies won&apos;t reach the disconnected agent, but you can still post for the record.
         </p>
       )}
-      <MessageComposer threadId={threadId} userId={userId} />
+      <MessageComposer threadId={threadId} userId={userId} agentApiKeyId={agentApiKeyId} />
     </div>
   ) : null;
 
@@ -91,7 +91,6 @@ export function ThreadDetailClient({
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
         agentName={agentName}
-        agentApiKeyId={agentApiKeyId}
       />
 
       {sortOrder === "old-first" && composer}

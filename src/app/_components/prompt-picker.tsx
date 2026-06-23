@@ -86,12 +86,12 @@ export function PromptPicker({ apiKeyId }: PromptPickerProps) {
       <button
         type="button"
         onClick={handleToggle}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:border-[var(--primary)] transition-colors"
+        className="px-3 py-2 text-sm rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors inline-flex items-center gap-1"
         aria-label="Use a saved prompt"
       >
         <svg
-          width="10"
-          height="10"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
