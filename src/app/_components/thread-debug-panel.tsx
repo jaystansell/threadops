@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ThreadDebugPanelProps {
   threadId: string;
@@ -106,10 +106,30 @@ function buildDiagnosticPrompt({
     "   - If you get a 403 error, the thread belongs to another agent",
   );
   lines.push("");
+  lines.push(
+    "6. FIELD NAME CHECK: Are you using the correct webhook payload field names?",
+  );
+  lines.push(
+    '   - The top-level field is `event` (NOT `event_type`)',
+  );
+  lines.push(
+    '   - Message data is in `payload` (NOT `data`)',
+  );
+  lines.push(
+    '   - Correct: body.event === "message.created" && body.payload.author_kind === "user"',
+  );
+  lines.push(
+    '   - WRONG: body.event_type, body.data.author_kind — these will silently reject every webhook',
+  );
+  lines.push(
+    '   - Values for author_kind are "user" (human) or "agent". There is no "human" value.',
+  );
+  lines.push("");
   lines.push("---");
   lines.push("");
   lines.push("Threadzy Documentation:");
   lines.push(`- API Docs: ${baseUrl}/docs/api`);
+  lines.push(`- Webhook Payloads: ${baseUrl}/docs/api#webhook-payloads`);
   lines.push(`- Webhook Setup: ${baseUrl}/docs/api#webhook-endpoints`);
   lines.push(`- Security & Auth: ${baseUrl}/security`);
   lines.push("");
@@ -121,26 +141,55 @@ function buildDiagnosticPrompt({
 }
 
 export function ThreadDebugPanel(props: ThreadDebugPanelProps) {
-  const { lastUserMessageAt, lastAgentMessageAt, ...promptProps } = props;
+  const { lastUserMessageAt, lastAgentMessageAt, threadId, ...promptProps } = props;
 
-  const unresponsive = isAgentUnresponsive(
-    lastUserMessageAt,
-    lastAgentMessageAt,
+  const [unresponsive, setUnresponsive] = useState(() =>
+    isAgentUnresponsive(lastUserMessageAt, lastAgentMessageAt),
   );
-  const [open, setOpen] = useState(unresponsive);
+  const [open, setOpen] = useState(() =>
+    isAgentUnresponsive(lastUserMessageAt, lastAgentMessageAt),
+  );
   const [copied, setCopied] = useState(false);
+  const [liveMessageCount, setLiveMessageCount] = useState(props.messageCount);
 
-  // If unresponsive state changed after mount (e.g. timer tick), keep panel open
-  if (unresponsive && !open) {
-    setOpen(true);
-  }
+  // Poll for new messages to auto-clear/auto-open when agent status changes
+  useEffect(() => {
+    let userAt = lastUserMessageAt;
+    let agentAt = lastAgentMessageAt;
+    let prevUnresponsive = isAgentUnresponsive(userAt, agentAt);
+
+    function check() {
+      const nowUnresponsive = isAgentUnresponsive(userAt, agentAt);
+      setUnresponsive(nowUnresponsive);
+      if (nowUnresponsive && !prevUnresponsive) setOpen(true);
+      prevUnresponsive = nowUnresponsive;
+    }
+
+    async function poll() {
+      try {
+        const res = await fetch(`/api/threads/${threadId}/messages`);
+        if (!res.ok) return;
+        const messages = (await res.json()) as Array<{ author_kind: string; created_at: string }>;
+        setLiveMessageCount(messages.length);
+        const lastUser = [...messages].reverse().find((m) => m.author_kind === "user");
+        const lastAgent = [...messages].reverse().find((m) => m.author_kind === "agent");
+        if (lastUser) userAt = lastUser.created_at;
+        if (lastAgent) agentAt = lastAgent.created_at;
+      } catch { /* ignore */ }
+      check();
+    }
+
+    check();
+    const interval = setInterval(poll, 30_000);
+    return () => clearInterval(interval);
+  }, [lastUserMessageAt, lastAgentMessageAt, threadId]);
 
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
       : "https://threadops-jade.vercel.app";
 
-  const prompt = buildDiagnosticPrompt({ ...promptProps, baseUrl });
+  const prompt = buildDiagnosticPrompt({ ...promptProps, threadId, messageCount: liveMessageCount, baseUrl });
 
   return (
     <div

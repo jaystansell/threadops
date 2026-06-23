@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const YOGA_POSES = [
   // Tree pose
@@ -128,40 +128,50 @@ interface AwaitingResponseIndicatorProps {
 export function AwaitingResponseIndicator({
   agentName,
 }: AwaitingResponseIndicatorProps) {
-  const [pose] = useState(
-    () => YOGA_POSES[Math.floor(Math.random() * YOGA_POSES.length)],
+  const [poseIndex, setPoseIndex] = useState(
+    () => Math.floor(Math.random() * YOGA_POSES.length),
   );
+
+  // Cycle through poses every 4 seconds for visible animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPoseIndex((i) => (i + 1) % YOGA_POSES.length);
+    }, 4_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pose = YOGA_POSES[poseIndex];
 
   return (
     <div className="flex items-center gap-3 py-3 px-2">
       <div
-        className="text-[var(--muted-foreground)]/40"
-        style={{ animation: "stickman-yoga-breathe 3s ease-in-out infinite" }}
+        className="text-teal-400"
+        style={{ animation: "stickman-yoga-breathe 3s ease-in-out infinite", transition: "all 0.6s ease-in-out" }}
       >
         {pose.svg}
       </div>
       <div className="flex flex-col">
-        <span className="text-xs text-[var(--muted-foreground)]/60 font-medium">
+        <span className="text-xs text-[var(--muted-foreground)] font-medium">
           Awaiting response
           {agentName ? ` from ${agentName}` : ""}...
         </span>
-        <span className="text-[10px] text-[var(--muted-foreground)]/30 italic">
+        <span className="text-[10px] text-[var(--muted-foreground)]/60 italic">
           {pose.name}
         </span>
       </div>
       <div className="flex gap-1 ml-auto">
         <span
-          className="w-1.5 h-1.5 rounded-full bg-[var(--muted-foreground)]/20"
+          className="w-1.5 h-1.5 rounded-full bg-teal-400/50"
           style={{ animation: "stickman-dot-pulse 1.4s ease-in-out infinite" }}
         />
         <span
-          className="w-1.5 h-1.5 rounded-full bg-[var(--muted-foreground)]/20"
+          className="w-1.5 h-1.5 rounded-full bg-teal-400/50"
           style={{
             animation: "stickman-dot-pulse 1.4s ease-in-out 0.2s infinite",
           }}
         />
         <span
-          className="w-1.5 h-1.5 rounded-full bg-[var(--muted-foreground)]/20"
+          className="w-1.5 h-1.5 rounded-full bg-teal-400/50"
           style={{
             animation: "stickman-dot-pulse 1.4s ease-in-out 0.4s infinite",
           }}
