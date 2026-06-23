@@ -9,6 +9,7 @@ import { FormattedDate } from "@/app/_components/formatted-date";
 import { ThreadActionsPanel } from "@/app/_components/thread-actions-panel";
 import { ThreadSavingsBanner } from "@/app/_components/thread-savings-banner";
 import { CopyableId } from "@/app/_components/copyable-id";
+import { ThreadDebugPanel } from "@/app/_components/thread-debug-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -141,6 +142,14 @@ export default async function ThreadDetailPage(
           currentStatus={thread.status}
           initialTags={tags}
           initialSummary={thread.summary ?? ""}
+        />
+        <ThreadDebugPanel
+          threadId={threadId}
+          agentName={agentName}
+          threadTitle={thread.title}
+          messageCount={messages.length}
+          lastMessageAt={messages.length > 0 ? messages[messages.length - 1].created_at : null}
+          isAgentRevoked={isAgentRevoked}
         />
         <ThreadSavingsBanner
           messageCount={messages.length}
