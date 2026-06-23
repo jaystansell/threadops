@@ -48,14 +48,19 @@ export async function PATCH(
     const keyRecord = keys.find((k) => k.id === keyId);
 
     // Send agent.revoked webhook BEFORE deactivating endpoints
-    await dispatchRevokedWebhook(
-      companyId as CompanyId,
-      keyId as ApiKeyId,
-      keyRecord?.label ?? "Unknown Agent",
-      keyRecord?.key_prefix ?? "",
-      agentThreads ?? [],
-      agentEndpoints ?? [],
-    );
+    // Wrapped in try-catch so webhook failures don't block revocation
+    try {
+      await dispatchRevokedWebhook(
+        companyId as CompanyId,
+        keyId as ApiKeyId,
+        keyRecord?.label ?? "Unknown Agent",
+        keyRecord?.key_prefix ?? "",
+        agentThreads ?? [],
+        agentEndpoints ?? [],
+      );
+    } catch {
+      // Best-effort: don't let webhook dispatch failure prevent revocation
+    }
 
     await apiKeyRepo.revoke(companyId as CompanyId, keyId as ApiKeyId);
 
