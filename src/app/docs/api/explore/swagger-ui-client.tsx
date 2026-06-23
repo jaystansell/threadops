@@ -8,12 +8,8 @@ import { useEffect, useRef } from "react";
  */
 export function SwaggerUIClient() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-
     const container = containerRef.current;
     if (!container) return;
 
@@ -23,9 +19,10 @@ export function SwaggerUIClient() {
     link.href = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css";
     document.head.appendChild(link);
 
-    // Dark mode overrides
+    // Dark mode overrides (scoped to .swagger-ui-wrapper to avoid leaking)
     const style = document.createElement("style");
     style.textContent = `
+      .swagger-ui-wrapper { background: #0f172a; }
       .swagger-ui { background: transparent !important; }
       .swagger-ui .topbar { display: none !important; }
       .swagger-ui, .swagger-ui .info, .swagger-ui .opblock,
@@ -49,7 +46,6 @@ export function SwaggerUIClient() {
       .swagger-ui .markdown p, .swagger-ui .markdown li { color: #cbd5e1 !important; }
       .swagger-ui .parameter__name { color: #93c5fd !important; }
       .swagger-ui .parameter__type { color: #86efac !important; }
-      body { background: #0f172a !important; }
     `;
     document.head.appendChild(style);
 
@@ -70,6 +66,12 @@ export function SwaggerUIClient() {
       }
     };
     document.body.appendChild(script);
+
+    return () => {
+      link.remove();
+      style.remove();
+      script.remove();
+    };
   }, []);
 
   return (
@@ -83,7 +85,7 @@ export function SwaggerUIClient() {
           ← Back to API docs
         </a>
       </div>
-      <div id="swagger-ui-container" ref={containerRef} />
+      <div className="swagger-ui-wrapper rounded-lg p-4" id="swagger-ui-container" ref={containerRef} />
     </div>
   );
 }

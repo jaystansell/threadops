@@ -4,7 +4,7 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { createWebhookRepo } from "@/adapters/supabase/webhook-repo";
 import { SIGNATURE_HEADER } from "@/core/rules/webhook";
 import type { CompanyId } from "@/core/types";
-import openApiSpec from "@/app/api/openapi.json";
+import { openApiSpec } from "@/app/api/openapi.json/spec";
 
 export const dynamic = "force-dynamic";
 
