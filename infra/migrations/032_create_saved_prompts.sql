@@ -35,7 +35,8 @@ CREATE POLICY "Users can insert own prompts"
 DROP POLICY IF EXISTS "Users can update own prompts" ON saved_prompts;
 CREATE POLICY "Users can update own prompts"
   ON saved_prompts FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can delete own prompts" ON saved_prompts;
 CREATE POLICY "Users can delete own prompts"

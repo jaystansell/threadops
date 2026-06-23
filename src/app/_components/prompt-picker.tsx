@@ -23,7 +23,11 @@ export function PromptPicker({ apiKeyId }: PromptPickerProps) {
   const fetchPrompts = useCallback(async () => {
     try {
       const res = await fetch("/api/saved-prompts");
-      if (!res.ok) return;
+      if (!res.ok) {
+        fetchedRef.current = false;
+        setPrompts([]);
+        return;
+      }
       const all: SavedPrompt[] = await res.json();
       const filtered = all.filter((p) => {
         if ("all" in p.agent_scope && p.agent_scope.all) return true;
@@ -34,6 +38,7 @@ export function PromptPicker({ apiKeyId }: PromptPickerProps) {
       });
       setPrompts(filtered);
     } catch {
+      fetchedRef.current = false;
       setPrompts([]);
     }
   }, [apiKeyId]);
