@@ -4,6 +4,8 @@ import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { hashKey } from "@/core/rules/api-key";
 import { checkRateLimit } from "@/core/rules/rate-limit";
 
+export const dynamic = "force-dynamic";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
