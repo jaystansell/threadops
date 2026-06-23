@@ -715,6 +715,50 @@ curl -s -X POST "http://localhost:3000/api/threads/<FYG_JET_THREAD_ID>/messages"
 - Check `webhook_deliveries` to confirm deliveries are being created for the thread
 - The `webhook_deliveries` table does NOT have an `endpoint_id` column — you cannot directly see which endpoint received a delivery
 
+### Agent Feedback Dashboard Testing (PR #119)
+
+The feedback dashboard (`/feedback`) is admin-only — restricted to `jay+direct@productcoalition.com`. Testing requires both API (curl) and browser interactions.
+
+**Admin user setup:**
+- User `jay+direct@productcoalition.com` (id: `df7456a7-5775-4a54-8536-33b8206c7beb`) exists in the Supabase auth system
+- To set a known password for testing:
+  ```bash
+  curl -s -X PUT "https://gymsbxkuiknbdtulmopv.supabase.co/auth/v1/admin/users/df7456a7-5775-4a54-8536-33b8206c7beb" \
+    -H "apikey: $THREADOPS_SUPABASE_SECRET_KEY" \
+    -H "Authorization: Bearer $THREADOPS_SUPABASE_SECRET_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"password": "TestAdmin123!"}'
+  ```
+- This user is a member of Acme Corp (`a0000000-0000-0000-0000-000000000001`)
+
+**Middleware note:** `/api/feedback` and `/feedback` are NOT in the middleware's protected routes list (only `/threads`, `/onboarding`, `/api/threads`, `/api/companies` are protected). This means:
+- `POST /api/feedback` and `GET /api/feedback` work via curl with `x-api-key` header without middleware blocking
+- `/feedback` page protection is handled by the server component itself (checks email, redirects to `/threads`)
+
+**Test flow:**
+1. Create a test API key via Supabase REST API (see "Creating Test API Keys via DB" section above)
+2. Submit feedback via curl:
+   ```bash
+   curl -s -X POST "https://threadops-jade.vercel.app/api/feedback" \
+     -H "Content-Type: application/json" \
+     -H "x-api-key: <plaintext_key>" \
+     -d '{"category":"api_feature","title":"Test feedback item","description":"Test description","priority":"high"}'
+   ```
+   Expected: 201 with JSON containing `status: "pending"`, correct `company_id` and `api_key_id`
+3. Log in as admin in browser, navigate to `/feedback`
+4. Verify: "Feedback" nav link visible (7th item), dashboard shows submitted item with correct title/badges
+5. Test HITL flow: type notes → click Approve → verify status badge changes, notes appear, buttons swap to "Mark Shipped"
+6. Click "Mark Shipped" → verify terminal state (no action buttons)
+7. Sign out, log in as non-admin user → verify no "Feedback" nav link, `/feedback` URL redirects to `/threads`
+
+**Key assertions:**
+- Admin nav has 7 links (including Feedback); non-admin has 6 (no Feedback)
+- Status transitions: pending → approved → shipped (with admin notes persisted)
+- Non-admin redirect: `/feedback` → `/threads` (server-side redirect)
+- Tab counts update correctly after each status change
+
+**Cleanup:** Delete test feedback rows and test API keys after testing. Delete any test users created for non-admin testing via the Supabase Admin API.
+
 ### Revoked Agent Webhook Isolation (PR #120+)
 
 Revoking an API key should cascade to deactivate all webhook endpoints tied to that key, AND the dispatch logic should skip endpoints whose key has `revoked_at` set.
