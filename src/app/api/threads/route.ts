@@ -181,6 +181,21 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Fetch latest agent processing status per thread
+    const processingStatusMap = new Map<string, string>();
+    if (threadIds.length > 0) {
+      const { data: statusRows } = await db
+        .from("agent_processing_status")
+        .select("thread_id, status, created_at")
+        .in("thread_id", threadIds)
+        .order("created_at", { ascending: false });
+      for (const row of statusRows ?? []) {
+        if (!processingStatusMap.has(row.thread_id)) {
+          processingStatusMap.set(row.thread_id, row.status);
+        }
+      }
+    }
+
     const enriched = threads.map((thread) => {
       const lm = lastMsgMap.get(thread.id);
       const agentName = agentMap.get(thread.id)
@@ -193,6 +208,7 @@ export async function GET(req: NextRequest) {
         last_author_name: lm?.author_name ?? null,
         last_message_at: lm?.created_at ?? null,
         agent_name: agentName,
+        agent_processing_status: processingStatusMap.get(thread.id) ?? null,
       };
     });
 

@@ -43,6 +43,16 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
     }
   }, [apiKeyId]);
 
+  // Re-fetch when apiKeyId changes (e.g. user selects a different agent)
+  useEffect(() => {
+    fetchedRef.current = false;
+    setPrompts(null);
+    if (open) {
+      fetchedRef.current = true;
+      fetchPrompts();
+    }
+  }, [apiKeyId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleToggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
