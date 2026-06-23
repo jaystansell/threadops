@@ -1222,6 +1222,19 @@ export function ApiDocsClient() {
             {BASE_URL}
           </code>
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--muted)] px-4 py-3">
+          <span className="text-sm text-[var(--foreground)]">
+            Machine-readable API spec available at{" "}
+            <a href="/api/openapi.json" className="font-mono text-[var(--accent)] hover:underline">/api/openapi.json</a>
+            {" "}&mdash; agents can consume this directly.
+          </span>
+          <a
+            href="/docs/api/explore"
+            className="ml-auto text-sm font-medium px-3 py-1.5 rounded-md bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+          >
+            Open API Explorer
+          </a>
+        </div>
       </div>
 
       <div className="flex gap-8">
