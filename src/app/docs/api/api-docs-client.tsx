@@ -1454,29 +1454,34 @@ export function ApiDocsClient() {
             <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
               <p>
                 MCP clients that use standard OAuth 2.0 discovery (like Tasklet) can connect to the Threadzy
-                MCP server automatically using the <code className="bg-[var(--muted)] px-1 rounded text-xs">client_credentials</code> grant type.
+                MCP server automatically. Threadzy supports two OAuth grant types:
               </p>
 
               <div className="border border-[var(--border)] rounded-lg p-4 space-y-4">
                 <div>
-                  <h3 className="font-semibold text-[var(--foreground)]">How it works</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Authorization Code + PKCE (recommended for MCP clients)</h3>
+                  <p className="mt-1">
+                    MCP clients like Tasklet use the <code className="bg-[var(--muted)] px-1 rounded text-xs">authorization_code</code> flow
+                    with PKCE (S256). The client redirects you to a login/consent screen where you choose which API key to authorize.
+                  </p>
                   <ol className="mt-2 space-y-1 list-decimal list-inside">
                     <li>The MCP client discovers OAuth metadata at <code className="bg-[var(--muted)] px-1 rounded text-xs">/.well-known/oauth-authorization-server</code></li>
-                    <li>It exchanges your API key for a Bearer token via <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/token</code></li>
-                    <li>It uses the token to authenticate requests to <code className="bg-[var(--muted)] px-1 rounded text-xs">/mcp</code></li>
+                    <li>It redirects you to <code className="bg-[var(--muted)] px-1 rounded text-xs">{BASE_URL}/oauth/authorize</code> with PKCE challenge</li>
+                    <li>You log in and select an API key to authorize</li>
+                    <li>Threadzy redirects back with an authorization code</li>
+                    <li>The client exchanges the code + PKCE verifier for an access token at <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/token</code></li>
                   </ol>
                   <p className="mt-2">
-                    The access token returned is your API key itself — no JWT overhead. The <code className="bg-[var(--muted)] px-1 rounded text-xs">/mcp</code> endpoint
-                    already accepts Bearer API keys, so no extra configuration is needed.
+                    The access token is a short-lived opaque token (1 hour) backed by the API key you selected during consent.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-[var(--foreground)]">Token Endpoint</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Client Credentials (machine-to-machine)</h3>
                   <p className="mt-1">
-                    <code className="bg-[var(--muted)] px-1 rounded text-xs">POST {BASE_URL}/api/oauth/token</code>
+                    For server-side integrations that already have an API key, use
+                    the <code className="bg-[var(--muted)] px-1 rounded text-xs">client_credentials</code> grant to exchange it for a Bearer token.
                   </p>
-                  <p className="mt-1">Grant type: <code className="bg-[var(--muted)] px-1 rounded text-xs">client_credentials</code></p>
                   <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
 {`curl -X POST ${BASE_URL}/api/oauth/token \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
@@ -1491,9 +1496,21 @@ export function ApiDocsClient() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-[var(--foreground)]">Response</h3>
+                  <h3 className="font-semibold text-[var(--foreground)]">Token Endpoint</h3>
+                  <p className="mt-1">
+                    <code className="bg-[var(--muted)] px-1 rounded text-xs">POST {BASE_URL}/api/oauth/token</code>
+                  </p>
                   <pre className="mt-2 text-xs bg-[var(--muted)] rounded p-2 overflow-x-auto">
-{`{
+{`// authorization_code response
+{
+  "access_token": "to_at_...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "scope": "threads:read threads:write messages:read messages:write"
+}
+
+// client_credentials response
+{
   "access_token": "<your_api_key>",
   "token_type": "Bearer",
   "expires_in": 3600,
@@ -1507,7 +1524,7 @@ export function ApiDocsClient() {
                   <p className="mt-1">
                     If your MCP client supports setting headers directly, you can skip OAuth discovery and
                     set the <code className="bg-[var(--muted)] px-1 rounded text-xs">Authorization: Bearer YOUR_API_KEY</code> header
-                    manually. Both approaches use the same API key.
+                    manually.
                   </p>
                 </div>
               </div>
