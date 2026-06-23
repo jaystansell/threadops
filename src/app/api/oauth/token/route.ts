@@ -21,6 +21,9 @@ const TOKEN_RESPONSE_HEADERS = {
   "Pragma": "no-cache",
 };
 
+const ACCESS_TOKEN_TTL = 3600; // 1 hour
+const REFRESH_TOKEN_TTL = 30 * 24 * 3600; // 30 days
+
 function jsonError(
   error: string,
   errorDescription: string,
@@ -45,14 +48,20 @@ function rateLimitedResponse(retryAfterMs: number): Response {
   );
 }
 
+function generateToken(prefix: string): string {
+  return `${prefix}${randomBytes(32).toString("hex")}`;
+}
+
 // ---- body parsing ----
 
 interface ParsedBody {
   grantType: string | null;
+  clientId: string | null;
   clientSecret: string | null;
   code: string | null;
   redirectUri: string | null;
   codeVerifier: string | null;
+  refreshToken: string | null;
 }
 
 function parseBody(bodyText: string, contentType: string): ParsedBody | null {
@@ -61,10 +70,12 @@ function parseBody(bodyText: string, contentType: string): ParsedBody | null {
       const p = JSON.parse(bodyText);
       return {
         grantType: p.grant_type || null,
+        clientId: p.client_id || null,
         clientSecret: p.client_secret || null,
         code: p.code || null,
         redirectUri: p.redirect_uri || null,
         codeVerifier: p.code_verifier || null,
+        refreshToken: p.refresh_token || null,
       };
     } catch {
       return null;
@@ -73,10 +84,12 @@ function parseBody(bodyText: string, contentType: string): ParsedBody | null {
   const params = new URLSearchParams(bodyText);
   return {
     grantType: params.get("grant_type"),
+    clientId: params.get("client_id"),
     clientSecret: params.get("client_secret"),
     code: params.get("code"),
     redirectUri: params.get("redirect_uri"),
     codeVerifier: params.get("code_verifier"),
+    refreshToken: params.get("refresh_token"),
   };
 }
 
@@ -88,6 +101,57 @@ async function sha256Base64Url(input: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const base64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// ---- token helpers ----
+
+async function issueTokenPair(
+  db: ReturnType<typeof createServerClient>,
+  params: {
+    apiKeyId: string;
+    companyId: string;
+    userId: string;
+    clientId: string;
+    scope: string;
+  },
+): Promise<{ accessToken: string; refreshToken: string } | Response> {
+  const accessToken = generateToken("to_at_");
+  const refreshToken = generateToken("to_rt_");
+  const accessHash = await hashKey(accessToken);
+  const refreshHash = await hashKey(refreshToken);
+  const accessExpires = new Date(Date.now() + ACCESS_TOKEN_TTL * 1000);
+  const refreshExpires = new Date(Date.now() + REFRESH_TOKEN_TTL * 1000);
+
+  const { error: atErr } = await db.from("oauth_access_tokens").insert({
+    token_hash: accessHash,
+    api_key_id: params.apiKeyId,
+    company_id: params.companyId,
+    user_id: params.userId,
+    scope: params.scope,
+    expires_at: accessExpires.toISOString(),
+  });
+
+  if (atErr) {
+    console.error("Failed to store access token:", atErr);
+    return jsonError("server_error", "Failed to issue access token", 500);
+  }
+
+  const { error: rtErr } = await db.from("oauth_refresh_tokens").insert({
+    token_hash: refreshHash,
+    api_key_id: params.apiKeyId,
+    company_id: params.companyId,
+    user_id: params.userId,
+    client_id: params.clientId,
+    scope: params.scope,
+    expires_at: refreshExpires.toISOString(),
+  });
+
+  if (rtErr) {
+    console.error("Failed to store refresh token:", rtErr);
+    return jsonError("server_error", "Failed to issue refresh token", 500);
+  }
+
+  return { accessToken, refreshToken };
 }
 
 // ---- grant handlers ----
@@ -135,7 +199,7 @@ async function handleClientCredentials(
     {
       access_token: secret,
       token_type: "Bearer",
-      expires_in: 3600,
+      expires_in: ACCESS_TOKEN_TTL,
       scope: scopes,
     },
     { headers: TOKEN_RESPONSE_HEADERS },
@@ -157,7 +221,6 @@ async function handleAuthorizationCode(
 
   const db = createServerClient();
 
-  // Look up the authorization code
   const { data: codeRecord, error: lookupError } = await db
     .from("oauth_authorization_codes")
     .select("*")
@@ -180,57 +243,97 @@ async function handleAuthorizationCode(
     return jsonError("invalid_grant", "redirect_uri mismatch", 400);
   }
 
-  // PKCE verification
   const computedChallenge = await sha256Base64Url(codeVerifier);
   if (computedChallenge !== codeRecord.code_challenge) {
     return jsonError("invalid_grant", "PKCE verification failed", 400);
   }
 
-  // Mark code as used (one-time use)
   await db
     .from("oauth_authorization_codes")
     .update({ used_at: new Date().toISOString() })
     .eq("code", code);
 
-  // Generate an opaque access token and store its hash.
-  // The MCP auth middleware resolves this token via oauth_access_tokens.
-  const accessToken = `to_at_${randomBytes(32).toString("hex")}`;
-  const tokenHash = await hashKey(accessToken);
-  const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour
+  const scope =
+    codeRecord.scope ||
+    "threads:read threads:write messages:read messages:write";
 
-  const { error: insertError } = await db
-    .from("oauth_access_tokens")
-    .insert({
-      token_hash: tokenHash,
-      api_key_id: codeRecord.api_key_id,
-      company_id: codeRecord.company_id,
-      user_id: codeRecord.user_id,
-      scope: codeRecord.scope,
-      expires_at: expiresAt.toISOString(),
-    });
+  const result = await issueTokenPair(db, {
+    apiKeyId: codeRecord.api_key_id,
+    companyId: codeRecord.company_id,
+    userId: codeRecord.user_id,
+    clientId: codeRecord.client_id,
+    scope,
+  });
 
-  if (insertError) {
-    console.error("Failed to store access token:", insertError);
-    return jsonError("server_error", "Failed to issue access token", 500);
-  }
-
-  // Read scopes from the linked API key
-  const { data: keyData } = await db
-    .from("api_keys")
-    .select("scopes")
-    .eq("id", codeRecord.api_key_id)
-    .single();
-
-  const keyScopes = (keyData?.scopes as string[] | null)?.length
-    ? (keyData!.scopes as string[]).join(" ")
-    : "threads:read threads:write messages:read messages:write";
+  if (result instanceof Response) return result;
 
   return Response.json(
     {
-      access_token: accessToken,
+      access_token: result.accessToken,
+      refresh_token: result.refreshToken,
       token_type: "Bearer",
-      expires_in: 3600,
-      scope: codeRecord.scope || keyScopes,
+      expires_in: ACCESS_TOKEN_TTL,
+      scope,
+    },
+    { headers: TOKEN_RESPONSE_HEADERS },
+  );
+}
+
+async function handleRefreshToken(
+  refreshTokenValue: string | null,
+): Promise<Response> {
+  if (!refreshTokenValue) {
+    return jsonError("invalid_request", "Missing refresh_token", 400);
+  }
+
+  const tokenHash = await hashKey(refreshTokenValue);
+
+  const limit = checkRateLimit(`oauth_refresh:${tokenHash}`);
+  if (!limit.allowed) return rateLimitedResponse(limit.retryAfterMs!);
+
+  const db = createServerClient();
+
+  const { data: rtRecord, error: rtError } = await db
+    .from("oauth_refresh_tokens")
+    .select("*")
+    .eq("token_hash", tokenHash)
+    .single();
+
+  if (rtError || !rtRecord) {
+    return jsonError("invalid_grant", "Invalid refresh token", 400);
+  }
+
+  if (rtRecord.revoked_at) {
+    return jsonError("invalid_grant", "Refresh token has been revoked", 400);
+  }
+
+  if (new Date(rtRecord.expires_at) < new Date()) {
+    return jsonError("invalid_grant", "Refresh token expired", 400);
+  }
+
+  // Revoke the old refresh token (rotation)
+  await db
+    .from("oauth_refresh_tokens")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", rtRecord.id);
+
+  const result = await issueTokenPair(db, {
+    apiKeyId: rtRecord.api_key_id,
+    companyId: rtRecord.company_id,
+    userId: rtRecord.user_id,
+    clientId: rtRecord.client_id,
+    scope: rtRecord.scope,
+  });
+
+  if (result instanceof Response) return result;
+
+  return Response.json(
+    {
+      access_token: result.accessToken,
+      refresh_token: result.refreshToken,
+      token_type: "Bearer",
+      expires_in: ACCESS_TOKEN_TTL,
+      scope: rtRecord.scope,
     },
     { headers: TOKEN_RESPONSE_HEADERS },
   );
@@ -242,75 +345,35 @@ export async function POST(req: NextRequest) {
   const bodyText = await req.text();
   const contentType = req.headers.get("content-type") || "";
 
-  console.log("[oauth/token] POST request", {
-    contentType,
-    origin: req.headers.get("origin"),
-    bodyKeys: (() => {
-      try {
-        if (contentType.includes("json")) {
-          return Object.keys(JSON.parse(bodyText));
-        }
-        return [...new URLSearchParams(bodyText).keys()];
-      } catch {
-        return "parse_error";
-      }
-    })(),
-  });
-
   const parsed = parseBody(bodyText, contentType);
   if (!parsed) {
-    console.log("[oauth/token] Failed to parse body");
     return jsonError("invalid_request", "Invalid request body", 400);
   }
 
-  console.log("[oauth/token] grant_type:", parsed.grantType, {
-    hasCode: !!parsed.code,
-    hasCodeVerifier: !!parsed.codeVerifier,
-    hasRedirectUri: !!parsed.redirectUri,
-    hasClientSecret: !!parsed.clientSecret,
-  });
-
-  let response: Response;
-
   switch (parsed.grantType) {
     case "client_credentials":
-      response = await handleClientCredentials(
+      return handleClientCredentials(
         parsed.clientSecret,
         req.headers.get("authorization"),
       );
-      break;
 
     case "authorization_code":
-      response = await handleAuthorizationCode(
+      return handleAuthorizationCode(
         parsed.code,
         parsed.redirectUri,
         parsed.codeVerifier,
       );
-      break;
+
+    case "refresh_token":
+      return handleRefreshToken(parsed.refreshToken);
 
     default:
-      response = jsonError(
+      return jsonError(
         "unsupported_grant_type",
-        "Supported grant types: client_credentials, authorization_code",
+        "Supported grant types: authorization_code, client_credentials, refresh_token",
         400,
       );
   }
-
-  const cloned = response.clone();
-  const responseBody = await cloned.json().catch(() => null);
-  console.log("[oauth/token] Response", {
-    status: response.status,
-    body: responseBody
-      ? {
-          ...responseBody,
-          access_token: responseBody.access_token
-            ? `${String(responseBody.access_token).slice(0, 10)}...`
-            : undefined,
-        }
-      : null,
-  });
-
-  return response;
 }
 
 export async function OPTIONS() {

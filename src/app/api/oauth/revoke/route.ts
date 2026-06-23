@@ -41,14 +41,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Only revoke OAuth access tokens (to_at_ prefix).
-  // Direct API keys are managed via the API Keys UI, not OAuth revocation.
+  const tokenHash = await hashKey(token);
+  const db = createServerClient();
+
   if (token.startsWith("to_at_")) {
-    const tokenHash = await hashKey(token);
-    const db = createServerClient();
     await db
       .from("oauth_access_tokens")
       .delete()
+      .eq("token_hash", tokenHash);
+  } else if (token.startsWith("to_rt_")) {
+    await db
+      .from("oauth_refresh_tokens")
+      .update({ revoked_at: new Date().toISOString() })
       .eq("token_hash", tokenHash);
   }
 
