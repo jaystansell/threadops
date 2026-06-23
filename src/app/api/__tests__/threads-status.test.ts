@@ -37,13 +37,13 @@ describe("PATCH /api/threads/[threadId]/status", () => {
 
     const mockThreadRepo = {
       getById: vi.fn().mockResolvedValue({
-        id: "thread-1",
+        id: "00000000-0000-4000-8000-000000000001",
         status: "open",
         company_id: "company-1",
         updated_at: new Date().toISOString(),
       }),
       updateStatus: vi.fn().mockResolvedValue({
-        id: "thread-1",
+        id: "00000000-0000-4000-8000-000000000001",
         status: (body as Record<string, unknown>)?.status ?? "archived",
         company_id: "company-1",
         updated_at: new Date().toISOString(),
@@ -58,7 +58,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
     vi.mocked(createServerClient).mockReturnValue(mockDb as never);
     vi.mocked(createThreadRepo).mockReturnValue(mockThreadRepo as never);
 
-    const req = new NextRequest("http://localhost:3000/api/threads/thread-1/status", {
+    const req = new NextRequest("http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/status", {
       method: "PATCH",
       body: JSON.stringify(body),
       headers: { "content-type": "application/json" },
@@ -68,7 +68,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
       "@/app/api/threads/[threadId]/status/route"
     );
     return PATCH(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
   }
 
@@ -111,7 +111,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
 
     const mockThreadRepo = {
       getById: vi.fn().mockResolvedValue({
-        id: "thread-1",
+        id: "00000000-0000-4000-8000-000000000001",
         status: "open",
         company_id: "company-1",
       }),
@@ -122,7 +122,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
     vi.mocked(createThreadRepo).mockReturnValue(mockThreadRepo as never);
 
     const req = new NextRequest(
-      "http://localhost:3000/api/threads/thread-1/status",
+      "http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/status",
       {
         method: "PATCH",
         body: JSON.stringify({ status: "open", company_id: "company-1" }),
@@ -134,7 +134,7 @@ describe("PATCH /api/threads/[threadId]/status", () => {
       "@/app/api/threads/[threadId]/status/route"
     );
     const res = await PATCH(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
 
     expect(res.status).toBe(422);
