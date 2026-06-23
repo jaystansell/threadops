@@ -715,6 +715,66 @@ curl -s -X POST "http://localhost:3000/api/threads/<FYG_JET_THREAD_ID>/messages"
 - Check `webhook_deliveries` to confirm deliveries are being created for the thread
 - The `webhook_deliveries` table does NOT have an `endpoint_id` column — you cannot directly see which endpoint received a delivery
 
+### Webhook Context Enrichment Testing (PR #136+)
+
+Outbound webhooks include a `context` object with thread metadata when `include_context` is true (default). Testing is shell-only (no browser needed).
+
+**Key concepts:**
+- `fetchThreadContext()` in `outbound-webhook.ts` runs 4 parallel queries: thread data, recent messages (last 5), message count, and thread_tags
+- Context is added to the webhook envelope as a top-level `context` key alongside `event`, `payload`, and `timestamp`
+- `include_context` column on `webhook_endpoints` table (boolean, default true) controls opt-out
+- Graceful degradation: if context fetch fails, webhook sends without the `context` field
+- Message bodies in `recent_messages` are truncated to 500 chars max
+- Tags come from the `thread_tags` table (separate table, not jsonb on threads)
+
+**Context object structure:**
+```json
+{
+  "thread_summary": "string | null",
+  "thread_tags": ["tag1", "tag2"],
+  "thread_status": "open",
+  "thread_title": "Thread title",
+  "recent_messages": [
+    {"body": "...", "author_kind": "agent", "author_name": "Bot", "created_at": "..."}
+  ],
+  "message_count": 15,
+  "reply_endpoint": "POST /api/threads/{thread_id}/messages",
+  "ack_endpoint": "POST /api/threads/{thread_id}/ack"
+}
+```
+
+**Testing approach — Integration test (recommended):**
+
+The `after()` function may not fire reliably in local Turbopack dev mode (Next.js 16). To test context-fetching logic, write a Node.js `.mjs` script that directly calls the same Supabase queries `fetchThreadContext` uses:
+```bash
+source .env.local
+# Script imports @supabase/supabase-js, creates client with service role key,
+# runs the 4 parallel queries against a test thread, and asserts on output
+node test-webhook-context.mjs
+```
+
+**Testing `include_context` API validation:**
+```bash
+# POST with string "false" — should return 400: "include_context must be a boolean"
+# POST with boolean false — should succeed (201)
+# PATCH with number 0 — should return 400: "include_context must be a boolean"
+# PATCH with boolean false/true — should succeed and toggle the value
+```
+
+**Important: Agent-scoped delivery affects webhook testing:**
+- Threads with `agent_api_key_id = NULL` only deliver to endpoints with `api_key_id = NULL` (legacy)
+- Agent-owned threads only deliver to the owning agent's endpoint
+- To test webhook delivery, create "legacy" endpoints (insert via Supabase REST with `api_key_id: null`)
+- OR set thread's `agent_api_key_id` to match endpoint's `api_key_id`, post from a different agent
+- Echo suppression always excludes the posting agent from receiving its own webhook
+- The `webhook_deliveries` table stores only the raw `eventPayload`, NOT the enriched envelope with context
+
+**Full e2e on production (requires public URL):**
+1. Expose a local port (`deploy expose`) to get a public URL
+2. Register a legacy webhook endpoint (api_key_id: null) with that URL
+3. Post a message via production to an unowned thread
+4. Verify captured payload includes the `context` object
+
 ### Agent Feedback Dashboard Testing (PR #119)
 
 The feedback dashboard (`/feedback`) is admin-only — restricted to `jay+direct@productcoalition.com`. Testing requires both API (curl) and browser interactions.
