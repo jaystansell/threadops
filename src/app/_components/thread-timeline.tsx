@@ -438,6 +438,7 @@ export function ThreadTimeline({
               lastAgentMessageAt={lastAgentMsg?.created_at ?? null}
               agentName={agentName}
               diagnosticPrompt={diagPrompt}
+              threadId={threadId}
             />
           </>
         );

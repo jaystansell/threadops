@@ -7,6 +7,7 @@ interface UnresponsiveAgentHintProps {
   lastAgentMessageAt: string | null;
   agentName: string | null;
   diagnosticPrompt: string;
+  threadId: string;
 }
 
 const THRESHOLD_MS = 5 * 60 * 1000;
@@ -16,17 +17,20 @@ export function UnresponsiveAgentHint({
   lastAgentMessageAt,
   agentName,
   diagnosticPrompt,
+  threadId,
 }: UnresponsiveAgentHintProps) {
   const [visible, setVisible] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [copied, setCopied] = useState(false);
 
+  // Check timestamps and poll for new messages to auto-clear when agent responds
   useEffect(() => {
+    let userAt = lastUserMessageAt;
+    let agentAt = lastAgentMessageAt;
+
     function check() {
-      const userTs = new Date(lastUserMessageAt).getTime();
-      const agentTs = lastAgentMessageAt
-        ? new Date(lastAgentMessageAt).getTime()
-        : 0;
+      const userTs = new Date(userAt).getTime();
+      const agentTs = agentAt ? new Date(agentAt).getTime() : 0;
       if (agentTs > userTs) {
         setVisible(false);
         return;
@@ -36,10 +40,23 @@ export function UnresponsiveAgentHint({
       setElapsed(Math.round(diff / 60_000));
     }
 
+    async function poll() {
+      try {
+        const res = await fetch(`/api/threads/${threadId}/messages`);
+        if (!res.ok) return;
+        const msgs = (await res.json()) as Array<{ author_kind: string; created_at: string }>;
+        const lastUser = [...msgs].reverse().find((m) => m.author_kind === "user");
+        const lastAgent = [...msgs].reverse().find((m) => m.author_kind === "agent");
+        if (lastUser) userAt = lastUser.created_at;
+        if (lastAgent) agentAt = lastAgent.created_at;
+      } catch { /* ignore */ }
+      check();
+    }
+
     check();
-    const interval = setInterval(check, 30_000);
+    const interval = setInterval(poll, 30_000);
     return () => clearInterval(interval);
-  }, [lastUserMessageAt, lastAgentMessageAt]);
+  }, [lastUserMessageAt, lastAgentMessageAt, threadId]);
 
   if (!visible) return null;
 

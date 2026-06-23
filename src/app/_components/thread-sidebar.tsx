@@ -250,6 +250,29 @@ export function ThreadSidebar({
   revokedKeyIds: revokedKeyIdsProp = [],
 }: ThreadSidebarProps) {
   const revokedKeyIds = new Set(revokedKeyIdsProp);
+
+  // Live-updating webhook status — auto-clears warnings when agents register endpoints
+  const [missingWebhookAgents, setMissingWebhookAgents] = useState<string[]>(agentsWithoutWebhooks);
+  useEffect(() => {
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/webhook-endpoints");
+        if (!res.ok || cancelled) return;
+        const endpoints = (await res.json()) as Array<{ api_key_id: string | null; active: boolean }>;
+        const activeKeyIds = new Set(
+          endpoints.filter((ep) => ep.active).map((ep) => ep.api_key_id).filter(Boolean),
+        );
+        const missing = agentKeys
+          .filter((k) => !k.revoked && !activeKeyIds.has(k.id))
+          .map((k) => k.label);
+        if (!cancelled) setMissingWebhookAgents(missing);
+      } catch { /* ignore fetch errors */ }
+    }
+    refresh();
+    const interval = setInterval(refresh, 30_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [agentKeys]);
   // Build agent label → revoked lookup (only mark as revoked if ALL keys with that label are revoked)
   const labelToAllRevoked = new Map<string, boolean>();
   for (const k of agentKeys) {
@@ -769,7 +792,7 @@ export function ThreadSidebar({
               : isAccordion
                 ? []
                 : sortedThreads;
-            const missingWebhook = groupBy === "agent" && isAccordion && group.label !== "Unassigned" && agentsWithoutWebhooks.includes(group.label);
+            const missingWebhook = groupBy === "agent" && isAccordion && group.label !== "Unassigned" && missingWebhookAgents.includes(group.label);
             const isRevoked = groupBy === "agent" && revokedAgentNames.has(group.label);
 
             return (

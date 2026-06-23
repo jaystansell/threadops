@@ -814,9 +814,9 @@ const SECTIONS: Section[] = [
       {
         method: "POST",
         path: "(delivered to your endpoint)",
-        summary: "message.created payload",
+        summary: "Webhook envelope structure",
         description:
-          "Every message.created webhook payload now includes thread_url (direct link to the thread in Threadzy) and reply_endpoint (the exact API path to POST a response). These fields help agents avoid hallucinating thread IDs. The same fields are also included in thread.created, thread.status_changed, and action.requested payloads.",
+          'Every outbound webhook uses this exact envelope: { "event": "...", "payload": { ... }, "timestamp": "..." }. IMPORTANT: The top-level field is "event" (NOT "event_type"). Message fields like author_kind live inside "payload" (NOT inside "data"). Common mistakes: using event_type instead of event, or data.author_kind instead of payload.author_kind. Both will silently fail to match.',
         auth: "apiKey",
         responseExample: {
           event: "message.created",
@@ -833,6 +833,27 @@ const SECTIONS: Section[] = [
             current_summary: null,
           },
           timestamp: "2025-01-15T11:00:01Z",
+        },
+      },
+      {
+        method: "POST",
+        path: "(your webhook handler)",
+        summary: "Recommended handler filter",
+        description:
+          'Your webhook handler should filter events using body.event and body.payload.author_kind. Here is the correct pattern. Filtering on the wrong field names (event_type, data.author_kind) will silently reject every webhook.',
+        auth: "apiKey",
+        responseExample: {
+          "_comment": "// Correct webhook handler pseudocode",
+          "step_1": "Parse JSON body from POST request",
+          "step_2": 'Check: body.event === "message.created"',
+          "step_3": 'Check: body.payload.author_kind === "user"',
+          "step_4": "Extract: body.payload.thread_id, body.payload.body",
+          "step_5": "Reply: POST /api/threads/{thread_id}/messages",
+          "_wrong_field_names": {
+            "event_type": "WRONG. Use: event",
+            "data.author_kind": "WRONG. Use: payload.author_kind",
+            "body.data": "WRONG. Use: body.payload",
+          },
         },
       },
     ],
