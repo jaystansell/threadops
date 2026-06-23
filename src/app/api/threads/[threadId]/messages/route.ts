@@ -6,7 +6,7 @@ import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import { hashKey } from "@/core/rules/api-key";
 import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
-import type { ThreadId, CompanyId } from "@/core/types";
+import type { ThreadId, CompanyId, MessageMetadata } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +76,7 @@ export async function POST(
   let authorId: string;
   let authorKind: "user" | "agent";
   let authorName: string | null = null;
+  let metadata: MessageMetadata | null = null;
 
   const { threadId } = await ctx.params;
 
@@ -121,6 +122,13 @@ export async function POST(
     authorId = keyRecord.id;
     authorKind = "agent";
     authorName = keyRecord.label;
+    metadata = {
+      source: "api",
+      endpoint: `POST /api/threads/${threadId}/messages`,
+      api_key_prefix: keyRecord.key_prefix,
+      agent_label: keyRecord.label,
+      thread_id: threadId,
+    };
   } else {
     const supabase = await createAuthServerClient();
     const {
@@ -132,6 +140,11 @@ export async function POST(
     }
     authorId = user.id;
     authorKind = "user";
+    metadata = {
+      source: "browser",
+      endpoint: `POST /api/threads/${threadId}/messages`,
+      thread_id: threadId,
+    };
   }
 
   const body = await req.json();
@@ -153,6 +166,7 @@ export async function POST(
       author_kind: authorKind,
       author_name: authorName,
       body: body.body,
+      metadata,
     });
 
     const { data: thread } = await db

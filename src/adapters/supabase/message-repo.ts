@@ -39,6 +39,9 @@ export function createMessageRepo(db: SupabaseClient): MessageRepo {
       if (input.author_name != null) {
         row.author_name = input.author_name;
       }
+      if (input.metadata != null) {
+        row.metadata = input.metadata;
+      }
       const { data, error } = await db
         .from("messages")
         .insert(row)

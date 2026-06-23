@@ -10,6 +10,7 @@ import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 import { FormattedDate } from "./formatted-date";
 import { MessageAttachments, AttachmentBadge } from "./message-attachments";
+import { MessageDetailsPanel } from "./message-details-panel";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -396,6 +397,13 @@ export function ThreadTimeline({
                 Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
               </span>
             </div>
+            {msg.metadata && (
+              <MessageDetailsPanel
+                metadata={msg.metadata}
+                messageId={msg.id}
+                messageCreatedAt={msg.created_at}
+              />
+            )}
           </div>
         );
       })}
