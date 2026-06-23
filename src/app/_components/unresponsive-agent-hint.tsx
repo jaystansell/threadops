@@ -18,6 +18,7 @@ export function UnresponsiveAgentHint({
   diagnosticPrompt,
 }: UnresponsiveAgentHintProps) {
   const [visible, setVisible] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -30,7 +31,9 @@ export function UnresponsiveAgentHint({
         setVisible(false);
         return;
       }
-      setVisible(Date.now() - userTs > THRESHOLD_MS);
+      const diff = Date.now() - userTs;
+      setVisible(diff > THRESHOLD_MS);
+      setElapsed(Math.round(diff / 60_000));
     }
 
     check();
@@ -39,10 +42,6 @@ export function UnresponsiveAgentHint({
   }, [lastUserMessageAt, lastAgentMessageAt]);
 
   if (!visible) return null;
-
-  const elapsed = Math.round(
-    (Date.now() - new Date(lastUserMessageAt).getTime()) / 60_000,
-  );
 
   return (
     <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState } from "react";
 
 const YOGA_POSES = [
   // Tree pose
@@ -128,9 +128,8 @@ interface AwaitingResponseIndicatorProps {
 export function AwaitingResponseIndicator({
   agentName,
 }: AwaitingResponseIndicatorProps) {
-  const pose = useMemo(
+  const [pose] = useState(
     () => YOGA_POSES[Math.floor(Math.random() * YOGA_POSES.length)],
-    [],
   );
 
   return (

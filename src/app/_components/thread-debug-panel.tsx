@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 interface ThreadDebugPanelProps {
   threadId: string;
@@ -130,9 +130,10 @@ export function ThreadDebugPanel(props: ThreadDebugPanelProps) {
   const [open, setOpen] = useState(unresponsive);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (unresponsive) setOpen(true);
-  }, [unresponsive]);
+  // If unresponsive state changed after mount (e.g. timer tick), keep panel open
+  if (unresponsive && !open) {
+    setOpen(true);
+  }
 
   const baseUrl =
     typeof window !== "undefined"
