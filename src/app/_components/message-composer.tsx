@@ -392,7 +392,10 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
         >
           {requestingContext ? "Requesting..." : "Ask for More Context"}
         </button>
-        <PromptPicker apiKeyId={agentApiKeyId} />
+        <PromptPicker
+          apiKeyId={agentApiKeyId}
+          onSelect={(text) => setBody((prev) => prev ? `${prev}\n${text}` : text)}
+        />
       </div>
       {pendingFiles.length > 0 && (
         <p className="text-[10px] text-[var(--muted-foreground)]">

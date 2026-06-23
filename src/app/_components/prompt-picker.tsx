@@ -11,12 +11,12 @@ interface SavedPrompt {
 
 interface PromptPickerProps {
   apiKeyId: string | null;
+  onSelect?: (body: string) => void;
 }
 
-export function PromptPicker({ apiKeyId }: PromptPickerProps) {
+export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
   const [open, setOpen] = useState(false);
   const [prompts, setPrompts] = useState<SavedPrompt[] | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const fetchedRef = useRef(false);
 
@@ -66,19 +66,14 @@ export function PromptPicker({ apiKeyId }: PromptPickerProps) {
     }
   }, [open]);
 
-  const handleCopy = useCallback(
-    async (prompt: SavedPrompt) => {
-      try {
-        await navigator.clipboard.writeText(prompt.body);
-        setCopiedId(prompt.id);
-        setTimeout(() => {
-          setCopiedId((prev) => (prev === prompt.id ? null : prev));
-        }, 2000);
-      } catch {
-        // Fallback: noop
+  const handleSelect = useCallback(
+    (prompt: SavedPrompt) => {
+      if (onSelect) {
+        onSelect(prompt.body);
       }
+      setOpen(false);
     },
-    [],
+    [onSelect],
   );
 
   return (
@@ -123,18 +118,14 @@ export function PromptPicker({ apiKeyId }: PromptPickerProps) {
               <button
                 key={prompt.id}
                 type="button"
-                onClick={() => handleCopy(prompt)}
+                onClick={() => handleSelect(prompt)}
                 className="w-full text-left px-3 py-2 hover:bg-[var(--muted)] transition-colors border-b border-[var(--border)] last:border-b-0"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-medium truncate">
                     {prompt.title}
                   </span>
-                  {copiedId === prompt.id && (
-                    <span className="text-[10px] text-[var(--accent)] shrink-0">
-                      Copied!
-                    </span>
-                  )}
+
                 </div>
                 <p className="text-[11px] text-[var(--muted-foreground)] truncate mt-0.5">
                   {prompt.body.slice(0, 100)}

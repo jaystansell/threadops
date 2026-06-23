@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PromptPicker } from "./prompt-picker";
 
 interface Agent {
   id: string;
@@ -136,6 +137,12 @@ export function NewThreadForm({ companyId, agents = [] }: NewThreadFormProps) {
           className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-[16px] sm:text-sm focus:outline-none focus:border-[var(--primary)] resize-none"
           disabled={submitting}
         />
+        <div className="mt-1">
+          <PromptPicker
+            apiKeyId={selectedAgent || null}
+            onSelect={(text) => setMessageBody((prev) => prev ? `${prev}\n${text}` : text)}
+          />
+        </div>
       </div>
 
       <div>
