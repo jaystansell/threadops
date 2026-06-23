@@ -22,7 +22,7 @@ export type ThreadWithLastMessage = Thread & {
   last_message_at?: string;
   agent_name?: string | null;
   tags?: string[];
-  agent_processing_status?: "acknowledged" | "processing" | "completed" | "escalated" | null;
+  agent_processing_status?: "acknowledged" | "processing" | "completed" | "escalated" | "unhandled" | null;
 };
 
 export type AgentGroup = {

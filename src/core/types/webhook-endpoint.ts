@@ -9,6 +9,7 @@ export type WebhookEventType =
   | "thread.created"
   | "thread.status_changed"
   | "thread.archived"
+  | "thread.unhandled"
   | "docs.updated"
   | "action.requested"
   | "attachment.created";
@@ -18,6 +19,7 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   "thread.created",
   "thread.status_changed",
   "thread.archived",
+  "thread.unhandled",
   "docs.updated",
   "action.requested",
   "attachment.created",

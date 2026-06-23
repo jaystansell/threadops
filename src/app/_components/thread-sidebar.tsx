@@ -1066,6 +1066,7 @@ export function ThreadSidebar({
                               const isActive = thread.id === activeThreadId;
                               const isPinned = pinnedThreads.has(thread.id);
                               const hasAck = thread.agent_processing_status === "acknowledged" || thread.agent_processing_status === "processing";
+                              const isUnhandled = thread.agent_processing_status === "unhandled";
                               return (
                                 <div key={thread.id} className="relative group">
                                   <Link
@@ -1087,6 +1088,9 @@ export function ThreadSidebar({
                                       </h3>
                                       {hasAck && (
                                         <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.7)]" title="Agent processing" />
+                                      )}
+                                      {isUnhandled && (
+                                        <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.7)]" title="Unhandled — agent did not acknowledge" />
                                       )}
                                       <button
                                         type="button"
@@ -1174,6 +1178,7 @@ export function ThreadSidebar({
                       const isActive = thread.id === activeThreadId;
                       const isPinned = pinnedThreads.has(thread.id);
                       const hasAck = thread.agent_processing_status === "acknowledged" || thread.agent_processing_status === "processing";
+                      const isUnhandled = thread.agent_processing_status === "unhandled";
                       return (
                         <div key={thread.id} className="relative group">
                           <Link
@@ -1197,6 +1202,9 @@ export function ThreadSidebar({
                               </h3>
                               {hasAck && (
                                 <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.7)]" title="Agent processing" />
+                              )}
+                              {isUnhandled && (
+                                <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.7)]" title="Unhandled — agent did not acknowledge" />
                               )}
                               <button
                                 type="button"

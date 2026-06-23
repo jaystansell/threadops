@@ -4,6 +4,7 @@ export interface Company {
   id: CompanyId;
   name: string;
   slug: string;
+  ack_timeout_seconds: number;
   created_at: string;
   updated_at: string;
 }

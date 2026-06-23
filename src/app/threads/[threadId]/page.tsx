@@ -133,6 +133,14 @@ export default async function ThreadDetailPage(
             </p>
           </div>
         )}
+        {agentProcessingStatus === "unhandled" && (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2">
+            <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.7)] shrink-0" />
+            <p className="text-xs text-amber-300">
+              Agent has not acknowledged this message within the configured timeout window.
+            </p>
+          </div>
+        )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           {agentName && (
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -150,6 +158,12 @@ export default async function ThreadDetailPage(
             <span className="flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-medium">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.7)]" />
               {agentProcessingStatus === "acknowledged" ? "Agent acknowledged" : "Agent processing"}
+            </span>
+          )}
+          {agentProcessingStatus === "unhandled" && (
+            <span className="flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-medium">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.7)]" />
+              Unhandled
             </span>
           )}
           <span className="text-xs text-[var(--muted-foreground)]">
