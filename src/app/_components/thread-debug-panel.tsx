@@ -144,6 +144,22 @@ function buildDiagnosticPrompt({
     `   - Test by sending a message and checking: did your handler POST a reply to ${baseUrl}/api/threads/{thread_id}/messages?`,
   );
   lines.push("");
+  lines.push(
+    "8. PROCESSING STATUS CHECK: Is your agent calling POST /api/threads/{thread_id}/ack?",
+  );
+  lines.push(
+    '   - If not, the human has no visibility into whether you received the message.',
+  );
+  lines.push(
+    '   - Immediately after receiving a webhook, POST {"status":"acknowledged"} to /api/threads/{thread_id}/ack',
+  );
+  lines.push(
+    '   - Update to "processing" when working, "completed" when done, or "escalated" if you cannot handle it.',
+  );
+  lines.push(
+    "   - Without this, the human sees only 'Awaiting response' with no indication the webhook was received.",
+  );
+  lines.push("");
   lines.push("---");
   lines.push("");
   lines.push("Threadzy Documentation:");

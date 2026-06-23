@@ -13,6 +13,7 @@ import { MessageAttachments, AttachmentBadge } from "./message-attachments";
 import { MessageDetailsPanel } from "./message-details-panel";
 import { AwaitingResponseIndicator } from "./awaiting-response-indicator";
 import { UnresponsiveAgentHint } from "./unresponsive-agent-hint";
+import { AgentProcessingStatus } from "./agent-processing-status";
 import { buildDiagnosticPrompt } from "./thread-debug-panel";
 
 function relativeTime(dateStr: string): string {
@@ -224,6 +225,7 @@ export function ThreadTimeline({
 
     return (
       <>
+        <AgentProcessingStatus threadId={threadId} isAwaiting={true} />
         <AwaitingResponseIndicator agentName={agentName} />
         <UnresponsiveAgentHint
           lastUserMessageAt={lastMsg.created_at}
