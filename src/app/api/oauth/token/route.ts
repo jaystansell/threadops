@@ -148,6 +148,10 @@ async function issueTokenPair(
 
   if (rtErr) {
     console.error("Failed to store refresh token:", rtErr);
+    await db
+      .from("oauth_access_tokens")
+      .delete()
+      .eq("token_hash", accessHash);
     return jsonError("server_error", "Failed to issue refresh token", 500);
   }
 
@@ -311,12 +315,6 @@ async function handleRefreshToken(
     return jsonError("invalid_grant", "Refresh token expired", 400);
   }
 
-  // Revoke the old refresh token (rotation)
-  await db
-    .from("oauth_refresh_tokens")
-    .update({ revoked_at: new Date().toISOString() })
-    .eq("id", rtRecord.id);
-
   const result = await issueTokenPair(db, {
     apiKeyId: rtRecord.api_key_id,
     companyId: rtRecord.company_id,
@@ -326,6 +324,12 @@ async function handleRefreshToken(
   });
 
   if (result instanceof Response) return result;
+
+  // Revoke the old refresh token only after new pair is issued successfully
+  await db
+    .from("oauth_refresh_tokens")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("id", rtRecord.id);
 
   return Response.json(
     {
