@@ -261,6 +261,8 @@ Some thread tasks may require tools your agent doesn't have. The agent should cl
 **API Key:** ${key}
 **Authentication:** Include \`X-API-Key: ${key}\` header on all requests.
 
+> For a complete machine-readable API spec, fetch \`GET ${baseUrl}/api/openapi.json\` — it contains all endpoints, schemas, and auth requirements in OpenAPI 3.0 format.
+
 ### Available Endpoints
 
 | Method | Endpoint | Description |

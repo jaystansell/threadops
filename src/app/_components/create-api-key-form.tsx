@@ -141,6 +141,10 @@ export function CreateApiKeyForm({ companyId }: Props) {
                     <> Some agents (like Tasklet) need you to manually provide the webhook URL — they can&apos;t see it themselves.</>
                   )}
                 </p>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  For a complete machine-readable API spec, fetch{" "}
+                  <code className="bg-[var(--muted)] px-1 py-0.5 rounded text-[10px]">GET /api/openapi.json</code>
+                </p>
                 <button
                   type="button"
                   onClick={async () => {
