@@ -257,7 +257,7 @@ export function MessageLifecycle({
                               setRetrying(true);
                               try {
                                 await fetch(
-                                  `/api/webhook-deliveries/${data.delivery!.id}`,
+                                  `/api/webhook-deliveries/${data.delivery!.id}/retry`,
                                   { method: "POST" },
                                 );
                                 const res = await fetch(
