@@ -14,6 +14,93 @@ export const dynamic = "force-dynamic";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
+export async function GET(
+  req: NextRequest,
+  ctx: RouteContext<"/api/threads/[threadId]/status">,
+) {
+  const apiKey = req.headers.get("x-api-key");
+  let companyId: string | null = null;
+
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+    companyId = keyRecord.company_id;
+  } else {
+    const supabase = await createAuthServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  const { threadId } = await ctx.params;
+  if (!UUID_RE.test(threadId)) {
+    return Response.json(
+      {
+        error: "Invalid thread ID format",
+        hint: "Thread IDs must be valid UUIDs.",
+        received: threadId,
+      },
+      { status: 400 },
+    );
+  }
+
+  const db = createServerClient();
+
+  // If authenticated via API key, verify the thread belongs to the agent's company
+  if (companyId) {
+    const { data: thread } = await db
+      .from("threads")
+      .select("id")
+      .eq("id", threadId)
+      .eq("company_id", companyId)
+      .single();
+
+    if (!thread) {
+      return Response.json(
+        { error: "Thread not found", hint: "Verify the thread_id." },
+        { status: 404 },
+      );
+    }
+  }
+
+  // Get the latest processing status for this thread
+  const { data: latestStatus } = await db
+    .from("agent_processing_status")
+    .select("status, created_at, api_key_id")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!latestStatus) {
+    return Response.json({ status: null, updated_at: null, agent_name: null });
+  }
+
+  // Fetch the agent label
+  const { data: keyInfo } = await db
+    .from("api_keys")
+    .select("label")
+    .eq("id", latestStatus.api_key_id)
+    .single();
+
+  return Response.json({
+    status: latestStatus.status,
+    updated_at: latestStatus.created_at,
+    agent_name: keyInfo?.label ?? null,
+  });
+}
+
 export async function PATCH(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/status">,

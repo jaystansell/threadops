@@ -315,13 +315,14 @@ const SECTIONS: Section[] = [
         path: "/api/webhook-endpoints",
         summary: "Create a webhook endpoint",
         description:
-          "Registers a new outbound webhook endpoint. A signing secret is generated automatically. Optionally pass a `filters` object to restrict delivery by author type.",
+          "Registers a new outbound webhook endpoint. A signing secret is generated automatically. Optionally pass a `filters` object to restrict delivery by author type. Set `include_context: false` to opt out of the enriched context object in webhook payloads (default: true).",
         auth: "apiKey",
         requestBody: {
           schema: {
             url: "string (required, valid URL)",
             events: "WebhookEventType[] (required, non-empty)",
             filters: "{ author_kind?: 'user' | 'agent' } (optional)",
+            include_context: "boolean (optional, default true)",
           },
           example: {
             url: "https://example.com/hooks/threadops",
@@ -348,7 +349,7 @@ const SECTIONS: Section[] = [
         method: "PATCH",
         path: "/api/webhook-endpoints/{endpointId}",
         summary: "Update a webhook endpoint",
-        description: "Partially updates a webhook endpoint (url, events, active status, or filters).",
+        description: "Partially updates a webhook endpoint (url, events, active status, filters, or include_context).",
         auth: "apiKey",
         requestBody: {
           schema: {
@@ -356,6 +357,7 @@ const SECTIONS: Section[] = [
             events: "WebhookEventType[] (optional)",
             active: "boolean (optional)",
             filters: "{ author_kind?: 'user' | 'agent' } (optional)",
+            include_context: "boolean (optional)",
           },
           example: { filters: { author_kind: "agent" } },
         },
@@ -816,7 +818,7 @@ const SECTIONS: Section[] = [
         path: "(delivered to your endpoint)",
         summary: "Webhook envelope structure",
         description:
-          'Every outbound webhook uses this exact envelope: { "event": "...", "payload": { ... }, "timestamp": "..." }. IMPORTANT: The top-level field is "event" (NOT "event_type"). Message fields like author_kind live inside "payload" (NOT inside "data"). Common mistakes: using event_type instead of event, or data.author_kind instead of payload.author_kind. Both will silently fail to match.',
+          'Every outbound webhook uses this exact envelope: { "event": "...", "payload": { ... }, "context": { ... }, "timestamp": "..." }. The "context" object is included by default and provides thread context so agents can respond without extra API calls. Set include_context: false on your endpoint to opt out. IMPORTANT: The top-level field is "event" (NOT "event_type"). Message fields like author_kind live inside "payload" (NOT inside "data"). Common mistakes: using event_type instead of event, or data.author_kind instead of payload.author_kind. Both will silently fail to match.',
         auth: "apiKey",
         responseExample: {
           event: "message.created",
@@ -831,6 +833,19 @@ const SECTIONS: Section[] = [
             body: "Can you summarize the latest thread activity?",
             created_at: "2025-01-15T11:00:00Z",
             current_summary: null,
+          },
+          context: {
+            thread_summary: "Discussion about webhook integration and API setup",
+            thread_tags: ["webhooks", "integration"],
+            thread_status: "open",
+            thread_title: "How to integrate webhooks?",
+            recent_messages: [
+              { body: "Can you summarize the latest thread activity?", author_kind: "user", author_name: "Jay", created_at: "2025-01-15T11:00:00Z" },
+              { body: "I set up the webhook endpoint yesterday.", author_kind: "user", author_name: "Jay", created_at: "2025-01-14T15:30:00Z" },
+            ],
+            message_count: 15,
+            reply_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages",
+            ack_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/ack",
           },
           timestamp: "2025-01-15T11:00:01Z",
         },
@@ -876,6 +891,61 @@ const SECTIONS: Section[] = [
             "missing_permissions": "Handler lacks API keys or credentials for external services",
           },
         },
+      },
+    ],
+  },
+  {
+    id: "agent-processing-status",
+    title: "Agent Processing Status",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/threads/{threadId}/ack",
+        summary: "Report processing status",
+        description:
+          "Agents call this to report their processing status on a thread. Each call creates a new status record; the latest record is the current status. Call this immediately after receiving a webhook to let the human know you received their message.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            status: "string (required) — one of: acknowledged, processing, completed, escalated",
+            message_id: "string (optional) — UUID of the message being processed",
+          },
+          example: {
+            status: "acknowledged",
+            message_id: "msg_uuid_here",
+          },
+        },
+        responseExample: {
+          id: "aps_uuid",
+          thread_id: "t_abc123",
+          api_key_id: "key_uuid",
+          message_id: "msg_uuid_here",
+          status: "acknowledged",
+          created_at: "2025-01-15T10:30:05Z",
+        },
+        errorCodes: [
+          { status: 400, description: "Invalid status value or malformed UUID." },
+          { status: 401, description: "Missing or invalid API key." },
+          { status: 404, description: "Thread not found or does not belong to your company." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads/{threadId}/status",
+        summary: "Get latest processing status",
+        description:
+          "Returns the latest agent processing status for a thread. Authenticated users see the current status, updated_at timestamp, and agent name. Returns null values if no status has been posted.",
+        auth: "apiKey",
+        responseExample: {
+          status: "processing",
+          updated_at: "2025-01-15T10:30:10Z",
+          agent_name: "Support Bot",
+        },
+        errorCodes: [
+          { status: 400, description: "Invalid thread ID format." },
+          { status: 401, description: "Not authenticated." },
+          { status: 404, description: "Thread not found." },
+        ],
       },
     ],
   },

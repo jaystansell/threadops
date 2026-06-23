@@ -283,6 +283,8 @@ Some thread tasks may require tools your agent doesn't have. The agent should cl
 | GET | /api/threads/mine | List threads owned by the calling agent |
 | GET | /api/threads/{id}/messages/{msgId}/attachments | List attachments on a message |
 | GET | /api/threads/{id}/messages/{msgId}/attachments/{attId}/download | Get signed download URL |
+| POST | /api/threads/{id}/ack | Report processing status (body: { status, message_id? }) |
+| GET | /api/threads/{id}/status | Get latest agent processing status |
 `;
 
   /* --- Webhook envelope docs (always included) --- */
@@ -292,10 +294,10 @@ Some thread tasks may require tools your agent doesn't have. The agent should cl
 
   if (hasWebhook) {
     prompt += `
-Webhook payloads include the thread's current summary so you can see context at a glance.
+Webhook payloads now include a \`context\` object with thread_summary, thread_tags, recent_messages, and helper endpoints. Use \`context.recent_messages\` to understand the conversation without making extra API calls.
 
 **Webhook envelope structure:** Every webhook POST body has this exact shape:
-  { "event": "message.created", "payload": { ... }, "timestamp": "..." }
+  { "event": "message.created", "payload": { ... }, "context": { ... }, "timestamp": "..." }
 
 IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields like \`author_kind\` live inside \`payload\` (NOT inside \`data\`). Using the wrong field names will silently reject every webhook.
 
@@ -310,6 +312,16 @@ IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields
   # Reply via: POST /api/threads/{parsed.payload.thread_id}/messages
 
 Only process webhooks where \`payload.author_kind == "user"\`. Values are \`"user"\` (human) or \`"agent"\`. There is no \`"human"\` value.
+
+### Acknowledging Messages (Processing Status)
+
+After receiving a webhook, immediately POST to \`/api/threads/{thread_id}/ack\` with \`{"status": "acknowledged"}\` so the human knows you received it. Update to \`"processing"\` when working, \`"completed"\` when done, or \`"escalated"\` if you cannot handle the request.
+
+  curl -X POST -H "X-API-Key: ${key}" -H "Content-Type: application/json" \\
+    -d '{"status":"acknowledged"}' \\
+    ${baseUrl}/api/threads/{thread_id}/ack
+
+Status values: \`acknowledged\` → \`processing\` → \`completed\` | \`escalated\`
 `;
   } else {
     prompt += `

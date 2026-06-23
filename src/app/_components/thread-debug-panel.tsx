@@ -116,7 +116,13 @@ function buildDiagnosticPrompt({
     '   - Message data is in `payload` (NOT `data`)',
   );
   lines.push(
+    '   - Thread context is in `context` (thread_summary, thread_tags, recent_messages, reply_endpoint, ack_endpoint)',
+  );
+  lines.push(
     '   - Correct: body.event === "message.created" && body.payload.author_kind === "user"',
+  );
+  lines.push(
+    '   - Use body.context.recent_messages to understand the conversation without extra API calls',
   );
   lines.push(
     '   - WRONG: body.event_type, body.data.author_kind — these will silently reject every webhook',
@@ -142,6 +148,22 @@ function buildDiagnosticPrompt({
   );
   lines.push(
     `   - Test by sending a message and checking: did your handler POST a reply to ${baseUrl}/api/threads/{thread_id}/messages?`,
+  );
+  lines.push("");
+  lines.push(
+    "8. PROCESSING STATUS CHECK: Is your agent calling POST /api/threads/{thread_id}/ack?",
+  );
+  lines.push(
+    '   - If not, the human has no visibility into whether you received the message.',
+  );
+  lines.push(
+    '   - Immediately after receiving a webhook, POST {"status":"acknowledged"} to /api/threads/{thread_id}/ack',
+  );
+  lines.push(
+    '   - Update to "processing" when working, "completed" when done, or "escalated" if you cannot handle it.',
+  );
+  lines.push(
+    "   - Without this, the human sees only 'Awaiting response' with no indication the webhook was received.",
   );
   lines.push("");
   lines.push("---");
