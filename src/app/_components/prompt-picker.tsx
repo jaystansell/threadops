@@ -17,7 +17,6 @@ interface PromptPickerProps {
 export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
   const [open, setOpen] = useState(false);
   const [prompts, setPrompts] = useState<SavedPrompt[] | null>(null);
-  const [insertedId, setInsertedId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const fetchedRef = useRef(false);
 
@@ -72,10 +71,6 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
       if (onSelect) {
         onSelect(prompt.body);
       }
-      setInsertedId(prompt.id);
-      setTimeout(() => {
-        setInsertedId((prev) => (prev === prompt.id ? null : prev));
-      }, 1500);
       setOpen(false);
     },
     [onSelect],
@@ -130,11 +125,7 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
                   <span className="text-xs font-medium truncate">
                     {prompt.title}
                   </span>
-                  {insertedId === prompt.id && (
-                    <span className="text-[10px] text-[var(--accent)] shrink-0">
-                      Inserted
-                    </span>
-                  )}
+
                 </div>
                 <p className="text-[11px] text-[var(--muted-foreground)] truncate mt-0.5">
                   {prompt.body.slice(0, 100)}
