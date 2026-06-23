@@ -11,6 +11,7 @@ import type { CompanyId, ThreadId, ThreadStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_STATUSES: ThreadStatus[] = ["open", "archived"];
 
 export async function PATCH(
@@ -47,6 +48,17 @@ export async function PATCH(
   }
 
   const { threadId } = await ctx.params;
+  if (!UUID_RE.test(threadId)) {
+    return Response.json(
+      {
+        error: "Invalid thread ID format",
+        hint: "Thread IDs must be valid UUIDs. Use the thread_id from the webhook payload, or call GET /api/threads to list your threads.",
+        received: threadId,
+      },
+      { status: 400 },
+    );
+  }
+
   const body = await req.json();
 
   if (!body.status || !VALID_STATUSES.includes(body.status)) {
@@ -75,7 +87,14 @@ export async function PATCH(
     );
 
     if (!thread) {
-      return Response.json({ error: "Thread not found" }, { status: 404 });
+      return Response.json(
+        {
+          error: "Thread not found",
+          hint: "Verify the thread_id matches a value from a webhook payload or from GET /api/threads. Do not construct thread IDs manually.",
+          thread_id_attempted: threadId,
+        },
+        { status: 404 },
+      );
     }
 
     if (apiKeyId && thread.agent_api_key_id && thread.agent_api_key_id !== apiKeyId) {
@@ -113,6 +132,8 @@ export async function PATCH(
       "thread.status_changed",
       {
         thread_id: threadId,
+        thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${threadId}`,
+        reply_endpoint: `POST /api/threads/${threadId}/messages`,
         previous_status: thread.status,
         new_status: updated.status,
         company_id: updated.company_id,

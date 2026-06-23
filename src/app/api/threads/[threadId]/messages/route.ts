@@ -10,11 +10,37 @@ import type { ThreadId, CompanyId, MessageMetadata } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function invalidThreadIdResponse(threadId: string) {
+  return Response.json(
+    {
+      error: "Invalid thread ID format",
+      hint: "Thread IDs must be valid UUIDs (e.g. 'dc9a8b2e-41b6-4491-98ce-511e3f3a44d3'). Use the thread_id from the webhook payload, or call GET /api/threads to list your threads.",
+      received: threadId,
+    },
+    { status: 400 },
+  );
+}
+
+function threadNotFoundResponse(threadId: string) {
+  return Response.json(
+    {
+      error: "Thread not found",
+      hint: "Verify the thread_id matches a value from a webhook payload or from GET /api/threads. Do not construct thread IDs manually.",
+      thread_id_attempted: threadId,
+    },
+    { status: 404 },
+  );
+}
+
 export async function GET(
   req: NextRequest,
   ctx: RouteContext<"/api/threads/[threadId]/messages">,
 ) {
   const { threadId } = await ctx.params;
+  if (!UUID_RE.test(threadId)) return invalidThreadIdResponse(threadId);
+
   const db = createServerClient();
 
   const apiKey = req.headers.get("x-api-key");
@@ -33,9 +59,7 @@ export async function GET(
       .select("company_id, agent_api_key_id")
       .eq("id", threadId)
       .single();
-    if (!thread) {
-      return Response.json({ error: "Thread not found" }, { status: 404 });
-    }
+    if (!thread) return threadNotFoundResponse(threadId);
     if (thread.company_id !== keyRecord.company_id) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -79,6 +103,7 @@ export async function POST(
   let metadata: MessageMetadata | null = null;
 
   const { threadId } = await ctx.params;
+  if (!UUID_RE.test(threadId)) return invalidThreadIdResponse(threadId);
 
   if (apiKey) {
     const db = createServerClient();
@@ -96,9 +121,7 @@ export async function POST(
       .select("company_id, agent_api_key_id")
       .eq("id", threadId)
       .single();
-    if (!thread) {
-      return Response.json({ error: "Thread not found" }, { status: 404 });
-    }
+    if (!thread) return threadNotFoundResponse(threadId);
     if (thread.company_id !== keyRecord.company_id) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -201,6 +224,8 @@ export async function POST(
           "thread.status_changed",
           {
             thread_id: threadId,
+            thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${threadId}`,
+            reply_endpoint: `POST /api/threads/${threadId}/messages`,
             previous_status: "archived",
             new_status: "open",
             company_id: thread.company_id,
@@ -222,6 +247,8 @@ export async function POST(
         {
           message_id: message.id,
           thread_id: threadId,
+          thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${threadId}`,
+          reply_endpoint: `POST /api/threads/${threadId}/messages`,
           author_id: message.author_id,
           author_kind: message.author_kind,
           author_name: message.author_name,

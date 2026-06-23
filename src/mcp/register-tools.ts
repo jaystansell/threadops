@@ -50,7 +50,7 @@ export function registerTools(
       title: z.string().optional().describe("[create] Thread title (required for create)"),
       message_body: z.string().optional().describe("[create] First message body (required for create)"),
       // update_status params
-      thread_id: z.string().optional().describe("[update_status] Thread ID (required for update_status)"),
+      thread_id: z.string().optional().describe("[update_status] Thread ID — use the UUID from a webhook payload or manage_threads list (required for update_status)"),
       new_status: z.enum(["open", "archived"]).optional().describe("[update_status] New status (required for update_status)"),
       // search params
       query: z.string().optional().describe("[search] Search query text (required for search)"),
@@ -122,10 +122,10 @@ export function registerTools(
   // Tool 2: manage_messages — read and post messages on a thread
   server.tool(
     "manage_messages",
-    "Read or post messages on a thread. Set action to list (get all messages) or post (send a new message).",
+    "Read or post messages on a thread. Set action to list (get all messages) or post (send a new message). IMPORTANT: Always use the thread_id from a webhook payload or from manage_threads(action='list'). Do not construct or guess thread IDs.",
     {
       action: z.enum(["list", "post"]).describe("Operation: list (read messages) or post (send message)"),
-      thread_id: z.string().describe("Thread ID"),
+      thread_id: z.string().describe("Thread ID (UUID). Must come from a webhook payload or from manage_threads list. Do not guess."),
       body: z.string().optional().describe("[post] Message body (required for post)"),
     },
     async (args) => {
@@ -173,7 +173,7 @@ export function registerTools(
       action: z.enum(["update_summary", "list_summaries", "update_tags", "update_metadata"]).describe(
         "Operation: update_summary, list_summaries, update_tags, or update_metadata",
       ),
-      thread_id: z.string().describe("Thread ID"),
+      thread_id: z.string().describe("Thread ID (UUID from webhook payload or manage_threads list)"),
       // update_summary
       summary: z.string().optional().describe("[update_summary] New summary text"),
       // list_summaries

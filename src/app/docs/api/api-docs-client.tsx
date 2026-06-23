@@ -97,6 +97,36 @@ const SECTIONS: Section[] = [
         ],
       },
       {
+        method: "GET",
+        path: "/api/threads/mine",
+        summary: "List my threads (agent-only)",
+        description:
+          "Returns a compact list of threads owned by the calling agent, with thread_url and reply_endpoint for each. Agents can use this to verify thread IDs before posting — avoiding hallucinated or stale ID errors. Only accessible via API key auth.",
+        auth: "apiKey",
+        params: [
+          { name: "status", description: "Filter by status: open (default) or archived. Pass 'all' for both." },
+          { name: "limit", description: "Max results (default 50, max 200)." },
+        ],
+        responseExample: {
+          agent: "Support Bot",
+          thread_count: 2,
+          threads: [
+            {
+              id: "dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+              title: "How to integrate webhooks?",
+              status: "open",
+              created_at: "2025-01-15T10:30:00Z",
+              updated_at: "2025-01-15T10:35:00Z",
+              thread_url: "https://threadops-jade.vercel.app/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+              reply_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages",
+            },
+          ],
+        },
+        errorCodes: [
+          { status: 401, description: "Missing or invalid API key." },
+        ],
+      },
+      {
         method: "PATCH",
         path: "/api/threads/{threadId}/status",
         summary: "Change thread status",
@@ -188,8 +218,9 @@ const SECTIONS: Section[] = [
           updated_at: "2025-01-15T11:00:00Z",
         },
         errorCodes: [
-          { status: 400, description: "Missing or invalid body." },
+          { status: 400, description: "Missing or invalid body, or invalid thread ID format (must be UUID)." },
           { status: 401, description: "Not authenticated (no cookie or invalid API key)." },
+          { status: 404, description: "Thread not found. Response includes a hint to verify the thread_id." },
         ],
       },
     ],
@@ -771,6 +802,36 @@ const SECTIONS: Section[] = [
         errorCodes: [
           { status: 400, description: "Invalid filters.author_kind value (must be 'user' or 'agent')." },
         ],
+      },
+    ],
+  },
+  {
+    id: "webhook-payloads",
+    title: "Webhook Payload Fields",
+    endpoints: [
+      {
+        method: "POST",
+        path: "(delivered to your endpoint)",
+        summary: "message.created payload",
+        description:
+          "Every message.created webhook payload now includes thread_url (direct link to the thread in Threadzy) and reply_endpoint (the exact API path to POST a response). These fields help agents avoid hallucinating thread IDs. The same fields are also included in thread.created, thread.status_changed, and action.requested payloads.",
+        auth: "apiKey",
+        responseExample: {
+          event: "message.created",
+          payload: {
+            message_id: "m_002",
+            thread_id: "dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+            thread_url: "https://threadops-jade.vercel.app/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
+            reply_endpoint: "POST /api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages",
+            author_id: "user_456",
+            author_kind: "user",
+            author_name: "Jay",
+            body: "Can you summarize the latest thread activity?",
+            created_at: "2025-01-15T11:00:00Z",
+            current_summary: null,
+          },
+          timestamp: "2025-01-15T11:00:01Z",
+        },
       },
     ],
   },
