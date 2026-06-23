@@ -715,6 +715,58 @@ curl -s -X POST "http://localhost:3000/api/threads/<FYG_JET_THREAD_ID>/messages"
 - Check `webhook_deliveries` to confirm deliveries are being created for the thread
 - The `webhook_deliveries` table does NOT have an `endpoint_id` column — you cannot directly see which endpoint received a delivery
 
+### Revoked Agent Webhook Isolation (PR #120+)
+
+Revoking an API key should cascade to deactivate all webhook endpoints tied to that key, AND the dispatch logic should skip endpoints whose key has `revoked_at` set.
+
+**Revoke cascade test flow:**
+1. Find or create an API key with an active webhook endpoint
+2. Call revoke: `PATCH /api/companies/{companyId}/api-keys/{keyId}/revoke`
+3. Query `webhook_endpoints` for that key — all should have `active=false`
+4. The revoke route adds `.eq("company_id", companyId)` for defensive scoping
+
+**Backfill verification (production):**
+```bash
+# Get all revoked keys
+source .env.local
+curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/api_keys?revoked_at=not.is.null&select=id,label" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+
+# For each key, verify 0 active endpoints
+curl -s "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/webhook_endpoints?api_key_id=eq.<KEY_ID>&active=eq.true&select=id" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+```
+
+**Unit tests:** 23 tests in `src/adapters/supabase/__tests__/outbound-webhook-filters.test.ts` cover echo suppression, cross-agent isolation, revoked agent filtering, multi-company isolation, and combined scenarios. Run with:
+```bash
+npx vitest run src/adapters/supabase/__tests__/outbound-webhook-filters.test.ts
+```
+
+### Sidebar View Persistence (PR #118+)
+
+The sidebar groupBy ("agent", "group", "timeline") and status filter ("open", "archived", "all") persist in localStorage across page refreshes and client-side navigations.
+
+**localStorage keys:**
+- `threadops-group-by` — stores "agent", "group", or "timeline"
+- `threadops-status-filter` — stores "open", "archived", or "all"
+
+**Browser test flow:**
+1. Navigate to `/threads`, change groupBy to "By group" via dropdown
+2. Hard refresh (Ctrl+Shift+R) — dropdown should still show "By group"
+3. Verify in devtools console: `localStorage.getItem("threadops-group-by")` === `"group"`
+4. Change status to "Archived", hard refresh — dropdown should still show "Archived" AND thread list should show archived threads
+5. Navigate away (e.g., to `/webhooks`) and back to `/threads` — verify archived threads still shown (mount fetch reconciliation)
+
+**Mount fetch reconciliation gotcha:** The thread list fetches data on mount. If the persisted status differs from the server default ("open"), the mount fetch must use the persisted value. Without the fix (commit `07a1199`), the dropdown shows "Archived" but the thread list briefly shows open threads before correcting. The fix defers the mount fetch via `useEffect` so localStorage is read first.
+
+**Disconnected agent indicators (PR #115/117):**
+- Revoked agents show "Disconnected" badge (red) in sidebar with 50% opacity and strikethrough name
+- Thread detail shows red banner: "This agent has been disconnected..."
+- Composer shows amber warning for revoked agent threads (still usable, but warns replies won't reach agent)
+- Check both "By agent" and "By group" sidebar views for consistent badge rendering
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
