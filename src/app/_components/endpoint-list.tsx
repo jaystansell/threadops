@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { WebhookEndpoint } from "@/core/types";
 
+interface TestResult {
+  success: boolean;
+  status?: number;
+  body?: string;
+  error?: string;
+}
+
 export function EndpointList({
   initialEndpoints,
 }: {
@@ -13,6 +20,8 @@ export function EndpointList({
   const [endpoints, setEndpoints] =
     useState<WebhookEndpoint[]>(initialEndpoints);
   const [busy, setBusy] = useState<string | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const toggleActive = async (endpoint: WebhookEndpoint) => {
     setBusy(endpoint.id);
@@ -30,6 +39,32 @@ export function EndpointList({
       }
     } finally {
       setBusy(null);
+    }
+  };
+
+  const testEndpoint = async (endpoint: WebhookEndpoint) => {
+    setTesting(endpoint.id);
+    setTestResults((prev) => {
+      const next = { ...prev };
+      delete next[endpoint.id];
+      return next;
+    });
+    try {
+      const res = await fetch(`/api/webhook-endpoints/${endpoint.id}/test`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      setTestResults((prev) => ({ ...prev, [endpoint.id]: data }));
+    } catch (err) {
+      setTestResults((prev) => ({
+        ...prev,
+        [endpoint.id]: {
+          success: false,
+          error: err instanceof Error ? err.message : "Network error",
+        },
+      }));
+    } finally {
+      setTesting(null);
     }
   };
 
@@ -112,6 +147,24 @@ export function EndpointList({
 
           <div className="flex gap-2 pt-1">
             <button
+              onClick={() => testEndpoint(ep)}
+              disabled={testing === ep.id || busy === ep.id}
+              data-testid="endpoint-test"
+              className="px-2 py-1 text-xs rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors disabled:opacity-50"
+            >
+              {testing === ep.id ? (
+                <span className="inline-flex items-center gap-1">
+                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Testing…
+                </span>
+              ) : (
+                "Test"
+              )}
+            </button>
+            <button
               onClick={() => toggleActive(ep)}
               disabled={busy === ep.id}
               data-testid="endpoint-toggle"
@@ -128,6 +181,33 @@ export function EndpointList({
               Delete
             </button>
           </div>
+
+          {testResults[ep.id] && (
+            <div
+              data-testid="endpoint-test-result"
+              className={`text-xs px-3 py-2 rounded border ${
+                testResults[ep.id].success
+                  ? "border-green-700 bg-green-900/30 text-green-300"
+                  : "border-red-700 bg-red-900/30 text-red-300"
+              }`}
+            >
+              {testResults[ep.id].success ? (
+                <span className="inline-flex items-center gap-1">
+                  <svg className="h-3.5 w-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Success — HTTP {testResults[ep.id].status}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  <svg className="h-3.5 w-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Failed — {testResults[ep.id].error || `HTTP ${testResults[ep.id].status}`}
+                </span>
+              )}
+            </div>
+          )}
         </li>
       ))}
     </ul>
