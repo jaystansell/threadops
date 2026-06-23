@@ -121,6 +121,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Validate include_context if provided
+  if (body.include_context !== undefined) {
+    if (typeof body.include_context !== "boolean") {
+      return Response.json(
+        { error: "include_context must be a boolean" },
+        { status: 400 },
+      );
+    }
+  }
+
   const secret = generateSecret();
 
   // Merge user-selected events with always-on events
@@ -139,7 +149,7 @@ export async function POST(req: NextRequest) {
       events: mergedEvents,
       secret,
       ...(body.filters && { filters: body.filters }),
-      ...(body.include_context === false && { include_context: false }),
+      ...(body.include_context !== undefined && { include_context: body.include_context }),
     });
     return Response.json(endpoint, { status: 201 });
   } catch (err) {
