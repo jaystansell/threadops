@@ -242,32 +242,75 @@ export async function POST(req: NextRequest) {
   const bodyText = await req.text();
   const contentType = req.headers.get("content-type") || "";
 
+  console.log("[oauth/token] POST request", {
+    contentType,
+    origin: req.headers.get("origin"),
+    bodyKeys: (() => {
+      try {
+        if (contentType.includes("json")) {
+          return Object.keys(JSON.parse(bodyText));
+        }
+        return [...new URLSearchParams(bodyText).keys()];
+      } catch {
+        return "parse_error";
+      }
+    })(),
+  });
+
   const parsed = parseBody(bodyText, contentType);
   if (!parsed) {
+    console.log("[oauth/token] Failed to parse body");
     return jsonError("invalid_request", "Invalid request body", 400);
   }
 
+  console.log("[oauth/token] grant_type:", parsed.grantType, {
+    hasCode: !!parsed.code,
+    hasCodeVerifier: !!parsed.codeVerifier,
+    hasRedirectUri: !!parsed.redirectUri,
+    hasClientSecret: !!parsed.clientSecret,
+  });
+
+  let response: Response;
+
   switch (parsed.grantType) {
     case "client_credentials":
-      return handleClientCredentials(
+      response = await handleClientCredentials(
         parsed.clientSecret,
         req.headers.get("authorization"),
       );
+      break;
 
     case "authorization_code":
-      return handleAuthorizationCode(
+      response = await handleAuthorizationCode(
         parsed.code,
         parsed.redirectUri,
         parsed.codeVerifier,
       );
+      break;
 
     default:
-      return jsonError(
+      response = jsonError(
         "unsupported_grant_type",
         "Supported grant types: client_credentials, authorization_code",
         400,
       );
   }
+
+  const cloned = response.clone();
+  const responseBody = await cloned.json().catch(() => null);
+  console.log("[oauth/token] Response", {
+    status: response.status,
+    body: responseBody
+      ? {
+          ...responseBody,
+          access_token: responseBody.access_token
+            ? `${String(responseBody.access_token).slice(0, 10)}...`
+            : undefined,
+        }
+      : null,
+  });
+
+  return response;
 }
 
 export async function OPTIONS() {
