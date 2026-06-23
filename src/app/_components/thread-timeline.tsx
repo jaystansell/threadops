@@ -221,7 +221,7 @@ export function ThreadTimeline({
     const lastAgentMsg = msgs
       .filter((m) => m.author_kind === "agent")
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://threadzy.ai";
     const diagPrompt = buildDiagnosticPrompt({
       threadId,
       agentName,

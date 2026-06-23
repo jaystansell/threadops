@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://threadops-jade.vercel.app",
+      "url": "https://threadzy.ai",
       "description": "Production"
     }
   ],

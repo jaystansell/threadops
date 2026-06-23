@@ -106,7 +106,7 @@ function buildDynamicPrompt(
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://threadops-jade.vercel.app";
+      : "https://threadzy.ai";
 
   const hasWebhook = answers.hasWebhookUrl === "yes";
   const wantsPolling = answers.includePolling === "yes";

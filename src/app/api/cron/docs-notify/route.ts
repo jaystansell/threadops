@@ -56,14 +56,14 @@ export async function GET(req: NextRequest) {
   // Build the docs payload
   const docsPayload = {
     api_version: openApiSpec.info.version,
-    base_url: openApiSpec.servers[0]?.url ?? "https://threadops-jade.vercel.app",
+    base_url: openApiSpec.servers[0]?.url ?? "https://threadzy.ai",
     rest_endpoints: Object.entries(openApiSpec.paths).map(([path, methods]) => ({
       path,
       methods: Object.keys(methods as Record<string, unknown>),
     })),
-    mcp_endpoint: "https://threadops-jade.vercel.app/mcp",
+    mcp_endpoint: "https://threadzy.ai/mcp",
     mcp_tools: MCP_TOOLS,
-    discovery_url: "https://threadops-jade.vercel.app/.well-known/mcp.json",
+    discovery_url: "https://threadzy.ai/.well-known/mcp.json",
     auth: {
       method: "API Key",
       header: "X-API-Key (REST) or Authorization: Bearer (MCP)",

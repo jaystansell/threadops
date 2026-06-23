@@ -215,7 +215,7 @@ interface ThreadSidebarProps {
 
 function buildWebhookPrompt(agentName: string): string {
   const baseUrl =
-    typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
+    typeof window !== "undefined" ? window.location.origin : "https://threadzy.ai";
   return `## Set Up Webhooks for ${agentName}
 
 ${agentName} is not receiving notifications when humans reply to threads. To fix this, register a webhook endpoint.

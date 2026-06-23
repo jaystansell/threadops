@@ -135,7 +135,7 @@ Then maximize with: `wmctrl -r :ACTIVE: -b add,maximized_vert,maximized_horz`
 
 Preview and production deployments may have Vercel SSO protection enabled. To test deployed URLs via curl:
 ```bash
-curl -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" "https://threadops-jade.vercel.app/..."
+curl -H "x-vercel-protection-bypass: ${VERCEL_AUTOMATION_BYPASS_SECRET}" "https://threadzy.ai/..."
 ```
 Browser access to Vercel previews requires Vercel SSO login, so prefer testing against local dev server for UI testing.
 
@@ -155,13 +155,13 @@ The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistent
 
 ### Testing Against Production vs Local
 
-**Recommended: Test against production (https://threadops-jade.vercel.app)**
+**Recommended: Test against production (https://threadzy.ai)**
 - Production is publicly accessible (no Vercel auth wall)
 - Vercel **preview** URLs are protected by Vercel Authentication and require team login - don't use them for testing
 - Production has real data and correct Supabase connection
 
 **Signup flow for production testing:**
-1. Navigate to `https://threadops-jade.vercel.app/signup`
+1. Navigate to `https://threadzy.ai/signup`
 2. Sign up with any email + password (min 6 chars). Email confirmation is **disabled** - session is created immediately
 3. After signup, you'll be redirected to `/onboarding` with a "Join Demo Company" button
 4. Click "Join Demo Company" to get access to threads, webhooks, API keys
@@ -536,7 +536,7 @@ The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If 
 - **Demo Company ID:** `a0000000-0000-0000-0000-000000000001`
 - **Demo Thread ID:** `d0000000-0000-0000-0000-000000000001`
 - **Supabase project ref:** `gymsbxkuiknbdtulmopv`
-- **Vercel deployment:** `https://threadops-jade.vercel.app/`
+- **Vercel deployment:** `https://threadzy.ai/`
 
 ## Database
 
@@ -613,7 +613,7 @@ The white paper (`/white-paper`) has 9 sections:
 8. ROI Summary (pricing copy and scenario cards)
 9. Interactive Calculator (same component as homepage)
 
-Test against production (`https://threadops-jade.vercel.app`) since no auth is required for the calculator or white paper pages.
+Test against production (`https://threadzy.ai`) since no auth is required for the calculator or white paper pages.
 
 ### Attachment Webhook Testing (PR #96)
 
@@ -799,7 +799,7 @@ The feedback dashboard (`/feedback`) is admin-only — restricted to `jay+direct
 1. Create a test API key via Supabase REST API (see "Creating Test API Keys via DB" section above)
 2. Submit feedback via curl:
    ```bash
-   curl -s -X POST "https://threadops-jade.vercel.app/api/feedback" \
+   curl -s -X POST "https://threadzy.ai/api/feedback" \
      -H "Content-Type: application/json" \
      -H "x-api-key: <plaintext_key>" \
      -d '{"category":"api_feature","title":"Test feedback item","description":"Test description","priority":"high"}'
