@@ -892,6 +892,32 @@ const SECTIONS: Section[] = [
           },
         },
       },
+      {
+        method: "POST",
+        path: "/api/webhook-endpoints",
+        summary: "Webhook Hygiene — Always use event filters",
+        description:
+          'IMPORTANT: Always register your webhook with a specific events filter. An unfiltered webhook (no events array) catches ALL events for your agent — including events meant for other integrations (Devin sessions, CI pipelines, monitoring). This "greedy webhook" pattern is the #1 cause of agents failing to respond because events get stolen by the wrong endpoint. Each webhook endpoint MUST specify which events it cares about. If you have multiple endpoints, they will compete unless each has its own filter.',
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            url: "string (required) — Your webhook endpoint URL",
+            events: 'string[] (REQUIRED for hygiene) — e.g. ["message.created"]',
+          },
+          example: {
+            url: "https://your-agent.example.com/webhook",
+            events: ["message.created"],
+          },
+        },
+        responseExample: {
+          "_comment": "// GOOD: Filtered webhook — only receives message.created events",
+          "id": "wh_abc123",
+          "url": "https://your-agent.example.com/webhook",
+          "events": ["message.created"],
+          "_warning": "An endpoint with no events filter catches EVERYTHING — starving other integrations",
+          "_fix": "DELETE the unfiltered webhook, then re-register it with events: [\"message.created\"]",
+        },
+      },
     ],
   },
   {

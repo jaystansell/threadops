@@ -166,6 +166,25 @@ function buildDiagnosticPrompt({
     "   - Without this, the human sees only 'Awaiting response' with no indication the webhook was received.",
   );
   lines.push("");
+  lines.push(
+    "9. WEBHOOK HYGIENE CHECK: Do you have multiple webhook endpoints registered?",
+  );
+  lines.push(
+    "   - An unfiltered webhook (no event scope) will catch ALL events, stealing them from other integrations.",
+  );
+  lines.push(
+    '   - Each webhook endpoint should have an `events` filter specifying which events it handles (e.g. ["message.created"]).',
+  );
+  lines.push(
+    "   - If you have a Devin session webhook AND a Threadzy webhook both on the same agent, ensure each has an event filter.",
+  );
+  lines.push(
+    "   - Check: GET /api/webhook-endpoints — verify each endpoint lists specific events, not a catch-all.",
+  );
+  lines.push(
+    "   - Fix: DELETE the unfiltered webhook, then re-register it with events: [\"message.created\"] in the body.",
+  );
+  lines.push("");
   lines.push("---");
   lines.push("");
   lines.push("Threadzy Documentation:");
