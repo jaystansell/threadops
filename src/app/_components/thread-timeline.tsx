@@ -24,6 +24,7 @@ import {
 } from "./external-link-modal";
 import { SourceIcon, resolveSourceType } from "./source-icon";
 import { WebhookDeliveryStatus } from "./webhook-delivery-status";
+import { MessageLifecycle } from "./message-lifecycle";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -505,6 +506,11 @@ export function ThreadTimeline({
               />
             )}
             <WebhookDeliveryStatus
+              threadId={threadId}
+              messageId={msg.id}
+              authorKind={msg.author_kind}
+            />
+            <MessageLifecycle
               threadId={threadId}
               messageId={msg.id}
               authorKind={msg.author_kind}
