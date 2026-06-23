@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { useMobileMenu } from "./mobile-menu-context";
 
+const ADMIN_EMAIL = "jay+direct@productcoalition.com";
+
 const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
   { href: "/webhooks", label: "Webhooks" },
@@ -25,6 +27,10 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
   useEffect(() => {
     close();
   }, [pathname, close]);
+
+  const links = userEmail === ADMIN_EMAIL
+    ? [...NAV_LINKS, { href: "/feedback", label: "Feedback" }]
+    : NAV_LINKS;
 
   async function handleSignOut() {
     const supabase = createAuthBrowserClient();
@@ -114,7 +120,7 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
 
             {/* Nav links */}
             <div className="px-3 py-2 space-y-0.5 shrink-0">
-              {NAV_LINKS.map((link) => (
+              {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}

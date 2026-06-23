@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const ADMIN_EMAIL = "jay+direct@productcoalition.com";
+
 const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
   { href: "/webhooks", label: "Webhooks" },
@@ -9,10 +11,14 @@ const NAV_LINKS = [
   { href: "/changelog", label: "Changelog" },
 ];
 
-export function DesktopNav() {
+export function DesktopNav({ userEmail }: { userEmail?: string | null }) {
+  const links = userEmail === ADMIN_EMAIL
+    ? [...NAV_LINKS, { href: "/feedback", label: "Feedback" }]
+    : NAV_LINKS;
+
   return (
     <nav className="hidden md:flex items-center gap-1">
-      {NAV_LINKS.map((link) => (
+      {links.map((link) => (
         <Link
           key={link.href}
           href={link.href}

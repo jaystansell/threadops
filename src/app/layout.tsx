@@ -57,7 +57,7 @@ export default async function RootLayout({
                     threadzy<span className="text-[var(--accent)]">.ai</span>
                   </Link>
                 </div>
-                <DesktopNav />
+                <DesktopNav userEmail={userEmail} />
                 <div className="hidden md:flex">
                   <AuthHeader />
                 </div>

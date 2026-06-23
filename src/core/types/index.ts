@@ -18,3 +18,10 @@ export type {
 export { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "./webhook-endpoint";
 export { FILE_LIMITS, isAllowedFile, validateMagicBytes } from "./attachment";
 export type { Attachment, AttachmentId } from "./attachment";
+export type {
+  AgentFeedback,
+  AgentFeedbackId,
+  AgentFeedbackCategory,
+  AgentFeedbackPriority,
+  AgentFeedbackStatus,
+} from "./agent-feedback";
