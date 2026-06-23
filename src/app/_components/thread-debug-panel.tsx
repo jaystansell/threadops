@@ -116,7 +116,13 @@ function buildDiagnosticPrompt({
     '   - Message data is in `payload` (NOT `data`)',
   );
   lines.push(
+    '   - Thread context is in `context` (thread_summary, thread_tags, recent_messages, reply_endpoint, ack_endpoint)',
+  );
+  lines.push(
     '   - Correct: body.event === "message.created" && body.payload.author_kind === "user"',
+  );
+  lines.push(
+    '   - Use body.context.recent_messages to understand the conversation without extra API calls',
   );
   lines.push(
     '   - WRONG: body.event_type, body.data.author_kind — these will silently reject every webhook',

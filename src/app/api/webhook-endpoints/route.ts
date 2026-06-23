@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
       events: mergedEvents,
       secret,
       ...(body.filters && { filters: body.filters }),
+      ...(body.include_context === false && { include_context: false }),
     });
     return Response.json(endpoint, { status: 201 });
   } catch (err) {

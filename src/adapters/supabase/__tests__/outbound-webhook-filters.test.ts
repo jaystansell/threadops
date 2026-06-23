@@ -25,6 +25,7 @@ function makeEndpoint(overrides: Partial<WebhookEndpoint>): WebhookEndpoint {
     secret: "secret123",
     active: true,
     filters: {},
+    include_context: true,
     created_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",
     ...overrides,
