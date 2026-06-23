@@ -926,6 +926,29 @@ curl -s http://localhost:3000/api/threads/$THREAD_ID/status \
 
 **Thread ownership validation:** The thread must belong to the same company as the API key. Cross-company requests return 404 "Thread not found".
 
+## Testing localStorage-Persisted UI State
+
+Several sidebar features persist state to localStorage. When testing these:
+
+1. **Clear the key first** to test default behavior: `localStorage.removeItem('threadops-hide-disconnected')`
+2. **Verify both states** — toggle ON then refresh, toggle OFF then refresh
+3. **Use DOM counting** to verify filtering works: `document.querySelectorAll('aside a[href^="/threads/"]').length`
+4. **Check localStorage value** matches UI state: `localStorage.getItem('threadops-hide-disconnected')`
+
+Known localStorage keys:
+- `threadops-hide-disconnected` — "true"/"false", defaults to "true" (ON)
+- `threadops-sidebar-groupBy` — "agent"/"group"/"timeline"
+- `threadops-sidebar-status` — "open"/"archived"/"all"
+- `threadops-sidebar-width` — pixel width (200-480)
+
+### Hide Disconnected Agents Toggle
+
+- Only appears when `revokedAgentNames.size > 0` (at least one agent has ALL keys revoked)
+- Filters across all 3 grouping modes: "By agent" (hides accordion groups), "By group" (hides subgroups, removes empty parent groups), "By timeline" (hides threads by agent_name)
+- **"By group" mode requires custom groups** to be configured via "Manage Groups" button — without groups, there's nothing to filter
+- Revoked agents show a red "Disconnected" badge when visible
+- Currently ~15 revoked agents in Demo Company with ~21 open threads
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
