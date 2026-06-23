@@ -134,7 +134,7 @@ export function ActionPalette({ threadId }: ActionPaletteProps) {
       if (propType === "number" || propType === "integer") {
         parameters[key] = raw ? Number(raw) : undefined;
       } else if (propType === "boolean") {
-        parameters[key] = raw === "true";
+        parameters[key] = raw ? raw === "true" : undefined;
       } else {
         parameters[key] = raw || undefined;
       }
@@ -303,6 +303,7 @@ function renderParamFields(
             onChange={(e) =>
               setValues((prev) => ({ ...prev, [key]: e.target.value }))
             }
+            required={isRequired}
             className="w-full px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--background)]"
           >
             <option value="">Select...</option>
