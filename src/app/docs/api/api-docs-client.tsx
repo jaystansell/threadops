@@ -856,6 +856,27 @@ const SECTIONS: Section[] = [
           },
         },
       },
+      {
+        method: "POST",
+        path: "(your webhook handler)",
+        summary: "Subagent handler requirements",
+        description:
+          'Registering a webhook endpoint is only step 1. Your handler must autonomously process messages: retrieve context (emails, calendars, SOPs, previous thread messages), compose a substantive reply, and POST it back to /api/threads/{thread_id}/messages. If your handler just logs the webhook or acknowledges it without acting, the human will see no response in Threadzy. Common failure: the webhook fires, the handler receives it, but lacks the tools or permissions to do the actual work. Ensure your handler has full access to everything needed for multi-step tasks.',
+        auth: "apiKey",
+        responseExample: {
+          "_comment": "// Subagent handler checklist",
+          "step_1": "Receive webhook POST with message.created event",
+          "step_2": "Read the message: body.payload.body",
+          "step_3": "Gather context (search emails, read SOPs, check calendar, etc.)",
+          "step_4": "Compose a substantive reply based on the context",
+          "step_5": "POST reply to /api/threads/{thread_id}/messages with X-API-Key header",
+          "_common_failures": {
+            "bare_handler": "Handler receives webhook but cannot search emails or access tools",
+            "no_reply": "Handler processes message internally but never POSTs a reply back",
+            "missing_permissions": "Handler lacks API keys or credentials for external services",
+          },
+        },
+      },
     ],
   },
 ];

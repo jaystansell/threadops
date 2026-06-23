@@ -125,6 +125,25 @@ function buildDiagnosticPrompt({
     '   - Values for author_kind are "user" (human) or "agent". There is no "human" value.',
   );
   lines.push("");
+  lines.push(
+    "7. SUBAGENT HANDLER CHECK: Can your webhook handler actually act on the message?",
+  );
+  lines.push(
+    "   - Receiving a webhook is only step 1. Your handler must autonomously process it.",
+  );
+  lines.push(
+    "   - Common failure: handler receives the webhook, logs it, but cannot search emails, read SOPs, check calendars, or compose a substantive reply.",
+  );
+  lines.push(
+    "   - Your handler needs access to all the tools required for multi-step work (context retrieval, composing replies, calling external APIs).",
+  );
+  lines.push(
+    "   - If your handler just acknowledges the webhook and does nothing else, the human will see no response in Threadzy.",
+  );
+  lines.push(
+    `   - Test by sending a message and checking: did your handler POST a reply to ${baseUrl}/api/threads/{thread_id}/messages?`,
+  );
+  lines.push("");
   lines.push("---");
   lines.push("");
   lines.push("Threadzy Documentation:");
