@@ -973,13 +973,13 @@ function CurlBlock({ endpoint }: { endpoint: Endpoint }) {
   const url = `${BASE_URL}${endpoint.path}`;
   let curl = `curl -X ${endpoint.method} "${url}"`;
 
-  if (endpoint.auth === "apiKey") {
-    curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
-  } else if (endpoint.path === "/api/webhooks/inbound") {
+  if (endpoint.path === "/api/webhooks/inbound") {
     curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
     curl += ` \\\n  -H "X-Idempotency-Key: unique-key-here"`;
-  } else {
+  } else if (endpoint.auth === "apiKey") {
     curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
+  } else {
+    curl += `\n  # Browser-only endpoint — managed via the Threadzy web UI`;
   }
 
   if (endpoint.requestBody) {
