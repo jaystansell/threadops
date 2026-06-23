@@ -33,8 +33,9 @@ function makeEndpoint(overrides: Partial<WebhookEndpoint>): WebhookEndpoint {
 
 /**
  * Replicates the filtering logic from dispatchOutboundWebhooks:
- * 1. Agent-scoped delivery + echo suppression
- * 2. Author-kind filter
+ * 1. Revoked key exclusion
+ * 2. Agent-scoped delivery + echo suppression
+ * 3. Author-kind filter
  */
 function filterEndpoints(
   allEndpoints: WebhookEndpoint[],
@@ -42,11 +43,17 @@ function filterEndpoints(
   eventPayload: Record<string, unknown>,
   agentApiKeyId?: string | null,
   excludeApiKeyId?: string | null,
+  revokedKeyIds?: Set<string>,
 ): WebhookEndpoint[] {
+  // Step 0: Skip endpoints whose API key has been revoked
+  const activeEndpoints = revokedKeyIds
+    ? allEndpoints.filter((ep) => !ep.api_key_id || !revokedKeyIds.has(ep.api_key_id))
+    : allEndpoints;
+
   // Step 1: Agent-scoped delivery + echo suppression (from existing code)
   const endpoints = eventType === "docs.updated"
-    ? allEndpoints
-    : allEndpoints.filter((ep) => {
+    ? activeEndpoints
+    : activeEndpoints.filter((ep) => {
         if (excludeApiKeyId && ep.api_key_id === excludeApiKeyId) return false;
         if (!agentApiKeyId) {
           return !ep.api_key_id;
@@ -332,6 +339,208 @@ describe("outbound webhook author_kind filter", () => {
         null,
       );
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe("Scenario 4: Revoked agent endpoints", () => {
+    const activeAgentEndpoint = makeEndpoint({
+      id: "ep_active" as WebhookEndpoint["id"],
+      api_key_id: "key_active",
+      url: "https://active-agent.example.com/hook",
+      filters: {},
+    });
+
+    const revokedAgentEndpoint = makeEndpoint({
+      id: "ep_revoked" as WebhookEndpoint["id"],
+      api_key_id: "key_revoked",
+      url: "https://revoked-agent.example.com/hook",
+      filters: {},
+    });
+
+    const revokedKeys = new Set(["key_revoked"]);
+
+    it("revoked agent endpoint receives ZERO deliveries for its own thread", () => {
+      const result = filterEndpoints(
+        [revokedAgentEndpoint],
+        "message.created",
+        { author_kind: "user", body: "Hello" },
+        "key_revoked",
+        null,
+        revokedKeys,
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it("active agent still receives deliveries when a revoked agent exists", () => {
+      const result = filterEndpoints(
+        [activeAgentEndpoint, revokedAgentEndpoint],
+        "message.created",
+        { author_kind: "user", body: "Hello" },
+        "key_active",
+        null,
+        revokedKeys,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_active");
+    });
+
+    it("revoked agent excluded from docs.updated broadcast too", () => {
+      const result = filterEndpoints(
+        [activeAgentEndpoint, revokedAgentEndpoint],
+        "docs.updated",
+        { author_kind: "user" },
+        null,
+        null,
+        revokedKeys,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_active");
+    });
+
+    it("legacy endpoint (no api_key_id) unaffected by revoked keys", () => {
+      const legacyEndpoint = makeEndpoint({
+        id: "ep_legacy" as WebhookEndpoint["id"],
+        api_key_id: null,
+        url: "https://legacy.example.com/hook",
+      });
+      const result = filterEndpoints(
+        [legacyEndpoint, revokedAgentEndpoint],
+        "docs.updated",
+        { author_kind: "user" },
+        null,
+        null,
+        revokedKeys,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_legacy");
+    });
+  });
+
+  describe("Scenario 5: Multi-company isolation", () => {
+    const company1Endpoint = makeEndpoint({
+      id: "ep_c1" as WebhookEndpoint["id"],
+      company_id: "company_1" as CompanyId,
+      api_key_id: "key_c1_agent",
+      url: "https://company1.example.com/hook",
+    });
+
+    const company2Endpoint = makeEndpoint({
+      id: "ep_c2" as WebhookEndpoint["id"],
+      company_id: "company_2" as CompanyId,
+      api_key_id: "key_c2_agent",
+      url: "https://company2.example.com/hook",
+    });
+
+    it("company 1 events never reach company 2 endpoints (agent-scoped)", () => {
+      // company_id filtering happens at DB query level (listActiveForEvent).
+      // Here we verify that even if both endpoints were returned (hypothetical
+      // bug), agent-scoped delivery prevents cross-company bleed.
+      const result = filterEndpoints(
+        [company1Endpoint, company2Endpoint],
+        "message.created",
+        { author_kind: "user", body: "Company 1 message" },
+        "key_c1_agent", // thread owned by company 1's agent
+        null,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_c1");
+      expect(result[0].company_id).toBe("company_1");
+    });
+
+    it("company 2 events never reach company 1 endpoints (agent-scoped)", () => {
+      const result = filterEndpoints(
+        [company1Endpoint, company2Endpoint],
+        "message.created",
+        { author_kind: "user", body: "Company 2 message" },
+        "key_c2_agent",
+        null,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_c2");
+      expect(result[0].company_id).toBe("company_2");
+    });
+
+    it("docs.updated goes to all endpoints regardless of company (since DB filters by company_id)", () => {
+      // docs.updated bypasses agent-scoped delivery. In production, listActiveForEvent
+      // already filters by company_id. This test documents that behavior.
+      const result = filterEndpoints(
+        [company1Endpoint, company2Endpoint],
+        "docs.updated",
+        { author_kind: "user" },
+        null,
+        null,
+      );
+      // Both pass because docs.updated skips agent-scoped check.
+      // In production, only same-company endpoints would be in the list.
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe("Scenario 6: Combined revoked + filter + echo suppression", () => {
+    it("all three mechanisms stack correctly", () => {
+      const activeFiltered = makeEndpoint({
+        id: "ep_af" as WebhookEndpoint["id"],
+        api_key_id: "key_active_filtered",
+        filters: { author_kind: "user" },
+      });
+      const activeUnfiltered = makeEndpoint({
+        id: "ep_au" as WebhookEndpoint["id"],
+        api_key_id: "key_active_unfiltered",
+        filters: {},
+      });
+      const revokedEndpoint = makeEndpoint({
+        id: "ep_revoked" as WebhookEndpoint["id"],
+        api_key_id: "key_revoked",
+        filters: {},
+      });
+      const echoEndpoint = makeEndpoint({
+        id: "ep_echo" as WebhookEndpoint["id"],
+        api_key_id: "key_active_filtered",
+        filters: {},
+      });
+
+      const revokedKeys = new Set(["key_revoked"]);
+
+      // Agent "key_active_filtered" posts in its own thread
+      // - revokedEndpoint: excluded (revoked key)
+      // - echoEndpoint: excluded (echo suppression, same key as sender)
+      // - activeFiltered: excluded (echo suppression, same key as sender)
+      // - activeUnfiltered: excluded (agent-scoped, different key)
+      const result = filterEndpoints(
+        [activeFiltered, activeUnfiltered, revokedEndpoint, echoEndpoint],
+        "message.created",
+        { author_kind: "agent", body: "Agent reply" },
+        "key_active_filtered", // thread owner
+        "key_active_filtered", // sender (echo suppression)
+        revokedKeys,
+      );
+      expect(result).toHaveLength(0);
+    });
+
+    it("human posts in active agent thread: only matching active endpoint receives", () => {
+      const activeFiltered = makeEndpoint({
+        id: "ep_af" as WebhookEndpoint["id"],
+        api_key_id: "key_agent",
+        filters: { author_kind: "user" },
+      });
+      const revokedEndpoint = makeEndpoint({
+        id: "ep_revoked" as WebhookEndpoint["id"],
+        api_key_id: "key_revoked",
+        filters: {},
+      });
+
+      const revokedKeys = new Set(["key_revoked"]);
+
+      const result = filterEndpoints(
+        [activeFiltered, revokedEndpoint],
+        "message.created",
+        { author_kind: "user", body: "Human message" },
+        "key_agent",
+        null,
+        revokedKeys,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("ep_af");
     });
   });
 });

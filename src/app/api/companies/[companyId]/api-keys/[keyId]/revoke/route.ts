@@ -32,6 +32,16 @@ export async function PATCH(
 
   try {
     await apiKeyRepo.revoke(companyId as CompanyId, keyId as ApiKeyId);
+
+    // Deactivate all webhook endpoints tied to this key
+    const { error: deactivateError } = await db
+      .from("webhook_endpoints")
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq("company_id", companyId)
+      .eq("api_key_id", keyId)
+      .eq("active", true);
+    if (deactivateError) throw deactivateError;
+
     return Response.json({ success: true });
   } catch (err) {
     return Response.json(
