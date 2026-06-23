@@ -13,6 +13,7 @@ interface ThreadDetailClientProps {
   userId: string;
   isOpen: boolean;
   isAgentRevoked?: boolean;
+  agentName?: string | null;
   threadEvents?: ThreadEvent[];
   attachmentCounts?: Record<string, number>;
 }
@@ -23,6 +24,7 @@ export function ThreadDetailClient({
   userId,
   isOpen,
   isAgentRevoked = false,
+  agentName = null,
   threadEvents = [],
   attachmentCounts = {},
 }: ThreadDetailClientProps) {
@@ -86,6 +88,7 @@ export function ThreadDetailClient({
         sortOrder={sortOrder}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
+        agentName={agentName}
       />
 
       {sortOrder === "old-first" && composer}

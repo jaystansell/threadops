@@ -149,6 +149,12 @@ export default async function ThreadDetailPage(
           threadTitle={thread.title}
           messageCount={messages.length}
           lastMessageAt={messages.length > 0 ? messages[messages.length - 1].created_at : null}
+          lastUserMessageAt={
+            [...messages].reverse().find((m) => m.author_kind === "user")?.created_at ?? null
+          }
+          lastAgentMessageAt={
+            [...messages].reverse().find((m) => m.author_kind === "agent")?.created_at ?? null
+          }
           isAgentRevoked={isAgentRevoked}
         />
         <ThreadSavingsBanner
@@ -165,6 +171,7 @@ export default async function ThreadDetailPage(
         userId={userCompany.userId}
         isOpen={thread.status === "open"}
         isAgentRevoked={isAgentRevoked}
+        agentName={agentName}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
       />

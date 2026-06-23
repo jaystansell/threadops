@@ -150,6 +150,21 @@ button, a {
   animation: stickman-question-bob 2s ease-in-out infinite;
 }
 
+/* Yoga/stretch stickman — awaiting agent response */
+@keyframes stickman-yoga-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50%      { transform: scale(1.05); opacity: 0.6; }
+}
+
+@keyframes stickman-dot-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(1.3); }
+}
+
+.stickman-yoga-arm {
+  animation: stickman-yoga-breathe 3s ease-in-out infinite;
+}
+
 /* Accessibility: disable all stickman motion for reduced-motion users */
 @media (prefers-reduced-motion: reduce) {
   .stickman-send,
@@ -161,7 +176,8 @@ button, a {
   .stickman-idle,
   .stickman-idle .stickman-eye-l,
   .stickman-idle .stickman-eye-r,
-  .stickman-idle .stickman-question {
+  .stickman-idle .stickman-question,
+  .stickman-yoga-arm {
     animation: none !important;
   }
   .stickman-send,
