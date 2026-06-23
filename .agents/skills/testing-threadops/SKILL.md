@@ -544,7 +544,7 @@ The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If 
 - Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
 - Use Supabase MCP (`execute_sql`) to inspect data if needed
 
-Migrations are in `infra/migrations/` (000-023). Seed data is in `infra/seed/seed.sql`.
+Migrations are in `infra/migrations/` (000-032). Seed data is in `infra/seed/seed.sql`.
 
 To apply migrations via psql (pooler connection, bypasses IPv6 issue):
 ```bash
@@ -870,6 +870,61 @@ The sidebar groupBy ("agent", "group", "timeline") and status filter ("open", "a
 - Thread detail shows red banner: "This agent has been disconnected..."
 - Composer shows amber warning for revoked agent threads (still usable, but warns replies won't reach agent)
 - Check both "By agent" and "By group" sidebar views for consistent badge rendering
+
+### Agent Processing Status (PR #135)
+
+The agent processing status feature lets agents report their webhook processing state (acknowledged, processing, completed, escalated) so humans see real-time indicators in the thread timeline.
+
+**Key files:**
+- `src/app/api/threads/[threadId]/ack/route.ts` — POST endpoint for agents
+- `src/app/api/threads/[threadId]/status/route.ts` — GET endpoint for polling
+- `src/app/_components/agent-processing-status.tsx` — UI component (polls every 10s)
+- `src/app/_components/thread-timeline.tsx` — integrates AgentProcessingStatus component
+- `infra/migrations/032_create_agent_processing_status.sql` — creates the table + RLS
+
+**Migration dependency:** The `agent_processing_status` table must exist in the database for the full E2E flow to work. Without it, POST /ack returns 500 (passes all validation but fails on insert) and GET /status returns `{"status":null,"updated_at":null,"agent_name":null}`.
+
+**Graceful degradation:** The UI component does NOT crash when the table is missing. It silently handles the null response and shows nothing. The existing "Awaiting response" indicator continues working independently.
+
+**Testing the API endpoints (curl):**
+```bash
+THREAD_ID="9bdb9c76-63ca-44d5-b51d-306a52c12c8d"
+API_KEY="to_4540b50447ec1c2ac3a1633d68127ef19b8c84d2b9c7b606662efc22b39854aa"
+
+# Auth validation
+curl -s http://localhost:3000/api/threads/$THREAD_ID/ack -X POST \
+  -H "Content-Type: application/json" -d '{"status":"acknowledged"}'
+# Expected: 401 "API key required"
+
+# Body validation
+curl -s http://localhost:3000/api/threads/$THREAD_ID/ack -X POST \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"status":"invalid"}'
+# Expected: 400 "status must be one of: acknowledged, processing, completed, escalated"
+
+# GET status (null response when no data or table missing)
+curl -s http://localhost:3000/api/threads/$THREAD_ID/status \
+  -H "X-API-Key: $API_KEY"
+# Expected: 200 {"status":null,"updated_at":null,"agent_name":null}
+```
+
+**Testing UI polling (browser):**
+1. Navigate to a thread in "awaiting response" state (last message from user)
+2. Open DevTools Network tab, filter for "status"
+3. Verify GET requests to `/api/threads/{id}/status` appear every ~10 seconds
+4. The polling only activates when the thread is awaiting a response
+
+**Full E2E flow (requires migration applied):**
+1. POST `/api/threads/{id}/ack` with `{"status":"processing"}` using API key
+2. GET `/api/threads/{id}/status` returns `{"status":"processing","updated_at":"...","agent_name":"<key label>"}`
+3. In browser, thread shows blue "Agent is working on this..." indicator with spinning animation
+4. POST with `{"status":"completed"}` hides the indicator on next poll cycle (~10s)
+
+**Middleware note:** The proxy in `src/adapters/supabase/auth/proxy.ts` already bypasses auth for API key routes on `/api/threads/*` (lines 51-54 check for `x-api-key` header). Both `/ack` and `/status` routes work with API key auth without modification.
+
+**Status enum:** Only these 4 values are accepted: `acknowledged`, `processing`, `completed`, `escalated`. Any other value returns 400.
+
+**Thread ownership validation:** The thread must belong to the same company as the API key. Cross-company requests return 404 "Thread not found".
 
 ## Seed Data for Testing
 
