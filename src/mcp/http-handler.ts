@@ -9,6 +9,12 @@ const BASE_URL =
 
 const RESOURCE_METADATA_URL = `${BASE_URL}/mcp/.well-known/oauth-protected-resource`;
 
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key",
+};
+
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,6 +35,11 @@ function extractApiKey(req: Request): string | null {
 }
 
 export async function handleMcpRequest(req: Request): Promise<Response> {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
   const apiKey = extractApiKey(req);
   if (!apiKey) {
     return new Response(
@@ -36,6 +47,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
       {
         status: 401,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
           "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
         },
@@ -56,6 +68,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
         {
           status: 429,
           headers: {
+            ...CORS_HEADERS,
             "Content-Type": "application/json",
             "Retry-After": String(retryAfterSec),
             "X-RateLimit-Limit": "60",
@@ -69,6 +82,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
       {
         status: 401,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
           "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
         },
@@ -76,28 +90,48 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
     );
   }
 
-  const server = new McpServer(
-    { name: "threadzy", version: "1.0.0" },
-    {
-      capabilities: { tools: {} },
-      instructions:
-        "Threadzy.ai MCP server. Working memory for AI agents. Use manage_threads to list/create/search threads, manage_messages to read/post, manage_thread_context to update summaries/tags/metadata, and manage_webhooks to register event endpoints.",
-    },
-  );
-
-  registerTools(server, db, async () => auth);
-
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
-
-  await server.connect(transport);
+  let server: McpServer | undefined;
+  let transport: WebStandardStreamableHTTPServerTransport | undefined;
 
   try {
-    return await transport.handleRequest(req);
+    server = new McpServer(
+      { name: "threadzy", version: "1.0.0" },
+      {
+        capabilities: { tools: {} },
+        instructions:
+          "Threadzy.ai MCP server. Working memory for AI agents. Use manage_threads to list/create/search threads, manage_messages to read/post, manage_thread_context to update summaries/tags/metadata, and manage_webhooks to register event endpoints.",
+      },
+    );
+
+    registerTools(server, db, async () => auth);
+
+    transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+
+    await server.connect(transport);
+
+    const response = await transport.handleRequest(req);
+    const corsResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+    for (const [k, v] of Object.entries(CORS_HEADERS)) {
+      corsResponse.headers.set(k, v);
+    }
+    return corsResponse;
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+      },
+    );
   } finally {
-    await transport.close();
-    await server.close();
+    if (transport) await transport.close().catch(() => {});
+    if (server) await server.close().catch(() => {});
   }
 }
