@@ -350,6 +350,22 @@ export function ThreadSidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Listen for archive events from the thread detail panel so we can
+  // remove the thread in-place without a full page refresh.
+  useEffect(() => {
+    function handleArchived(e: Event) {
+      const threadId = (e as CustomEvent).detail?.threadId as string | undefined;
+      if (!threadId) return;
+      setOverrideThreads((prev) => {
+        const base = prev ?? initialThreads;
+        return base.filter((t) => t.id !== threadId);
+      });
+      setExtraThreads((prev) => prev.filter((t) => t.id !== threadId));
+    }
+    window.addEventListener("threadops:thread-archived", handleArchived);
+    return () => window.removeEventListener("threadops:thread-archived", handleArchived);
+  }, [initialThreads]);
+
   const togglePin = useCallback((threadId: string) => {
     const current = readStorageSet(PINNED_STORAGE_KEY);
     if (current.has(threadId)) {
@@ -381,7 +397,6 @@ export function ThreadSidebar({
         if (viewingArchived) {
           router.push("/threads");
         }
-        router.refresh();
       }
     } catch {
       // Silently handle

@@ -8,6 +8,7 @@ export type WebhookEventType =
   | "message.created"
   | "thread.created"
   | "thread.status_changed"
+  | "thread.archived"
   | "docs.updated"
   | "action.requested"
   | "attachment.created";
@@ -16,13 +17,14 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
   "message.created",
   "thread.created",
   "thread.status_changed",
+  "thread.archived",
   "docs.updated",
   "action.requested",
   "attachment.created",
 ];
 
 /** Scopes that are always included on every webhook endpoint. */
-export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested", "attachment.created"];
+export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested", "attachment.created", "thread.archived"];
 
 export interface WebhookEndpointFilters {
   author_kind?: "user" | "agent";
