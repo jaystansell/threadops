@@ -16,6 +16,7 @@ const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
 const AGENT_COLORS_KEY = "threadops-agent-colors";
 const STATUS_FILTER_KEY = "threadops-status-filter";
 const GROUP_BY_KEY = "threadops-group-by";
+const SORT_BY_KEY = "threadops-sort-by";
 const HIDE_DISCONNECTED_KEY = "threadops-hide-disconnected";
 
 function readStorageString(key: string, fallback: string): string {
@@ -93,6 +94,11 @@ const GROUP_OPTIONS = [
   { value: "agent", label: "By agent" },
   { value: "group", label: "By group" },
   { value: "timeline", label: "By timeline" },
+] as const;
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "updated", label: "Updated first" },
 ] as const;
 
 const AGENT_COLORS = [
@@ -295,6 +301,8 @@ export function ThreadSidebar({
   const setStatus = useCallback((v: string) => { setStatusRaw(v); writeStorageString(STATUS_FILTER_KEY, v); }, []);
   const [groupBy, setGroupByRaw] = useState(() => readStorageString(GROUP_BY_KEY, "agent"));
   const setGroupBy = useCallback((v: string) => { setGroupByRaw(v); writeStorageString(GROUP_BY_KEY, v); }, []);
+  const [sortBy, setSortByRaw] = useState(() => readStorageString(SORT_BY_KEY, "updated"));
+  const setSortBy = useCallback((v: string) => { setSortByRaw(v); writeStorageString(SORT_BY_KEY, v); }, []);
   const [hideDisconnected, setHideDisconnectedRaw] = useState(() => readStorageString(HIDE_DISCONNECTED_KEY, "true") === "true");
   const setHideDisconnected = useCallback((v: boolean) => { setHideDisconnectedRaw(v); writeStorageString(HIDE_DISCONNECTED_KEY, String(v)); }, []);
   const [search, setSearch] = useState("");
@@ -742,6 +750,17 @@ export function ThreadSidebar({
               </option>
             ))}
           </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-1 py-0.5 text-[16px] sm:text-xs focus:outline-none focus:border-[var(--primary)]"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
         {groupBy === "group" && (
           <button
@@ -816,7 +835,13 @@ export function ThreadSidebar({
             const sortedThreads = [...group.threads].sort((a, b) => {
               const aPinned = pinnedThreads.has(a.id) ? 0 : 1;
               const bPinned = pinnedThreads.has(b.id) ? 0 : 1;
-              return aPinned - bPinned;
+              if (aPinned !== bPinned) return aPinned - bPinned;
+              if (sortBy === "newest") {
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              }
+              const aTime = a.last_message_at ?? a.updated_at ?? a.created_at;
+              const bTime = b.last_message_at ?? b.updated_at ?? b.created_at;
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
             });
             const visibleThreads = isAccordion && isOpen
               ? sortedThreads
@@ -982,7 +1007,13 @@ export function ThreadSidebar({
                         const subSorted = [...sub.threads].sort((a, b) => {
                           const ap = pinnedThreads.has(a.id) ? 0 : 1;
                           const bp = pinnedThreads.has(b.id) ? 0 : 1;
-                          return ap - bp;
+                          if (ap !== bp) return ap - bp;
+                          if (sortBy === "newest") {
+                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                          }
+                          const aTime = a.last_message_at ?? a.updated_at ?? a.created_at;
+                          const bTime = b.last_message_at ?? b.updated_at ?? b.created_at;
+                          return new Date(bTime).getTime() - new Date(aTime).getTime();
                         });
                         return (
                           <div key={subKey} className={subRevoked ? "opacity-50" : ""}>
