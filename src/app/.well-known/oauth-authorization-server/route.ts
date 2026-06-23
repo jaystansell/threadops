@@ -24,7 +24,6 @@ export async function GET() {
         "messages:read",
         "messages:write",
         "webhooks:read",
-        "webhooks:write",
       ],
       service_documentation: `${BASE_URL}/docs/api`,
     },

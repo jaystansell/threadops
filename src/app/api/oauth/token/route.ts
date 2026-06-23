@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { hashKey } from "@/core/rules/api-key";
-import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
+import { checkRateLimit } from "@/core/rules/rate-limit";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -92,7 +92,16 @@ export async function POST(req: NextRequest) {
   // Rate limit by key hash (prevent brute force)
   const limit = checkRateLimit(`oauth_token:${keyHash}`);
   if (!limit.allowed) {
-    return rateLimitResponse(limit.retryAfterMs!);
+    return Response.json(
+      { error: "rate_limit_exceeded", error_description: "Too many requests" },
+      {
+        status: 429,
+        headers: {
+          ...CORS_HEADERS,
+          "Retry-After": String(Math.ceil(limit.retryAfterMs! / 1000)),
+        },
+      },
+    );
   }
 
   if (!keyRecord) {
