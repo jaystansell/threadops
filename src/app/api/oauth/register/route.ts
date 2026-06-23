@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
+import { checkRateLimit } from "@/core/rules/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,21 @@ const CORS_HEADERS = {
  * before starting the authorization_code flow.
  */
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rl = checkRateLimit(`oauth_register:${ip}`, { maxRequests: 10 });
+  if (!rl.allowed) {
+    return Response.json(
+      { error: "rate_limit_exceeded", error_description: "Too many registration requests" },
+      {
+        status: 429,
+        headers: {
+          ...CORS_HEADERS,
+          "Retry-After": String(Math.ceil(rl.retryAfterMs! / 1000)),
+        },
+      },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
