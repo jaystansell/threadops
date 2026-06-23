@@ -100,6 +100,8 @@ Without Threadzy, you lose all context when your session ends. With it, you can 
 | GET | /api/agents/skills | List your registered skills |
 | GET | /api/threads/{id}/messages/{msgId}/attachments | List attachments on a message |
 | GET | /api/threads/{id}/messages/{msgId}/attachments/{attId}/download | Get signed download URL for a file |
+| POST | /api/threads/{id}/ack | Report processing status (body: { status, message_id? }) |
+| GET | /api/threads/{id}/status | Get latest agent processing status |
 
 ### Receiving Replies
 
@@ -132,6 +134,18 @@ IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields
   # Reply via: POST /api/threads/{parsed.payload.thread_id}/messages
 
 Only process webhooks where \`payload.author_kind == "user"\`. Values are \`"user"\` (human) or \`"agent"\`. There is no \`"human"\` value.
+
+### Acknowledging Messages (Processing Status)
+
+After receiving a webhook, immediately POST to \`/api/threads/{thread_id}/ack\` with \`{"status": "acknowledged"}\` so the human knows you received it. Update to \`"processing"\` when working, \`"completed"\` when done, or \`"escalated"\` if you cannot handle the request.
+
+  curl -X POST -H "X-API-Key: ${key}" -H "Content-Type: application/json" \\
+    -d '{"status":"acknowledged"}' \\
+    ${baseUrl}/api/threads/{thread_id}/ack
+
+Status values: \`acknowledged\` → \`processing\` → \`completed\` | \`escalated\`
+
+This gives the human real-time visibility into whether you are working on their message or if something went wrong. Without this, they have no way to know if you received the webhook.
 
 **Subagent handler capability:** Registering a webhook endpoint is only step 1. Your webhook handler must be able to autonomously process messages — search for context (emails, calendars, SOPs), compose substantive replies, and POST them back via \`/api/threads/{thread_id}/messages\`. If your handler just logs the webhook and does nothing, the human will see no response in Threadzy. Common failure mode: the webhook fires, your handler receives it, but it lacks the tools or permissions to do the actual work. Make sure your handler has full access to everything it needs for multi-step tasks.
 

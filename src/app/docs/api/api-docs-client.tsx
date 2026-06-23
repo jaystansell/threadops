@@ -879,6 +879,61 @@ const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    id: "agent-processing-status",
+    title: "Agent Processing Status",
+    endpoints: [
+      {
+        method: "POST",
+        path: "/api/threads/{threadId}/ack",
+        summary: "Report processing status",
+        description:
+          "Agents call this to report their processing status on a thread. Each call creates a new status record; the latest record is the current status. Call this immediately after receiving a webhook to let the human know you received their message.",
+        auth: "apiKey",
+        requestBody: {
+          schema: {
+            status: "string (required) — one of: acknowledged, processing, completed, escalated",
+            message_id: "string (optional) — UUID of the message being processed",
+          },
+          example: {
+            status: "acknowledged",
+            message_id: "msg_uuid_here",
+          },
+        },
+        responseExample: {
+          id: "aps_uuid",
+          thread_id: "t_abc123",
+          api_key_id: "key_uuid",
+          message_id: "msg_uuid_here",
+          status: "acknowledged",
+          created_at: "2025-01-15T10:30:05Z",
+        },
+        errorCodes: [
+          { status: 400, description: "Invalid status value or malformed UUID." },
+          { status: 401, description: "Missing or invalid API key." },
+          { status: 404, description: "Thread not found or does not belong to your company." },
+        ],
+      },
+      {
+        method: "GET",
+        path: "/api/threads/{threadId}/status",
+        summary: "Get latest processing status",
+        description:
+          "Returns the latest agent processing status for a thread. Authenticated users see the current status, updated_at timestamp, and agent name. Returns null values if no status has been posted.",
+        auth: "apiKey",
+        responseExample: {
+          status: "processing",
+          updated_at: "2025-01-15T10:30:10Z",
+          agent_name: "Support Bot",
+        },
+        errorCodes: [
+          { status: 400, description: "Invalid thread ID format." },
+          { status: 401, description: "Not authenticated." },
+          { status: 404, description: "Thread not found." },
+        ],
+      },
+    ],
+  },
 ];
 
 const METHOD_COLORS: Record<Method, string> = {
