@@ -14,6 +14,12 @@ import { MessageDetailsPanel } from "./message-details-panel";
 import { AwaitingResponseIndicator } from "./awaiting-response-indicator";
 import { UnresponsiveAgentHint } from "./unresponsive-agent-hint";
 import { buildDiagnosticPrompt } from "./thread-debug-panel";
+import {
+  ExternalLinkModal,
+  isInternalUrl,
+  getTrustedDomains,
+  extractDomain,
+} from "./external-link-modal";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -101,6 +107,7 @@ export function ThreadTimeline({
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [externalLinkHref, setExternalLinkHref] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -405,7 +412,22 @@ export function ThreadTimeline({
                 remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
                   a: ({ children, href, ...props }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      {...props}
+                      onClick={(e) => {
+                        if (
+                          href &&
+                          !isInternalUrl(href) &&
+                          !getTrustedDomains().has(extractDomain(href))
+                        ) {
+                          e.preventDefault();
+                          setExternalLinkHref(href);
+                        }
+                      }}
+                    >
                       {children}
                     </a>
                   ),
@@ -451,6 +473,12 @@ export function ThreadTimeline({
         );
       })}
       {sortOrder !== "new-first" && awaitingBlock}
+      {externalLinkHref && (
+        <ExternalLinkModal
+          href={externalLinkHref}
+          onClose={() => setExternalLinkHref(null)}
+        />
+      )}
     </div>
   );
 }
