@@ -20,7 +20,9 @@ export async function postMessage(
     input.thread_id as ThreadId,
   );
   if (!thread) {
-    throw new Error("Thread not found or does not belong to your company");
+    throw new Error(
+      `Thread not found (id: ${input.thread_id}). Verify the thread_id from the webhook payload or use manage_threads(action='list') to get your active thread IDs. Do not construct IDs manually.`,
+    );
   }
   if (thread.agent_api_key_id && thread.agent_api_key_id !== auth.keyId) {
     throw new Error("This thread belongs to another agent");

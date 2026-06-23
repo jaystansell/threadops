@@ -295,6 +295,8 @@ export async function POST(req: NextRequest) {
       "thread.created",
       {
         thread_id: thread.id,
+        thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${thread.id}`,
+        reply_endpoint: `POST /api/threads/${thread.id}/messages`,
         title: thread.title,
         status: thread.status,
         company_id: thread.company_id,

@@ -43,7 +43,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
     } as never);
 
     const req = new NextRequest(
-      "http://localhost:3000/api/threads/thread-1/messages",
+      "http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/messages",
       {
         method: "POST",
         body: JSON.stringify({ body: "Hello" }),
@@ -55,7 +55,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
       "@/app/api/threads/[threadId]/messages/route"
     );
     const res = await POST(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
 
     expect(res.status).toBe(401);
@@ -71,7 +71,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
     vi.mocked(createApiKeyRepo).mockReturnValue(mockApiKeyRepo as never);
 
     const req = new NextRequest(
-      "http://localhost:3000/api/threads/thread-1/messages",
+      "http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/messages",
       {
         method: "POST",
         body: JSON.stringify({ body: "Hello" }),
@@ -86,7 +86,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
       "@/app/api/threads/[threadId]/messages/route"
     );
     const res = await POST(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
 
     expect(res.status).toBe(401);
@@ -104,7 +104,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
     } as never);
 
     const req = new NextRequest(
-      "http://localhost:3000/api/threads/thread-1/messages",
+      "http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/messages",
       {
         method: "POST",
         body: JSON.stringify({}),
@@ -116,7 +116,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
       "@/app/api/threads/[threadId]/messages/route"
     );
     const res = await POST(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
 
     expect(res.status).toBe(400);
@@ -136,7 +136,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
     const mockMessageRepo = {
       create: vi.fn().mockResolvedValue({
         id: "msg-1",
-        thread_id: "thread-1",
+        thread_id: "00000000-0000-4000-8000-000000000001",
         author_id: "user-1",
         author_kind: "user",
         author_name: null,
@@ -161,7 +161,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
     vi.mocked(createMessageRepo).mockReturnValue(mockMessageRepo as never);
 
     const req = new NextRequest(
-      "http://localhost:3000/api/threads/thread-1/messages",
+      "http://localhost:3000/api/threads/00000000-0000-4000-8000-000000000001/messages",
       {
         method: "POST",
         body: JSON.stringify({ body: "Hello world" }),
@@ -173,7 +173,7 @@ describe("POST /api/threads/[threadId]/messages", () => {
       "@/app/api/threads/[threadId]/messages/route"
     );
     const res = await POST(req, {
-      params: Promise.resolve({ threadId: "thread-1" }),
+      params: Promise.resolve({ threadId: "00000000-0000-4000-8000-000000000001" }),
     } as never);
 
     expect(res.status).toBe(201);
