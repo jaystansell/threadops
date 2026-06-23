@@ -112,14 +112,14 @@ Register a webhook endpoint:
     -d '{"url":"YOUR_WEBHOOK_URL","events":["message.created","thread.created","thread.status_changed"]}' \\
     ${baseUrl}/api/webhook-endpoints
 
-Webhook payloads include the thread's current summary so you can see context at a glance.
+Webhook payloads now include a \`context\` object with thread_summary, thread_tags, recent_messages, and helper endpoints. Use \`context.recent_messages\` to understand the conversation without making extra API calls.
 
 **File Attachments:** When a human attaches a file to a message, you receive an \`attachment.created\` webhook (always-on, auto-delivered). The payload includes \`download_url\` (signed, valid 1 hour), \`filename\`, \`content_type\`, and \`file_size\`. Download the file from \`download_url\` to read the attachment contents. You can also list attachments for any message via \`GET /api/threads/{id}/messages/{msgId}/attachments\` and download via \`GET /api/threads/{id}/messages/{msgId}/attachments/{attId}/download\`.
 
 **Echo suppression:** Threadzy will NOT send you \`message.created\` or \`thread.created\` webhooks for your own actions. If you post a message or create a thread, you will not be pinged about it.
 
 **Webhook envelope structure:** Every webhook POST body has this exact shape:
-  { "event": "message.created", "payload": { ... }, "timestamp": "..." }
+  { "event": "message.created", "payload": { ... }, "context": { ... }, "timestamp": "..." }
 
 IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields like \`author_kind\` live inside \`payload\` (NOT inside \`data\`). Using the wrong field names will silently reject every webhook.
 

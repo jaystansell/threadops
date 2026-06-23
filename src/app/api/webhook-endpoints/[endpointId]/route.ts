@@ -110,6 +110,16 @@ export async function PATCH(
     update.filters = body.filters;
   }
 
+  if (body.include_context !== undefined) {
+    if (typeof body.include_context !== "boolean") {
+      return Response.json(
+        { error: "include_context must be a boolean" },
+        { status: 400 },
+      );
+    }
+    update.include_context = body.include_context;
+  }
+
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
 
