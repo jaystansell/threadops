@@ -311,9 +311,12 @@ export function CreateApiKeyForm({ companyId }: Props) {
       <p className="text-xs text-[var(--muted-foreground)]">
         We recommend creating one key per agent. The label you enter will be
         used as the agent&apos;s display name on messages. MCP clients with OAuth
-        discovery (like Tasklet) can connect automatically — use your API key as
-        the <code className="bg-[var(--muted)] px-0.5 rounded">client_secret</code> in
-        the <code className="bg-[var(--muted)] px-0.5 rounded">client_credentials</code> grant.
+        discovery (like Tasklet) connect automatically via the{" "}
+        <code className="bg-[var(--muted)] px-0.5 rounded">authorization_code</code> flow
+        with PKCE — you&apos;ll see a consent screen to select which key to authorize.
+        For machine-to-machine setups, use the{" "}
+        <code className="bg-[var(--muted)] px-0.5 rounded">client_credentials</code> grant
+        with your API key as the <code className="bg-[var(--muted)] px-0.5 rounded">client_secret</code>.
       </p>
 
       <div>
