@@ -649,7 +649,12 @@ export function ThreadSidebar({
       grouped = grouped.map((g) => ({
         ...g,
         subGroups: g.subGroups?.filter((sub) => !revokedAgentNames.has(sub.label)),
-      })).filter((g) => (g.subGroups ? g.subGroups.length > 0 : true) || g.threads.length > 0);
+      })).filter((g) => (g.subGroups ? g.subGroups.length > 0 : true));
+    } else if (groupBy === "timeline") {
+      grouped = grouped.map((g) => ({
+        ...g,
+        threads: g.threads.filter((t) => !revokedAgentNames.has(t.agent_name ?? "")),
+      })).filter((g) => g.threads.length > 0);
     }
   }
 
