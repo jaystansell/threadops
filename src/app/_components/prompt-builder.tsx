@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+export interface PromptBuilderConfig {
+  promptReady: boolean;
+  hasWebhookUrl: boolean;
+}
+
 interface PromptBuilderProps {
   apiKey: string;
   agentLabel: string;
+  onConfigChange?: (config: PromptBuilderConfig) => void;
 }
 
 interface PromptAnswers {
@@ -104,8 +110,6 @@ function buildDynamicPrompt(
 
   const hasWebhook = answers.hasWebhookUrl === "yes";
   const wantsPolling = answers.includePolling === "yes";
-  const limitedTools =
-    answers.canSearchData === "no" || answers.canSearchData === "not_sure";
   const selectedTools = [...answers.tools];
 
   let stepNumber = 1;
@@ -209,8 +213,11 @@ Post a message to any thread confirming you are connected:
     ${baseUrl}/api/threads/THREAD_ID/messages
 `;
 
-  /* --- Subagent handler warning --- */
-  if (limitedTools) {
+  /* --- Subagent handler / tool warnings --- */
+  const limitedSearch =
+    answers.canSearchData === "no" || answers.canSearchData === "not_sure";
+
+  if (limitedSearch) {
     prompt += `
 ---
 
@@ -223,21 +230,24 @@ Your webhook/polling handler must be able to **autonomously** process messages �
       prompt += `You indicated your agent **cannot** search emails, calendars, and SOPs. This means your handler may not be able to fully respond to human requests that require looking up external information. Consider connecting your agent to these data sources before going live.
 
 `;
-    } else if (answers.canSearchData === "not_sure") {
+    } else {
       prompt += `You're **not sure** whether your agent can search emails, calendars, and SOPs. Verify this before going live — without access to these data sources, your handler may only be able to give generic responses.
 
 `;
     }
+  }
 
-    if (selectedTools.length > 0 && selectedTools.length < TOOL_OPTIONS.length) {
-      const missing = TOOL_OPTIONS.filter((t) => !answers.tools.has(t));
-      if (missing.length > 0) {
-        prompt += `Your agent has access to: ${selectedTools.join(", ")}
-Missing tools: ${missing.join(", ")}
+  if (selectedTools.length > 0 && selectedTools.length < TOOL_OPTIONS.length) {
+    const missing = TOOL_OPTIONS.filter((t) => !answers.tools.has(t));
+    if (missing.length > 0) {
+      if (!limitedSearch) {
+        prompt += `\n---\n\n`;
+      }
+      prompt += `**Agent tools:** ${selectedTools.join(", ")}
+**Missing tools:** ${missing.join(", ")}
 Some thread tasks may require tools your agent doesn't have. The agent should clearly communicate when it cannot fulfill a request due to missing tools.
 
 `;
-      }
     }
   }
 
@@ -386,7 +396,7 @@ function RadioGroup({
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
-export function PromptBuilder({ apiKey, agentLabel }: PromptBuilderProps) {
+export function PromptBuilder({ apiKey, agentLabel, onConfigChange }: PromptBuilderProps) {
   const [answers, setAnswers] = useState<PromptAnswers>({
     hasWebhookUrl: null,
     canSearchData: null,
@@ -395,14 +405,30 @@ export function PromptBuilder({ apiKey, agentLabel }: PromptBuilderProps) {
   });
   const [promptCopied, setPromptCopied] = useState(false);
 
+  const pollingAutoSet = answers.hasWebhookUrl === "no";
+  const effectivePolling = pollingAutoSet ? "yes" : answers.includePolling;
+
   const allAnswered =
     answers.hasWebhookUrl !== null &&
     answers.canSearchData !== null &&
-    answers.includePolling !== null;
+    (pollingAutoSet || answers.includePolling !== null);
+
+  useEffect(() => {
+    onConfigChange?.({
+      promptReady: allAnswered,
+      hasWebhookUrl: answers.hasWebhookUrl === "yes",
+    });
+  }, [allAnswered, answers.hasWebhookUrl, onConfigChange]);
 
   const generatedPrompt = useMemo(
-    () => (allAnswered ? buildDynamicPrompt(apiKey, agentLabel, answers) : ""),
-    [apiKey, agentLabel, answers, allAnswered],
+    () =>
+      allAnswered
+        ? buildDynamicPrompt(apiKey, agentLabel, {
+            ...answers,
+            includePolling: effectivePolling,
+          })
+        : "",
+    [apiKey, agentLabel, answers, allAnswered, effectivePolling],
   );
 
   function toggleTool(tool: string) {
@@ -482,33 +508,43 @@ export function PromptBuilder({ apiKey, agentLabel }: PromptBuilderProps) {
         />
       </div>
 
-      {/* Question 3 */}
-      <div className="space-y-1.5 rounded-lg border border-[var(--border)] p-3">
-        <div className="flex items-start">
-          <p className="text-sm font-medium">
-            Include polling as a fallback to webhooks?
+      {/* Question 3 — only shown when agent has a webhook URL */}
+      {answers.hasWebhookUrl === "yes" && (
+        <div className="space-y-1.5 rounded-lg border border-[var(--border)] p-3">
+          <div className="flex items-start">
+            <p className="text-sm font-medium">
+              Include polling as a fallback to webhooks?
+            </p>
+            <AskAgentTooltip promptKey="includePolling" />
+          </div>
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Uses more tokens but ensures your agent stays connected if webhooks
+            go down.
           </p>
-          <AskAgentTooltip promptKey="includePolling" />
+          <RadioGroup
+            name="includePolling"
+            options={[
+              { value: "yes", label: "Yes" },
+              { value: "no", label: "No" },
+            ]}
+            value={answers.includePolling}
+            onChange={(v) =>
+              setAnswers((prev) => ({
+                ...prev,
+                includePolling: v as PromptAnswers["includePolling"],
+              }))
+            }
+          />
         </div>
-        <p className="text-xs text-[var(--muted-foreground)]">
-          Uses more tokens but ensures your agent stays connected if webhooks go
-          down.
-        </p>
-        <RadioGroup
-          name="includePolling"
-          options={[
-            { value: "yes", label: "Yes" },
-            { value: "no", label: "No" },
-          ]}
-          value={answers.includePolling}
-          onChange={(v) =>
-            setAnswers((prev) => ({
-              ...prev,
-              includePolling: v as PromptAnswers["includePolling"],
-            }))
-          }
-        />
-      </div>
+      )}
+      {pollingAutoSet && (
+        <div className="rounded-lg border border-[var(--border)] p-3">
+          <p className="text-xs text-[var(--muted-foreground)]">
+            Polling will be included automatically since your agent has no
+            webhook URL.
+          </p>
+        </div>
+      )}
 
       {/* Question 4 */}
       <div className="space-y-1.5 rounded-lg border border-[var(--border)] p-3">

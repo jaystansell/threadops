@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { VALID_SCOPES } from "@/core/rules/api-key";
 import { PromptBuilder } from "./prompt-builder";
+import type { PromptBuilderConfig } from "./prompt-builder";
 
 interface Props {
   companyId: string;
@@ -26,6 +27,10 @@ export function CreateApiKeyForm({ companyId }: Props) {
   const [result, setResult] = useState<CreateResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [createdLabel, setCreatedLabel] = useState("");
+  const [promptConfig, setPromptConfig] = useState<PromptBuilderConfig>({
+    promptReady: false,
+    hasWebhookUrl: false,
+  });
   const [setupPhase, setSetupPhase] = useState<SetupPhase>("created");
   const [pollSeconds, setPollSeconds] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,52 +121,71 @@ export function CreateApiKeyForm({ companyId }: Props) {
           </div>
         </div>
 
-        <PromptBuilder apiKey={result.plaintext_key} agentLabel={createdLabel} />
+        <PromptBuilder
+          apiKey={result.plaintext_key}
+          agentLabel={createdLabel}
+          onConfigChange={setPromptConfig}
+        />
 
         {setupPhase === "created" && (
           <div className="space-y-3 border-t border-[var(--border)] pt-4">
-            <p className="text-xs text-yellow-700 dark:text-yellow-300">
-              <strong>Next:</strong> Copy the prompt above and share it with your agent.
-              Some agents (like Tasklet) need you to manually provide the webhook URL — they can&apos;t see it themselves.
-            </p>
-            <button
-              type="button"
-              onClick={async () => {
-                setSetupPhase("shared");
-                // Mark as shared in backend (best-effort, column may not exist yet)
-                try {
-                  await fetch(`/api/companies/${companyId}/api-keys/${result.id}/shared`, {
-                    method: "POST",
-                  });
-                } catch { /* migration may not be run yet */ }
-                // Start monitoring
-                setSetupPhase("monitoring");
-                setPollSeconds(0);
-                timerRef.current = setInterval(() => {
-                  setPollSeconds((s) => s + 1);
-                }, 1000);
-                pollRef.current = setInterval(async () => {
-                  try {
-                    const res = await fetch(`/api/companies/${companyId}/api-keys/${result.id}/setup-status`);
-                    if (res.ok) {
-                      const data = await res.json();
-                      if (data.has_webhook) {
+            {!promptConfig.promptReady ? (
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                <strong>Next:</strong> Answer the questions above to generate your agent&apos;s setup prompt.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  <strong>Next:</strong> Copy the prompt above and share it with your agent.
+                  {promptConfig.hasWebhookUrl && (
+                    <> Some agents (like Tasklet) need you to manually provide the webhook URL — they can&apos;t see it themselves.</>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSetupPhase("shared");
+                    // Mark as shared in backend (best-effort, column may not exist yet)
+                    try {
+                      await fetch(`/api/companies/${companyId}/api-keys/${result.id}/shared`, {
+                        method: "POST",
+                      });
+                    } catch { /* migration may not be run yet */ }
+
+                    if (promptConfig.hasWebhookUrl) {
+                      // Start monitoring for webhook registration
+                      setSetupPhase("monitoring");
+                      setPollSeconds(0);
+                      timerRef.current = setInterval(() => {
+                        setPollSeconds((s) => s + 1);
+                      }, 1000);
+                      pollRef.current = setInterval(async () => {
+                        try {
+                          const res = await fetch(`/api/companies/${companyId}/api-keys/${result.id}/setup-status`);
+                          if (res.ok) {
+                            const data = await res.json();
+                            if (data.has_webhook) {
+                              stopPolling();
+                              setSetupPhase("success");
+                            }
+                          }
+                        } catch { /* ignore */ }
+                      }, 10000);
+                      setTimeout(() => {
                         stopPolling();
-                        setSetupPhase("success");
-                      }
+                        setSetupPhase((prev) => prev === "monitoring" ? "needs-manual-webhook" : prev);
+                      }, POLL_DURATION * 1000);
+                    } else {
+                      // Polling-only setup — skip webhook monitoring
+                      setSetupPhase("success");
                     }
-                  } catch { /* ignore */ }
-                }, 10000); // poll every 10s
-                // Auto-stop after 5 min
-                setTimeout(() => {
-                  stopPolling();
-                  setSetupPhase((prev) => prev === "monitoring" ? "needs-manual-webhook" : prev);
-                }, POLL_DURATION * 1000);
-              }}
-              className="w-full px-4 py-2.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
-            >
-              I&apos;ve shared this with my agent
-            </button>
+                  }}
+                  className="w-full px-4 py-2.5 text-sm font-medium rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+                >
+                  I&apos;ve shared this with my agent
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={handleDismiss}
