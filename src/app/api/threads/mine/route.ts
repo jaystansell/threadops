@@ -34,6 +34,17 @@ export async function GET(req: NextRequest) {
 
   const db = createServerClient();
 
+  // Total count query (independent of limit/pagination)
+  const countQuery = db
+    .from("threads")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("agent_api_key_id", keyId);
+
+  if (status === "open" || status === "archived") {
+    countQuery.eq("status", status);
+  }
+
   const query = db
     .from("threads")
     .select("id, title, status, created_at, updated_at")
@@ -46,7 +57,10 @@ export async function GET(req: NextRequest) {
     query.eq("status", status);
   }
 
-  const { data, error } = await query;
+  const [{ count: totalCount }, { data, error }] = await Promise.all([
+    countQuery,
+    query,
+  ]);
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
@@ -56,7 +70,9 @@ export async function GET(req: NextRequest) {
 
   return Response.json({
     agent: keyLabel,
-    thread_count: data?.length ?? 0,
+    total_threads: totalCount ?? 0,
+    returned: data?.length ?? 0,
+    limit,
     threads: (data ?? []).map((t) => ({
       ...t,
       thread_url: `${appUrl}/threads/${t.id}`,

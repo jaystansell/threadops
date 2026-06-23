@@ -109,7 +109,9 @@ const SECTIONS: Section[] = [
         ],
         responseExample: {
           agent: "Support Bot",
-          thread_count: 2,
+          total_threads: 12,
+          returned: 2,
+          limit: 50,
           threads: [
             {
               id: "dc9a8b2e-41b6-4491-98ce-511e3f3a44d3",
