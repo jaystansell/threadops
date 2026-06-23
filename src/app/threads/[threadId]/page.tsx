@@ -8,6 +8,8 @@ import { ThreadDetailClient } from "@/app/_components/thread-detail-client";
 import { FormattedDate } from "@/app/_components/formatted-date";
 import { ThreadActionsPanel } from "@/app/_components/thread-actions-panel";
 import { ThreadSavingsBanner } from "@/app/_components/thread-savings-banner";
+import { CopyableId } from "@/app/_components/copyable-id";
+import { ThreadDebugPanel } from "@/app/_components/thread-debug-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -105,6 +107,7 @@ export default async function ThreadDetailPage(
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
+        <CopyableId label="Thread ID" value={threadId} />
         <h2 className="text-xl font-bold">{thread.title}</h2>
         {isAgentRevoked && (
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-red-800/50 bg-red-950/30 px-3 py-2">
@@ -140,6 +143,20 @@ export default async function ThreadDetailPage(
           initialTags={tags}
           initialSummary={thread.summary ?? ""}
         />
+        <ThreadDebugPanel
+          threadId={threadId}
+          agentName={agentName}
+          threadTitle={thread.title}
+          messageCount={messages.length}
+          lastMessageAt={messages.length > 0 ? messages[messages.length - 1].created_at : null}
+          lastUserMessageAt={
+            [...messages].reverse().find((m) => m.author_kind === "user")?.created_at ?? null
+          }
+          lastAgentMessageAt={
+            [...messages].reverse().find((m) => m.author_kind === "agent")?.created_at ?? null
+          }
+          isAgentRevoked={isAgentRevoked}
+        />
         <ThreadSavingsBanner
           messageCount={messages.length}
           readCount={readCount}
@@ -154,6 +171,7 @@ export default async function ThreadDetailPage(
         userId={userCompany.userId}
         isOpen={thread.status === "open"}
         isAgentRevoked={isAgentRevoked}
+        agentName={agentName}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
       />

@@ -10,6 +10,10 @@ import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
 import { FormattedDate } from "./formatted-date";
 import { MessageAttachments, AttachmentBadge } from "./message-attachments";
+import { MessageDetailsPanel } from "./message-details-panel";
+import { AwaitingResponseIndicator } from "./awaiting-response-indicator";
+import { UnresponsiveAgentHint } from "./unresponsive-agent-hint";
+import { buildDiagnosticPrompt } from "./thread-debug-panel";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -83,6 +87,7 @@ interface ThreadTimelineProps {
   sortOrder: SortOrder;
   threadEvents?: ThreadEvent[];
   attachmentCounts?: Record<string, number>;
+  agentName?: string | null;
 }
 
 export function ThreadTimeline({
@@ -91,6 +96,7 @@ export function ThreadTimeline({
   sortOrder,
   threadEvents = [],
   attachmentCounts = {},
+  agentName = null,
 }: ThreadTimelineProps) {
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -396,9 +402,46 @@ export function ThreadTimeline({
                 Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
               </span>
             </div>
+            {msg.metadata && (
+              <MessageDetailsPanel
+                metadata={msg.metadata}
+                messageId={msg.id}
+                messageCreatedAt={msg.created_at}
+              />
+            )}
           </div>
         );
       })}
+      {(() => {
+        const msgs = combined;
+        if (msgs.length === 0) return null;
+        const lastMsg = sortOrder === "new-first" ? msgs.reduce((a, b) => new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b) : msgs[msgs.length - 1];
+        if (lastMsg.author_kind !== "user") return null;
+
+        const lastAgentMsg = msgs.filter((m) => m.author_kind === "agent").sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
+        const diagPrompt = buildDiagnosticPrompt({
+          threadId,
+          agentName,
+          threadTitle: "",
+          messageCount: msgs.length,
+          lastMessageAt: lastMsg.created_at,
+          isAgentRevoked: false,
+          baseUrl,
+        });
+
+        return (
+          <>
+            <AwaitingResponseIndicator agentName={agentName} />
+            <UnresponsiveAgentHint
+              lastUserMessageAt={lastMsg.created_at}
+              lastAgentMessageAt={lastAgentMsg?.created_at ?? null}
+              agentName={agentName}
+              diagnosticPrompt={diagPrompt}
+            />
+          </>
+        );
+      })()}
     </div>
   );
 }

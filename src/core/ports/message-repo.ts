@@ -1,4 +1,4 @@
-import type { Message, MessageId, MessageAuthorKind } from "../types";
+import type { Message, MessageId, MessageAuthorKind, MessageMetadata } from "../types";
 import type { ThreadId } from "../types";
 
 export interface MessageRepo {
@@ -13,4 +13,5 @@ export interface MessageCreateInput {
   author_kind: MessageAuthorKind;
   author_name?: string | null;
   body: string;
+  metadata?: MessageMetadata | null;
 }

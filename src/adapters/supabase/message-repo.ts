@@ -45,6 +45,18 @@ export function createMessageRepo(db: SupabaseClient): MessageRepo {
         .select()
         .single();
       if (error) throw error;
+
+      // Best-effort: attach metadata if the column exists (migration 031)
+      if (input.metadata != null) {
+        const { data: updated } = await db
+          .from("messages")
+          .update({ metadata: input.metadata })
+          .eq("id", (data as Message).id)
+          .select()
+          .single();
+        if (updated) return updated as Message;
+      }
+
       return data as Message;
     },
   };
