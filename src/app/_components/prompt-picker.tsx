@@ -18,13 +18,13 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
   const [open, setOpen] = useState(false);
   const [prompts, setPrompts] = useState<SavedPrompt[] | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const fetchedRef = useRef(false);
+  const lastFetchedKeyRef = useRef<string | null | undefined>(undefined);
 
   const fetchPrompts = useCallback(async () => {
     try {
       const res = await fetch("/api/saved-prompts");
       if (!res.ok) {
-        fetchedRef.current = false;
+        lastFetchedKeyRef.current = undefined;
         setPrompts([]);
         return;
       }
@@ -38,7 +38,7 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
       });
       setPrompts(filtered);
     } catch {
-      fetchedRef.current = false;
+      lastFetchedKeyRef.current = undefined;
       setPrompts([]);
     }
   }, [apiKeyId]);
@@ -46,13 +46,13 @@ export function PromptPicker({ apiKeyId, onSelect }: PromptPickerProps) {
   const handleToggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
-      if (next && !fetchedRef.current) {
-        fetchedRef.current = true;
+      if (next && lastFetchedKeyRef.current !== apiKeyId) {
+        lastFetchedKeyRef.current = apiKeyId;
         fetchPrompts();
       }
       return next;
     });
-  }, [fetchPrompts]);
+  }, [fetchPrompts, apiKeyId]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {

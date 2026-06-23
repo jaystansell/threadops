@@ -22,6 +22,7 @@ export type ThreadWithLastMessage = Thread & {
   last_message_at?: string;
   agent_name?: string | null;
   tags?: string[];
+  agent_processing_status?: "acknowledged" | "processing" | "completed" | "escalated" | null;
 };
 
 export type AgentGroup = {
@@ -120,6 +121,22 @@ export default async function ThreadsLayout({
     }
   }
 
+  // Fetch latest agent processing status per thread
+  const processingStatusMap = new Map<string, string>();
+  if (threadIds.length > 0) {
+    const { data: statusRows } = await db
+      .from("agent_processing_status")
+      .select("thread_id, status, created_at")
+      .in("thread_id", threadIds)
+      .order("created_at", { ascending: false });
+    for (const row of statusRows ?? []) {
+      // Keep only the most recent status per thread
+      if (!processingStatusMap.has(row.thread_id)) {
+        processingStatusMap.set(row.thread_id, row.status);
+      }
+    }
+  }
+
   const threadsWithLastMsg: ThreadWithLastMessage[] = threads.map((t) => {
     const lm = lastMessageMap.get(t.id);
     return {
@@ -129,6 +146,7 @@ export default async function ThreadsLayout({
       last_author_name: lm?.author_name,
       last_message_at: lm?.created_at,
       agent_name: agentMap.get(t.id) ?? null,
+      agent_processing_status: (processingStatusMap.get(t.id) as ThreadWithLastMessage["agent_processing_status"]) ?? null,
     };
   });
 

@@ -1019,6 +1019,7 @@ export function ThreadSidebar({
                             {subOpen && subSorted.map((thread) => {
                               const isActive = thread.id === activeThreadId;
                               const isPinned = pinnedThreads.has(thread.id);
+                              const hasAck = thread.agent_processing_status === "acknowledged" || thread.agent_processing_status === "processing";
                               return (
                                 <div key={thread.id} className="relative group">
                                   <Link
@@ -1029,15 +1030,18 @@ export function ThreadSidebar({
                                         : "hover:bg-[var(--muted)]"
                                     }`}
                                   >
-                                    <div className="flex items-start gap-1">
+                                    <div className="flex items-center gap-1">
                                       {isPinned && (
-                                        <svg className="w-3 h-3 shrink-0 mt-0.5 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-3 h-3 shrink-0 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
                                           <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                                         </svg>
                                       )}
                                       <h3 className={`text-sm leading-tight flex-1 ${isActive ? "font-semibold" : "font-medium"}`}>
                                         {thread.title}
                                       </h3>
+                                      {hasAck && (
+                                        <span className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" title="Agent processing" />
+                                      )}
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -1123,6 +1127,7 @@ export function ThreadSidebar({
                     visibleThreads.map((thread) => {
                       const isActive = thread.id === activeThreadId;
                       const isPinned = pinnedThreads.has(thread.id);
+                      const hasAck = thread.agent_processing_status === "acknowledged" || thread.agent_processing_status === "processing";
                       return (
                         <div key={thread.id} className="relative group">
                           <Link
@@ -1133,9 +1138,9 @@ export function ThreadSidebar({
                                 : "hover:bg-[var(--muted)]"
                             }`}
                           >
-                            <div className="flex items-start gap-1">
+                            <div className="flex items-center gap-1">
                               {isPinned && (
-                                <svg className="w-3 h-3 shrink-0 mt-0.5 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-3 h-3 shrink-0 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                                 </svg>
                               )}
@@ -1144,6 +1149,9 @@ export function ThreadSidebar({
                               >
                                 {thread.title}
                               </h3>
+                              {hasAck && (
+                                <span className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" title="Agent processing" />
+                              )}
                               <button
                                 type="button"
                                 onClick={(e) => {
