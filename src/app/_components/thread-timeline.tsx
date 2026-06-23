@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import Markdown from "react-markdown";
+import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import type { Message } from "@/core/types";
@@ -414,6 +414,9 @@ export function ThreadTimeline({
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <Markdown
                 remarkPlugins={[remarkGfm, remarkBreaks, remarkSlackChannels]}
+                urlTransform={(url) =>
+                  url.startsWith("slack-channel:") ? url : defaultUrlTransform(url)
+                }
                 components={{
                   a: ({ children, href, ...props }) => {
                     if (href?.startsWith("slack-channel:")) {
