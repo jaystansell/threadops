@@ -36,6 +36,15 @@ export async function postMessage(
       .eq("id", input.thread_id);
   }
 
+  const messageRepo = createMessageRepo(db);
+  const message = await messageRepo.create({
+    thread_id: input.thread_id as ThreadId,
+    author_id: auth.keyId,
+    author_kind: "agent",
+    author_name: auth.keyLabel,
+    body: input.body.trim(),
+  });
+
   // Auto-complete processing status when agent responds
   await db.from("agent_processing_status").insert({
     thread_id: input.thread_id,
@@ -43,12 +52,5 @@ export async function postMessage(
     status: "completed",
   });
 
-  const messageRepo = createMessageRepo(db);
-  return messageRepo.create({
-    thread_id: input.thread_id as ThreadId,
-    author_id: auth.keyId,
-    author_kind: "agent",
-    author_name: auth.keyLabel,
-    body: input.body.trim(),
-  });
+  return message;
 }
