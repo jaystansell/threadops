@@ -219,7 +219,7 @@ export async function PATCH(
       "thread.status_changed",
       {
         thread_id: threadId,
-        thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app"}/threads/${threadId}`,
+        thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai"}/threads/${threadId}`,
         reply_endpoint: `POST /api/threads/${threadId}/messages`,
         previous_status: thread.status,
         new_status: updated.status,

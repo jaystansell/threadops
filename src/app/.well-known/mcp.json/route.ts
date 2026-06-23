@@ -1,5 +1,5 @@
 const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL || "https://threadops-jade.vercel.app";
+  process.env.NEXT_PUBLIC_APP_URL || "https://threadzy.ai";
 
 export async function GET() {
   return Response.json({

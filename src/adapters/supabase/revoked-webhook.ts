@@ -67,7 +67,7 @@ export async function dispatchRevokedWebhook(
   if (!endpointsWithSecrets || endpointsWithSecrets.length === 0) return;
 
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://threadops-jade.vercel.app";
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai";
 
   const revokedAt = new Date().toISOString();
 

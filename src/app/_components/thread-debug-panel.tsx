@@ -228,7 +228,7 @@ export function ThreadDebugPanel(props: ThreadDebugPanelProps) {
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : "https://threadops-jade.vercel.app";
+      : "https://threadzy.ai";
 
   const prompt = buildDiagnosticPrompt({ ...promptProps, threadId, messageCount: liveMessageCount, baseUrl });
 
