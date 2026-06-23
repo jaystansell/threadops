@@ -14,6 +14,7 @@ import { MessageDetailsPanel } from "./message-details-panel";
 import { AwaitingResponseIndicator } from "./awaiting-response-indicator";
 import { UnresponsiveAgentHint } from "./unresponsive-agent-hint";
 import { buildDiagnosticPrompt } from "./thread-debug-panel";
+import { SourceIcon, resolveSourceType } from "./source-icon";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -436,6 +437,7 @@ export function ThreadTimeline({
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
+              <SourceIcon sourceType={resolveSourceType(msg.author_kind, msg.metadata)} size={12} />
               <span>
                 Delivered via {deliveryMethod(msg.author_kind)} &middot; {relativeTime(msg.created_at)}
               </span>
