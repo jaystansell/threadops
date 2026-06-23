@@ -477,11 +477,12 @@ export function ThreadSidebar({
   useEffect(() => {
     if (mountFetchedRef.current) return;
     mountFetchedRef.current = true;
-    if (status !== "open") {
-      fetchThreads(status, search);
+    const savedStatus = readStorageString(STATUS_FILTER_KEY, "open");
+    if (savedStatus !== "open") {
+      // Defer to avoid synchronous setState inside effect
+      queueMicrotask(() => fetchThreads(savedStatus, ""));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchThreads]);
 
   function handleStatusChange(newStatus: string) {
     setStatus(newStatus);
