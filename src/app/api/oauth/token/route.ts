@@ -11,6 +11,14 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Expose-Headers": "WWW-Authenticate",
+};
+
+// RFC 6749 Section 5.1: token responses MUST include these headers
+const TOKEN_RESPONSE_HEADERS = {
+  ...CORS_HEADERS,
+  "Cache-Control": "no-store",
+  "Pragma": "no-cache",
 };
 
 function jsonError(
@@ -130,7 +138,7 @@ async function handleClientCredentials(
       expires_in: 3600,
       scope: scopes,
     },
-    { headers: CORS_HEADERS },
+    { headers: TOKEN_RESPONSE_HEADERS },
   );
 }
 
@@ -224,7 +232,7 @@ async function handleAuthorizationCode(
       expires_in: 3600,
       scope: codeRecord.scope || keyScopes,
     },
-    { headers: CORS_HEADERS },
+    { headers: TOKEN_RESPONSE_HEADERS },
   );
 }
 
