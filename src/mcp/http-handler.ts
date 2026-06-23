@@ -9,6 +9,12 @@ const BASE_URL =
 
 const RESOURCE_METADATA_URL = `${BASE_URL}/mcp/.well-known/oauth-protected-resource`;
 
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key",
+};
+
 function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,6 +35,11 @@ function extractApiKey(req: Request): string | null {
 }
 
 export async function handleMcpRequest(req: Request): Promise<Response> {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+
   const apiKey = extractApiKey(req);
   if (!apiKey) {
     return new Response(
@@ -36,6 +47,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
       {
         status: 401,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
           "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
         },
@@ -56,6 +68,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
         {
           status: 429,
           headers: {
+            ...CORS_HEADERS,
             "Content-Type": "application/json",
             "Retry-After": String(retryAfterSec),
             "X-RateLimit-Limit": "60",
@@ -69,6 +82,7 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
       {
         status: 401,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
           "WWW-Authenticate": `Bearer resource_metadata="${RESOURCE_METADATA_URL}"`,
         },
@@ -95,7 +109,17 @@ export async function handleMcpRequest(req: Request): Promise<Response> {
   await server.connect(transport);
 
   try {
-    return await transport.handleRequest(req);
+    const response = await transport.handleRequest(req);
+    // Add CORS headers to MCP transport responses
+    const corsResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+    for (const [k, v] of Object.entries(CORS_HEADERS)) {
+      corsResponse.headers.set(k, v);
+    }
+    return corsResponse;
   } finally {
     await transport.close();
     await server.close();

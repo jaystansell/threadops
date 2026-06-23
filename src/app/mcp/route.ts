@@ -16,3 +16,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   return handler(req);
 }
+
+export async function OPTIONS(req: Request) {
+  return handler(req);
+}
