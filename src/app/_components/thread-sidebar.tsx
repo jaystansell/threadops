@@ -1040,7 +1040,7 @@ export function ThreadSidebar({
                                         {thread.title}
                                       </h3>
                                       {hasAck && (
-                                        <span className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" title="Agent processing" />
+                                        <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.7)]" title="Agent processing" />
                                       )}
                                       <button
                                         type="button"
@@ -1150,7 +1150,7 @@ export function ThreadSidebar({
                                 {thread.title}
                               </h3>
                               {hasAck && (
-                                <span className="shrink-0 w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" title="Agent processing" />
+                                <span className="shrink-0 w-3.5 h-3.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.7)]" title="Agent processing" />
                               )}
                               <button
                                 type="button"
