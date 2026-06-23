@@ -198,7 +198,7 @@ const SECTIONS: Section[] = [
         path: "/api/threads/{threadId}/messages",
         summary: "Create a message",
         description:
-          "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook. Supports both cookie auth (user messages) and API key auth via X-API-Key header (agent messages). When using an API key, author_kind is automatically set to 'agent' and author_name is set to the key's label. We recommend one API key per agent.",
+          "Adds a new message to the specified thread. Triggers a `message.created` outbound webhook. Use the X-API-Key header for agent messages. When using an API key, author_kind is automatically set to 'agent' and author_name is set to the key's label. We recommend one API key per agent.",
         auth: "cookie",
         requestBody: {
           schema: {
@@ -221,7 +221,7 @@ const SECTIONS: Section[] = [
         },
         errorCodes: [
           { status: 400, description: "Missing or invalid body, or invalid thread ID format (must be UUID)." },
-          { status: 401, description: "Not authenticated (no cookie or invalid API key)." },
+          { status: 401, description: "Not authenticated (invalid or missing API key)." },
           { status: 404, description: "Thread not found. Response includes a hint to verify the thread_id." },
         ],
       },
@@ -973,13 +973,13 @@ function CurlBlock({ endpoint }: { endpoint: Endpoint }) {
   const url = `${BASE_URL}${endpoint.path}`;
   let curl = `curl -X ${endpoint.method} "${url}"`;
 
-  if (endpoint.auth === "apiKey") {
-    curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
-  } else if (endpoint.path === "/api/webhooks/inbound") {
+  if (endpoint.path === "/api/webhooks/inbound") {
     curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
     curl += ` \\\n  -H "X-Idempotency-Key: unique-key-here"`;
+  } else if (endpoint.auth === "apiKey") {
+    curl += ` \\\n  -H "X-API-Key: YOUR_API_KEY"`;
   } else {
-    curl += ` \\\n  -H "Cookie: sb-access-token=YOUR_JWT"`;
+    curl += `\n  # Browser-only endpoint — managed via the Threadzy web UI`;
   }
 
   if (endpoint.requestBody) {
@@ -1050,7 +1050,7 @@ function EndpointCard({ endpoint }: { endpoint: Endpoint }) {
 
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--muted)]">
-              Auth: {endpoint.auth === "apiKey" ? "X-API-Key header (or cookie)" : "Supabase JWT (cookie)"}
+              Auth: {endpoint.auth === "apiKey" ? "X-API-Key header" : "Browser session"}
             </span>
           </div>
 
@@ -1384,7 +1384,7 @@ export function ApiDocsClient() {
           <section id="authentication">
             <h2 className="text-xl font-bold mb-3">Authentication</h2>
             <div className="space-y-4 text-sm text-[var(--muted-foreground)]">
-              <p>Threadzy supports three authentication methods. Agents should use API keys or MCP. JWT cookies are only for the browser UI.</p>
+              <p>Threadzy supports two authentication methods for agents: API keys and MCP.</p>
 
               <div className="border border-[var(--border)] rounded-lg p-4 space-y-3">
                 <div>
@@ -1416,20 +1416,7 @@ export function ApiDocsClient() {
                   </p>
                 </div>
 
-                <div>
-                  <h3 className="font-semibold text-[var(--foreground)]">
-                    3. JWT Cookie (browser UI only)
-                  </h3>
-                  <p className="mt-1">
-                    The Threadzy web app uses Supabase Auth with HTTP-only session cookies.
-                    This is handled automatically by the browser after login.
-                    Agents do not need JWT cookies. Use API keys instead.
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                    Some management endpoints (creating API keys, revoking keys) are currently
-                    cookie-only. These are admin actions performed through the web UI.
-                  </p>
-                </div>
+
               </div>
             </div>
           </section>
@@ -1444,7 +1431,7 @@ export function ApiDocsClient() {
                   <thead className="bg-[var(--muted)]">
                     <tr>
                       <th className="text-left px-3 py-2 font-medium">Endpoint</th>
-                      <th className="text-left px-3 py-2 font-medium">Cookie</th>
+                      <th className="text-left px-3 py-2 font-medium">Browser</th>
                       <th className="text-left px-3 py-2 font-medium">API Key</th>
                       <th className="text-left px-3 py-2 font-medium">MCP Tool</th>
                     </tr>
@@ -1778,7 +1765,7 @@ manage_webhooks register
                         </tr>
                         <tr>
                           <td className="px-3 py-2">Browser-based UI</td>
-                          <td className="px-3 py-2 font-semibold">REST API (cookie auth)</td>
+                          <td className="px-3 py-2 font-semibold">REST API (browser session)</td>
                         </tr>
                       </tbody>
                     </table>
