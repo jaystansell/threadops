@@ -229,6 +229,24 @@ export async function PATCH(
       thread.agent_api_key_id,
     );
 
+    // Fire a dedicated thread.archived event so agents know the job is done
+    if (newStatus === "archived") {
+      dispatchOutboundWebhooks(
+        companyId as CompanyId,
+        "thread.archived",
+        {
+          thread_id: threadId,
+          thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai"}/threads/${threadId}`,
+          title: thread.title,
+          summary: thread.summary ?? null,
+          company_id: updated.company_id,
+          archived_at: updated.updated_at,
+          hint: "This thread has been archived by the user. You may consider this task complete.",
+        },
+        thread.agent_api_key_id,
+      );
+    }
+
     return Response.json(updated);
   } catch (err) {
     if (err instanceof InvalidStatusTransitionError) {

@@ -65,8 +65,10 @@ export function ThreadActionsPanel({
         setShowArchiveAnimation(true);
         archiveTimerRef.current = setTimeout(() => {
           archiveTimerRef.current = null;
+          window.dispatchEvent(
+            new CustomEvent("threadops:thread-archived", { detail: { threadId } }),
+          );
           router.push("/threads");
-          router.refresh();
         }, 700);
       } else {
         setStatusUpdating(false);
