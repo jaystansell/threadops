@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
+  { href: "/prompts", label: "Prompts" },
   { href: "/savings", label: "Savings" },
   { href: "/docs/api", label: "Docs" },
   { href: "/changelog", label: "Changelog" },

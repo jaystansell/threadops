@@ -172,6 +172,7 @@ export default async function ThreadDetailPage(
         isOpen={thread.status === "open"}
         isAgentRevoked={isAgentRevoked}
         agentName={agentName}
+        agentApiKeyId={thread.agent_api_key_id}
         threadEvents={threadEvents}
         attachmentCounts={attachmentCounts}
       />
