@@ -82,6 +82,8 @@ export function MessageDetailsPanel({
   messageId,
   messageCreatedAt,
 }: MessageDetailsPanelProps) {
+  const [open, setOpen] = useState(false);
+
   const argumentLines: string[] = [];
   if (metadata.api_key_prefix) {
     argumentLines.push(`API_KEY="${metadata.api_key_prefix}${"*".repeat(8)}..."`);
@@ -104,28 +106,48 @@ export function MessageDetailsPanel({
   const resultText = JSON.stringify(resultObj, null, 2);
 
   return (
-    <div className="mt-2 space-y-1.5">
-      <DetailSection label="Arguments:" copyText={argumentsText}>
-        {argumentLines.map((line, i) => (
-          <div key={i}>
-            <span className="text-[var(--muted-foreground)]">  </span>
-            {line}
-          </div>
-        ))}
-      </DetailSection>
-      <DetailSection label="Result:" copyText={resultText}>
-        <span className="text-[var(--muted-foreground)]">{"log: "}</span>
-        {"(nested JSON)"}
-        {"\n"}
-        <span className="text-[var(--muted-foreground)]">{"  id: "}</span>
-        {messageId}
-        {"\n"}
-        <span className="text-[var(--muted-foreground)]">{"  author_name: "}</span>
-        {metadata.agent_label ?? "null"}
-        {"\n"}
-        <span className="text-[var(--muted-foreground)]">{"  created_at: "}</span>
-        {messageCreatedAt}
-      </DetailSection>
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)]/60 hover:text-[var(--muted-foreground)] transition-colors"
+      >
+        <svg
+          width="8"
+          height="8"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className={`transition-transform ${open ? "rotate-90" : ""}`}
+        >
+          <path d="M8 5l8 7-8 7z" />
+        </svg>
+        Details...
+      </button>
+      {open && (
+        <div className="mt-1.5 space-y-1.5">
+          <DetailSection label="Arguments:" copyText={argumentsText}>
+            {argumentLines.map((line, i) => (
+              <div key={i}>
+                <span className="text-[var(--muted-foreground)]">  </span>
+                {line}
+              </div>
+            ))}
+          </DetailSection>
+          <DetailSection label="Result:" copyText={resultText}>
+            <span className="text-[var(--muted-foreground)]">{"log: "}</span>
+            {"(nested JSON)"}
+            {"\n"}
+            <span className="text-[var(--muted-foreground)]">{"  id: "}</span>
+            {messageId}
+            {"\n"}
+            <span className="text-[var(--muted-foreground)]">{"  author_name: "}</span>
+            {metadata.agent_label ?? "null"}
+            {"\n"}
+            <span className="text-[var(--muted-foreground)]">{"  created_at: "}</span>
+            {messageCreatedAt}
+          </DetailSection>
+        </div>
+      )}
     </div>
   );
 }
