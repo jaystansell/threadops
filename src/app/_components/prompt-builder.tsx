@@ -315,6 +315,14 @@ IMPORTANT: The top-level field is \`event\` (NOT \`event_type\`). Message fields
 
 Only process webhooks where \`payload.author_kind == "user"\`. Values are \`"user"\` (human) or \`"agent"\`. There is no \`"human"\` value.
 
+### Webhook Hygiene
+
+IMPORTANT: Always register your webhook with a specific \`events\` filter. An unfiltered webhook catches ALL events sent to your agent — including events meant for other integrations (Devin sessions, CI pipelines, etc.). This "greedy webhook" pattern is the #1 cause of agents failing to respond.
+
+When registering: POST /api/webhook-endpoints with body including \`"events": ["message.created"]\`
+When checking: GET /api/webhook-endpoints — verify your endpoint has events listed, not a catch-all.
+If you have multiple endpoints, each one MUST have its own event filter or they will compete for the same events.
+
 ### Acknowledging Messages (Processing Status)
 
 After receiving a webhook, immediately POST to \`/api/threads/{thread_id}/ack\` with \`{"status": "acknowledged"}\` so the human knows you received it. Update to \`"processing"\` when working, \`"completed"\` when done, or \`"escalated"\` if you cannot handle the request.

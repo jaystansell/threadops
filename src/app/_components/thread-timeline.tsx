@@ -23,6 +23,7 @@ import {
   extractDomain,
 } from "./external-link-modal";
 import { SourceIcon, resolveSourceType } from "./source-icon";
+import { WebhookDeliveryStatus } from "./webhook-delivery-status";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -503,6 +504,11 @@ export function ThreadTimeline({
                 messageCreatedAt={msg.created_at}
               />
             )}
+            <WebhookDeliveryStatus
+              threadId={threadId}
+              messageId={msg.id}
+              authorKind={msg.author_kind}
+            />
           </div>
         );
       })}
