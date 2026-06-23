@@ -16,6 +16,7 @@ const EXPANDED_GROUPS_KEY = "threadops-expanded-groups";
 const AGENT_COLORS_KEY = "threadops-agent-colors";
 const STATUS_FILTER_KEY = "threadops-status-filter";
 const GROUP_BY_KEY = "threadops-group-by";
+const HIDE_DISCONNECTED_KEY = "threadops-hide-disconnected";
 
 function readStorageString(key: string, fallback: string): string {
   try {
@@ -294,6 +295,8 @@ export function ThreadSidebar({
   const setStatus = useCallback((v: string) => { setStatusRaw(v); writeStorageString(STATUS_FILTER_KEY, v); }, []);
   const [groupBy, setGroupByRaw] = useState(() => readStorageString(GROUP_BY_KEY, "agent"));
   const setGroupBy = useCallback((v: string) => { setGroupByRaw(v); writeStorageString(GROUP_BY_KEY, v); }, []);
+  const [hideDisconnected, setHideDisconnectedRaw] = useState(() => readStorageString(HIDE_DISCONNECTED_KEY, "true") === "true");
+  const setHideDisconnected = useCallback((v: boolean) => { setHideDisconnectedRaw(v); writeStorageString(HIDE_DISCONNECTED_KEY, String(v)); }, []);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialThreads.length >= BATCH_SIZE);
@@ -638,6 +641,18 @@ export function ThreadSidebar({
     );
   }
 
+  // Filter out disconnected agents when toggle is on
+  if (hideDisconnected && revokedAgentNames.size > 0) {
+    if (groupBy === "agent") {
+      grouped = grouped.filter((g) => !revokedAgentNames.has(g.label));
+    } else if (groupBy === "group") {
+      grouped = grouped.map((g) => ({
+        ...g,
+        subGroups: g.subGroups?.filter((sub) => !revokedAgentNames.has(sub.label)),
+      })).filter((g) => (g.subGroups ? g.subGroups.length > 0 : true) || g.threads.length > 0);
+    }
+  }
+
   const activeThreadId = pathname.match(/\/threads\/([^/]+)/)?.[1];
 
   // Auto-expand: derive the group containing the active thread and merge it
@@ -731,6 +746,17 @@ export function ThreadSidebar({
           >
             Manage Groups
           </button>
+        )}
+        {revokedAgentNames.size > 0 && (
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideDisconnected}
+              onChange={(e) => setHideDisconnected(e.target.checked)}
+              className="w-3 h-3 rounded border-[var(--border)] accent-[var(--accent)]"
+            />
+            <span className="text-[10px] text-[var(--muted-foreground)]">Hide disconnected</span>
+          </label>
         )}
       </div>
 
