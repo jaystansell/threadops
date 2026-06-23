@@ -37,9 +37,24 @@ export function dispatchOutboundWebhooks(
       const endpointRepo = createWebhookEndpointRepo(db);
       const webhookRepo = createWebhookRepo(db);
 
-      const allEndpoints = await endpointRepo.listActiveForEvent(
+      const allEndpointsRaw = await endpointRepo.listActiveForEvent(
         companyId,
         eventType,
+      );
+
+      // Skip endpoints whose API key has been revoked
+      const keyIds = [...new Set(allEndpointsRaw.map((ep) => ep.api_key_id).filter(Boolean))] as string[];
+      let revokedKeyIds = new Set<string>();
+      if (keyIds.length > 0) {
+        const { data: revokedRows } = await db
+          .from("api_keys")
+          .select("id")
+          .in("id", keyIds)
+          .not("revoked_at", "is", null);
+        revokedKeyIds = new Set((revokedRows ?? []).map((r: { id: string }) => r.id));
+      }
+      const allEndpoints = allEndpointsRaw.filter(
+        (ep) => !ep.api_key_id || !revokedKeyIds.has(ep.api_key_id),
       );
 
       // Agent-scoped delivery: only deliver thread events to the owning agent's endpoint.
