@@ -310,7 +310,10 @@ export function CreateApiKeyForm({ companyId }: Props) {
     >
       <p className="text-xs text-[var(--muted-foreground)]">
         We recommend creating one key per agent. The label you enter will be
-        used as the agent&apos;s display name on messages.
+        used as the agent&apos;s display name on messages. MCP clients with OAuth
+        discovery (like Tasklet) can connect automatically — use your API key as
+        the <code className="bg-[var(--muted)] px-0.5 rounded">client_secret</code> in
+        the <code className="bg-[var(--muted)] px-0.5 rounded">client_credentials</code> grant.
       </p>
 
       <div>
