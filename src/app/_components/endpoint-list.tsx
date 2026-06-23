@@ -20,7 +20,7 @@ export function EndpointList({
   const [endpoints, setEndpoints] =
     useState<WebhookEndpoint[]>(initialEndpoints);
   const [busy, setBusy] = useState<string | null>(null);
-  const [testing, setTesting] = useState<string | null>(null);
+  const [testingSet, setTestingSet] = useState<Set<string>>(new Set());
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
 
   const toggleActive = async (endpoint: WebhookEndpoint) => {
@@ -43,7 +43,7 @@ export function EndpointList({
   };
 
   const testEndpoint = async (endpoint: WebhookEndpoint) => {
-    setTesting(endpoint.id);
+    setTestingSet((prev) => new Set(prev).add(endpoint.id));
     setTestResults((prev) => {
       const next = { ...prev };
       delete next[endpoint.id];
@@ -64,7 +64,11 @@ export function EndpointList({
         },
       }));
     } finally {
-      setTesting(null);
+      setTestingSet((prev) => {
+        const next = new Set(prev);
+        next.delete(endpoint.id);
+        return next;
+      });
     }
   };
 
@@ -148,11 +152,11 @@ export function EndpointList({
           <div className="flex gap-2 pt-1">
             <button
               onClick={() => testEndpoint(ep)}
-              disabled={testing === ep.id || busy === ep.id}
+              disabled={testingSet.has(ep.id) || busy === ep.id}
               data-testid="endpoint-test"
               className="px-2 py-1 text-xs rounded border border-[var(--border)] hover:border-[var(--primary)] transition-colors disabled:opacity-50"
             >
-              {testing === ep.id ? (
+              {testingSet.has(ep.id) ? (
                 <span className="inline-flex items-center gap-1">
                   <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
