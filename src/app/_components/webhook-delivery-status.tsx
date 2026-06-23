@@ -48,6 +48,7 @@ export function WebhookDeliveryStatus({
   const [deliveries, setDeliveries] = useState<DeliveryRecord[] | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   const isUserMessage = authorKind === "user";
 
@@ -94,6 +95,30 @@ export function WebhookDeliveryStatus({
     }
   };
 
+  const handleRetry = async (deliveryId: string) => {
+    setRetrying(deliveryId);
+    try {
+      const res = await fetch(
+        `/api/webhook-deliveries/${deliveryId}/retry`,
+        { method: "POST" },
+      );
+      if (res.ok) {
+        // Refresh deliveries to show updated status
+        const refreshRes = await fetch(
+          `/api/threads/${threadId}/messages/${messageId}/deliveries`,
+        );
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          setDeliveries(data.deliveries);
+        }
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setRetrying(null);
+    }
+  };
+
   // No deliveries yet or still loading initial
   if (deliveries === null || deliveries.length === 0) return null;
 
@@ -102,35 +127,50 @@ export function WebhookDeliveryStatus({
 
   return (
     <div className="mt-1.5">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)]/60 hover:text-[var(--muted-foreground)] transition-colors"
-      >
-        <svg
-          width="8"
-          height="8"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className={`transition-transform ${open ? "rotate-90" : ""}`}
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={handleToggle}
+          className="flex items-center gap-1.5 text-[10px] text-[var(--muted-foreground)]/60 hover:text-[var(--muted-foreground)] transition-colors"
         >
-          <path d="M8 5l8 7-8 7z" />
-        </svg>
-        <span>
-          Webhook:{" "}
-          {allSucceeded && (
-            <span className="text-green-400 font-medium">
-              {deliveries.length === 1 ? "200 OK" : `${deliveries.length}× 200 OK`}
-            </span>
-          )}
-          {anyFailed && !allSucceeded && (
-            <span className="text-red-400 font-medium">delivery failed</span>
-          )}
-          {!allSucceeded && !anyFailed && (
-            <span className="text-yellow-400 font-medium">pending</span>
-          )}
-        </span>
-      </button>
+          <svg
+            width="8"
+            height="8"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className={`transition-transform ${open ? "rotate-90" : ""}`}
+          >
+            <path d="M8 5l8 7-8 7z" />
+          </svg>
+          <span>
+            Webhook:{" "}
+            {allSucceeded && (
+              <span className="text-green-400 font-medium">
+                {deliveries.length === 1 ? "200 OK" : `${deliveries.length}× 200 OK`}
+              </span>
+            )}
+            {anyFailed && !allSucceeded && (
+              <span className="text-red-400 font-medium">delivery failed</span>
+            )}
+            {!allSucceeded && !anyFailed && (
+              <span className="text-yellow-400 font-medium">pending</span>
+            )}
+          </span>
+        </button>
+        {anyFailed && !allSucceeded && (
+          <button
+            type="button"
+            onClick={() => {
+              const failed = deliveries.find((d) => d.status === "failed");
+              if (failed) handleRetry(failed.id);
+            }}
+            disabled={retrying !== null}
+            className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 transition-colors disabled:opacity-50"
+          >
+            {retrying ? "Retrying..." : "Retry"}
+          </button>
+        )}
+      </div>
       {open && (
         <div className="mt-1 border border-[var(--border)] rounded-lg overflow-hidden">
           <div className="px-3 py-2 bg-[var(--background)] font-mono text-[11px] leading-relaxed space-y-2">
@@ -146,6 +186,16 @@ export function WebhookDeliveryStatus({
                     <span className="text-[var(--muted-foreground)]">
                       ({d.attempts} attempts)
                     </span>
+                  )}
+                  {d.status === "failed" && (
+                    <button
+                      type="button"
+                      onClick={() => handleRetry(d.id)}
+                      disabled={retrying === d.id}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200 transition-colors disabled:opacity-50"
+                    >
+                      {retrying === d.id ? "Retrying..." : "Retry"}
+                    </button>
                   )}
                 </div>
                 {d.last_error && (
