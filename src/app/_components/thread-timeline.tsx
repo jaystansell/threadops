@@ -8,6 +8,7 @@ import type { Message } from "@/core/types";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { createRealtimeAdapter } from "@/adapters/supabase/realtime";
 import type { ThreadId } from "@/core/types";
+import { remarkSlackChannels } from "./remark-slack-channels";
 import { FormattedDate } from "./formatted-date";
 import { MessageAttachments, AttachmentBadge } from "./message-attachments";
 import { MessageDetailsPanel } from "./message-details-panel";
@@ -402,13 +403,39 @@ export function ThreadTimeline({
             </div>
             <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
               <Markdown
-                remarkPlugins={[remarkGfm, remarkBreaks]}
+                remarkPlugins={[remarkGfm, remarkBreaks, remarkSlackChannels]}
                 components={{
-                  a: ({ children, href, ...props }) => (
-                    <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                      {children}
-                    </a>
-                  ),
+                  a: ({ children, href, ...props }) => {
+                    if (href?.startsWith("slack-channel:")) {
+                      const channel = href.replace("slack-channel:", "");
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--muted)] text-[var(--muted-foreground)] text-xs font-medium align-middle"
+                          title={`Slack channel: #${channel}`}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden="true"
+                            className="shrink-0"
+                          >
+                            <path d="M6 15a2 2 0 0 1-2 2a2 2 0 0 1-2-2a2 2 0 0 1 2-2h2v2zm1 0a2 2 0 0 1 2-2a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2a2 2 0 0 1-2-2v-5z" fill="currentColor" />
+                            <path d="M9 6a2 2 0 0 1-2-2a2 2 0 0 1 2-2a2 2 0 0 1 2 2v2H9zm0 1a2 2 0 0 1 2 2a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2a2 2 0 0 1 2-2h5z" fill="currentColor" />
+                            <path d="M18 9a2 2 0 0 1 2-2a2 2 0 0 1 2 2a2 2 0 0 1-2 2h-2V9zm-1 0a2 2 0 0 1-2 2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2a2 2 0 0 1 2 2v5z" fill="currentColor" />
+                            <path d="M15 18a2 2 0 0 1 2 2a2 2 0 0 1-2 2a2 2 0 0 1-2-2v-2h2zm0-1a2 2 0 0 1-2-2a2 2 0 0 1 2-2h5a2 2 0 0 1 2 2a2 2 0 0 1-2 2h-5z" fill="currentColor" />
+                          </svg>
+                          {children}
+                        </span>
+                      );
+                    }
+                    return (
+                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                        {children}
+                      </a>
+                    );
+                  },
                 }}
               >
                 {msg.body}
