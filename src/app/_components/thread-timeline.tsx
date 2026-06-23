@@ -199,6 +199,43 @@ export function ThreadTimeline({
             new Date(b.created_at).getTime(),
         );
 
+  // Build the awaiting-response block (shows when last message is from user)
+  const awaitingBlock = (() => {
+    const msgs = combined;
+    if (msgs.length === 0) return null;
+    const lastMsg = msgs.reduce((a, b) =>
+      new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b,
+    );
+    if (lastMsg.author_kind !== "user") return null;
+
+    const lastAgentMsg = msgs
+      .filter((m) => m.author_kind === "agent")
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
+    const diagPrompt = buildDiagnosticPrompt({
+      threadId,
+      agentName,
+      threadTitle: "",
+      messageCount: msgs.length,
+      lastMessageAt: lastMsg.created_at,
+      isAgentRevoked: false,
+      baseUrl,
+    });
+
+    return (
+      <>
+        <AwaitingResponseIndicator agentName={agentName} />
+        <UnresponsiveAgentHint
+          lastUserMessageAt={lastMsg.created_at}
+          lastAgentMessageAt={lastAgentMsg?.created_at ?? null}
+          agentName={agentName}
+          diagnosticPrompt={diagPrompt}
+          threadId={threadId}
+        />
+      </>
+    );
+  })();
+
   if (timeline.length === 0) {
     return (
       <p className="text-sm text-[var(--muted-foreground)]">
@@ -214,6 +251,7 @@ export function ThreadTimeline({
 
   return (
     <div className="space-y-3" data-testid="thread-timeline">
+      {sortOrder === "new-first" && awaitingBlock}
       {timeline.map((item) => {
         if (item.kind === "event") {
           const evt = item.data;
@@ -366,7 +404,7 @@ export function ThreadTimeline({
               <Markdown
                 remarkPlugins={[remarkGfm, remarkBreaks]}
                 components={{
-                  a: ({ children, href, node: _node, ...props }) => (
+                  a: ({ children, href, ...props }) => (
                     <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
                       {children}
                     </a>
@@ -412,37 +450,7 @@ export function ThreadTimeline({
           </div>
         );
       })}
-      {(() => {
-        const msgs = combined;
-        if (msgs.length === 0) return null;
-        const lastMsg = sortOrder === "new-first" ? msgs.reduce((a, b) => new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b) : msgs[msgs.length - 1];
-        if (lastMsg.author_kind !== "user") return null;
-
-        const lastAgentMsg = msgs.filter((m) => m.author_kind === "agent").sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-        const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://threadops-jade.vercel.app";
-        const diagPrompt = buildDiagnosticPrompt({
-          threadId,
-          agentName,
-          threadTitle: "",
-          messageCount: msgs.length,
-          lastMessageAt: lastMsg.created_at,
-          isAgentRevoked: false,
-          baseUrl,
-        });
-
-        return (
-          <>
-            <AwaitingResponseIndicator agentName={agentName} />
-            <UnresponsiveAgentHint
-              lastUserMessageAt={lastMsg.created_at}
-              lastAgentMessageAt={lastAgentMsg?.created_at ?? null}
-              agentName={agentName}
-              diagnosticPrompt={diagPrompt}
-              threadId={threadId}
-            />
-          </>
-        );
-      })()}
+      {sortOrder !== "new-first" && awaitingBlock}
     </div>
   );
 }

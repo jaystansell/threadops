@@ -156,11 +156,13 @@ export function ThreadDebugPanel(props: ThreadDebugPanelProps) {
   useEffect(() => {
     let userAt = lastUserMessageAt;
     let agentAt = lastAgentMessageAt;
+    let prevUnresponsive = isAgentUnresponsive(userAt, agentAt);
 
     function check() {
       const nowUnresponsive = isAgentUnresponsive(userAt, agentAt);
       setUnresponsive(nowUnresponsive);
-      if (nowUnresponsive) setOpen(true);
+      if (nowUnresponsive && !prevUnresponsive) setOpen(true);
+      prevUnresponsive = nowUnresponsive;
     }
 
     async function poll() {
