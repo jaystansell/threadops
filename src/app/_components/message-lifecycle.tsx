@@ -81,6 +81,7 @@ export function MessageLifecycle({
   const [data, setData] = useState<LifecycleData | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const isUserMessage = authorKind === "user";
 
@@ -121,10 +122,15 @@ export function MessageLifecycle({
       : "inactive";
 
   // Summary line for collapsed state
+  const httpBadge =
+    data.delivery.response_code && deliveryStatus === "complete"
+      ? ` (${data.delivery.response_code})`
+      : "";
   const summaryText = (() => {
-    if (data.reply) return "Delivered → ACK'd → Replied";
-    if (data.ack) return "Delivered → ACK'd → Awaiting reply";
-    if (deliveryStatus === "complete") return "Delivered → Awaiting ACK";
+    if (data.reply) return `Delivered${httpBadge} → ACK'd → Replied`;
+    if (data.ack) return `Delivered${httpBadge} → ACK'd → Awaiting reply`;
+    if (deliveryStatus === "complete")
+      return `Delivered${httpBadge} → Awaiting ACK`;
     if (deliveryStatus === "failed") return "Delivery failed";
     return "Delivering...";
   })();
@@ -243,6 +249,32 @@ export function MessageLifecycle({
                               {data.delivery.last_error}
                             </span>
                           )}
+                        {deliveryStatus === "failed" && (
+                          <button
+                            type="button"
+                            disabled={retrying}
+                            onClick={async () => {
+                              setRetrying(true);
+                              try {
+                                await fetch(
+                                  `/api/webhook-deliveries/${data.delivery!.id}`,
+                                  { method: "POST" },
+                                );
+                                const res = await fetch(
+                                  `/api/threads/${threadId}/messages/${messageId}/lifecycle`,
+                                );
+                                if (res.ok) setData(await res.json());
+                              } catch {
+                                // ignore
+                              } finally {
+                                setRetrying(false);
+                              }
+                            }}
+                            className="text-[10px] text-amber-400 hover:text-amber-300 underline"
+                          >
+                            {retrying ? "Retrying..." : "Retry"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
