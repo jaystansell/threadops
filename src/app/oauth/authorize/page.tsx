@@ -40,6 +40,27 @@ export default async function AuthorizePage({ searchParams }: Props) {
     );
   }
 
+  // Validate client_id against registered clients
+  const db = createServerClient();
+  const { data: oauthClient } = await db
+    .from("oauth_clients")
+    .select("redirect_uris")
+    .eq("client_id", client_id)
+    .maybeSingle();
+
+  if (!oauthClient) {
+    return (
+      <ErrorPage message="Unknown client_id. The application must register via the registration endpoint first." />
+    );
+  }
+
+  const registeredUris = oauthClient.redirect_uris as string[];
+  if (!registeredUris.includes(redirect_uri)) {
+    return (
+      <ErrorPage message="Invalid redirect_uri. It does not match any URI registered for this client." />
+    );
+  }
+
   // Check authentication
   const supabase = await createAuthServerClient();
   const {
@@ -54,8 +75,7 @@ export default async function AuthorizePage({ searchParams }: Props) {
     redirect(`/login?next=${encodeURIComponent(returnUrl)}`);
   }
 
-  // Get user's company and API keys
-  const db = createServerClient();
+  // Get user's company and API keys (reuse db from client validation above)
   const { data: membership } = await db
     .from("company_members")
     .select("company_id")

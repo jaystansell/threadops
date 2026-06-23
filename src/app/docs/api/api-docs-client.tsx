@@ -1465,14 +1465,17 @@ export function ApiDocsClient() {
                     with PKCE (S256). The client redirects you to a login/consent screen where you choose which API key to authorize.
                   </p>
                   <ol className="mt-2 space-y-1 list-decimal list-inside">
-                    <li>The MCP client discovers OAuth metadata at <code className="bg-[var(--muted)] px-1 rounded text-xs">/.well-known/oauth-authorization-server</code></li>
-                    <li>It redirects you to <code className="bg-[var(--muted)] px-1 rounded text-xs">{BASE_URL}/oauth/authorize</code> with PKCE challenge</li>
+                    <li>Client fetches resource metadata at <code className="bg-[var(--muted)] px-1 rounded text-xs">/mcp/.well-known/oauth-protected-resource</code> to discover the authorization server</li>
+                    <li>Client registers itself via <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/register</code> (Dynamic Client Registration, RFC 7591) to get a <code className="bg-[var(--muted)] px-1 rounded text-xs">client_id</code></li>
+                    <li>Client discovers OAuth metadata at <code className="bg-[var(--muted)] px-1 rounded text-xs">/.well-known/oauth-authorization-server</code></li>
+                    <li>Client redirects you to <code className="bg-[var(--muted)] px-1 rounded text-xs">{BASE_URL}/oauth/authorize</code> with PKCE challenge</li>
                     <li>You log in and select an API key to authorize</li>
                     <li>Threadzy redirects back with an authorization code</li>
-                    <li>The client exchanges the code + PKCE verifier for an access token at <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/token</code></li>
+                    <li>Client exchanges the code + PKCE verifier for an access token at <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/token</code></li>
                   </ol>
                   <p className="mt-2">
                     The access token is a short-lived opaque token (1 hour) backed by the API key you selected during consent.
+                    Tokens can be revoked via <code className="bg-[var(--muted)] px-1 rounded text-xs">POST /api/oauth/revoke</code>.
                   </p>
                 </div>
 

@@ -7,22 +7,19 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+/**
+ * GET /mcp/.well-known/oauth-protected-resource
+ *
+ * RFC 9728 Protected Resource Metadata.
+ * MCP clients discover which OAuth authorization server protects
+ * the /mcp endpoint by fetching this document first.
+ */
 export async function GET() {
   return Response.json(
     {
-      issuer: BASE_URL,
-      authorization_endpoint: `${BASE_URL}/oauth/authorize`,
-      token_endpoint: `${BASE_URL}/api/oauth/token`,
-      registration_endpoint: `${BASE_URL}/api/oauth/register`,
-      revocation_endpoint: `${BASE_URL}/api/oauth/revoke`,
-      token_endpoint_auth_methods_supported: [
-        "client_secret_post",
-        "client_secret_basic",
-        "none",
-      ],
-      grant_types_supported: ["authorization_code", "client_credentials"],
-      response_types_supported: ["code"],
-      code_challenge_methods_supported: ["S256"],
+      resource: `${BASE_URL}/mcp`,
+      authorization_servers: [BASE_URL],
+      bearer_methods_supported: ["header"],
       scopes_supported: [
         "threads:read",
         "threads:write",
@@ -30,7 +27,6 @@ export async function GET() {
         "messages:write",
         "webhooks:read",
       ],
-      service_documentation: `${BASE_URL}/docs/api`,
     },
     { headers: CORS_HEADERS },
   );
