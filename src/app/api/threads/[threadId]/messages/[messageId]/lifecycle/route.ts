@@ -114,6 +114,18 @@ export async function GET(
     } satisfies LifecycleResponse);
   }
 
+  // Find the next user message in this thread (to scope fallback ACK query)
+  const { data: nextUserMsg } = await db
+    .from("messages")
+    .select("created_at")
+    .eq("thread_id", threadId)
+    .eq("author_kind", "user")
+    .gt("created_at", message.created_at)
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  const nextUserMsgTime = nextUserMsg?.[0]?.created_at ?? null;
+
   // Fetch delivery, ACK, and reply in parallel
   const [deliveryResult, ackResult, replyResult, endpointResult] =
     await Promise.all([
@@ -129,14 +141,28 @@ export async function GET(
         .order("created_at", { ascending: false })
         .limit(1),
 
-      // 2. ACK status from agent_processing_status for this message
+      // 2. ACK status: first try message-specific, then fall back to thread-level
       db
         .from("agent_processing_status")
         .select("status, created_at")
         .eq("thread_id", threadId)
         .eq("message_id", messageId)
         .order("created_at", { ascending: false })
-        .limit(1),
+        .limit(1)
+        .then(async (res) => {
+          if (res.data && res.data.length > 0) return res;
+          // Fallback: thread-level ACK between this message and the next user message
+          let query = db
+            .from("agent_processing_status")
+            .select("status, created_at")
+            .eq("thread_id", threadId)
+            .is("message_id", null)
+            .gt("created_at", message.created_at);
+          if (nextUserMsgTime) {
+            query = query.lt("created_at", nextUserMsgTime);
+          }
+          return query.order("created_at", { ascending: true }).limit(1);
+        }),
 
       // 3. First agent reply after this message
       db

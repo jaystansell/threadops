@@ -23,7 +23,6 @@ import {
   extractDomain,
 } from "./external-link-modal";
 import { SourceIcon, resolveSourceType } from "./source-icon";
-import { WebhookDeliveryStatus } from "./webhook-delivery-status";
 import { MessageLifecycle } from "./message-lifecycle";
 
 function relativeTime(dateStr: string): string {
@@ -505,11 +504,6 @@ export function ThreadTimeline({
                 messageCreatedAt={msg.created_at}
               />
             )}
-            <WebhookDeliveryStatus
-              threadId={threadId}
-              messageId={msg.id}
-              authorKind={msg.author_kind}
-            />
             <MessageLifecycle
               threadId={threadId}
               messageId={msg.id}
