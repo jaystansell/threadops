@@ -192,6 +192,15 @@ export async function POST(
       metadata,
     });
 
+    // Auto-complete processing status when an agent posts a response
+    if (authorKind === "agent") {
+      await db.from("agent_processing_status").insert({
+        thread_id: threadId,
+        api_key_id: authorId,
+        status: "completed",
+      });
+    }
+
     const { data: thread } = await db
       .from("threads")
       .select("company_id, summary, agent_api_key_id, status")
