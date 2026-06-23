@@ -90,6 +90,20 @@ export default async function ThreadDetailPage(
     .order("created_at", { ascending: true });
   const tags = (tagRows ?? []).map((r: { tag: string }) => r.tag);
 
+  // Fetch latest agent processing status for this thread
+  let agentProcessingStatus: string | null = null;
+  {
+    const { data: statusRows } = await db
+      .from("agent_processing_status")
+      .select("status")
+      .eq("thread_id", threadId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (statusRows && statusRows.length > 0) {
+      agentProcessingStatus = (statusRows[0] as { status: string }).status;
+    }
+  }
+
   // Fetch agent name and revocation status for this thread
   let agentName: string | null = null;
   let isAgentRevoked = false;
@@ -132,6 +146,12 @@ export default async function ThreadDetailPage(
           <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]">
             {thread.status}
           </span>
+          {(agentProcessingStatus === "acknowledged" || agentProcessingStatus === "processing") && (
+            <span className="flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-medium">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.7)]" />
+              {agentProcessingStatus === "acknowledged" ? "Agent acknowledged" : "Agent processing"}
+            </span>
+          )}
           <span className="text-xs text-[var(--muted-foreground)]">
             <FormattedDate date={thread.created_at} />
           </span>
