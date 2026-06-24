@@ -23,7 +23,7 @@ import {
   extractDomain,
 } from "./external-link-modal";
 import { SourceIcon, resolveSourceType } from "./source-icon";
-import { MessageLifecycle } from "./message-lifecycle";
+import { MessageDeliveryReceipt } from "./message-delivery-receipt";
 
 function relativeTime(dateStr: string): string {
   const now = Date.now();
@@ -601,7 +601,7 @@ export function ThreadTimeline({
                 messageCreatedAt={msg.created_at}
               />
             )}
-            <MessageLifecycle
+            <MessageDeliveryReceipt
               threadId={threadId}
               messageId={msg.id}
               authorKind={msg.author_kind}
