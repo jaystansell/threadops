@@ -85,6 +85,7 @@ export function ThreadDetailClient({
       {sortOrder === "new-first" && composer}
 
       <ThreadTimeline
+        key={threadId}
         initialMessages={messages}
         threadId={threadId}
         sortOrder={sortOrder}

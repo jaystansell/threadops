@@ -117,7 +117,7 @@ export function ThreadTimeline({
   const menuRef = useRef<HTMLDivElement>(null);
   const knownIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)));
 
-  // Keep knownIds in sync with initialMessages prop changes (navigation)
+  // Keep knownIds in sync with initialMessages (component remounts on threadId change via key prop)
   useEffect(() => {
     knownIdsRef.current = new Set(initialMessages.map((m) => m.id));
   }, [initialMessages]);
