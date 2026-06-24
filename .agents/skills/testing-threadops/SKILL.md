@@ -926,6 +926,49 @@ curl -s http://localhost:3000/api/threads/$THREAD_ID/status \
 
 **Thread ownership validation:** The thread must belong to the same company as the API key. Cross-company requests return 404 "Thread not found".
 
+### Delivery Receipts Testing (PR #173)
+
+The delivery receipt component (`MessageDeliveryReceipt`) shows a collapsible 4-stage pipeline below each user message: Webhook Fired → HTTP Response → Agent ACK → Agent Reply.
+
+**Key files:**
+- `src/app/_components/message-delivery-receipt.tsx` — React component (compact + expanded views)
+- `src/app/api/threads/[threadId]/messages/[messageId]/delivery/route.ts` — API endpoint
+- `src/app/_components/thread-timeline.tsx` — integrates `MessageDeliveryReceipt` for user messages only
+
+**API endpoint:** `GET /api/threads/:threadId/messages/:messageId/delivery`
+- Returns: `{ stages: DeliveryStage[], overall_status, webhook, ack, reply }`
+- `overall_status` enum: "delivered" | "acknowledged" | "replied" | "pending" | "failed"
+- `stages` always has exactly 4 items with `label`, `status`, `timestamp`, `detail`
+- Stage `status` values: "complete" | "pending" | "failed" | "inactive"
+- Graceful fallback: works without migration 037 columns (uses `payload->>message_id` lookup)
+
+**Test data locations:**
+- Thread with successful deliveries: `dc9a8b2e-41b6-4491-98ce-511e3f3a44d3` ("Andrea Bronzini — EP104 Promotion Gap")
+  - Message `be65d6d3-e07c-4fd1-bf5c-803492c2f5f4` — HTTP 200, overall "delivered"
+- Thread with failed + replied: `4c0e4d5f-8c9d-471c-841c-212efabf0b16` ("Outreach & Customer Monitoring")
+  - Message `20f91365-efea-4846-a32c-206874e44aa2` — HTTP 405 failure but agent replied (overall "replied")
+
+**Browser test flow:**
+1. Navigate to thread with deliveries, scroll to find user messages
+2. Verify compact receipt below user messages: `📤 → ✓200 → ⏳ → ○` (or similar pipeline)
+3. Verify color coding: amber text for "delivered", green for "replied"
+4. Click receipt to expand — verify 4 progress dots, 4 detail rows with timestamps
+5. Verify agent messages do NOT show delivery receipts
+6. Click again to collapse — verify returns to single-line compact view
+
+**API test via browser console (requires authenticated session):**
+```javascript
+fetch('/api/threads/dc9a8b2e-41b6-4491-98ce-511e3f3a44d3/messages/be65d6d3-e07c-4fd1-bf5c-803492c2f5f4/delivery')
+  .then(r => r.json()).then(d => console.log(JSON.stringify(d)))
+```
+
+**Data constraint:** Demo company has NO purely "failed" overall_status — all failed webhook deliveries have subsequent agent replies, making overall "replied". This means:
+- Cannot test red compact view color coding
+- Cannot test retry button visibility (only shows when `overall_status === "failed"`)
+- To test these, you would need to insert a synthetic webhook_delivery with no corresponding agent reply
+
+**Retry button logic:** Only renders when `data.overall_status === "failed"` AND `data.webhook` exists. Calls `POST /api/webhook-deliveries/:delivery_id/retry` then refreshes receipt data.
+
 ## Testing localStorage-Persisted UI State
 
 Several sidebar features persist state to localStorage. When testing these:
