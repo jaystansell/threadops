@@ -98,16 +98,82 @@ Setting `THREADOPS_API_KEY` to an invalid value produces `isError: true, "Invali
 
 ### OAuth Access Token Auth (authorization_code flow)
 The MCP auth middleware (`src/mcp/auth.ts`) accepts two token formats:
-- Direct API key (prefix `to_`) → validated via `api_keys` table hash lookup
-- OAuth access token (prefix `to_at_`) → resolved via `oauth_access_tokens` table → linked `api_keys` record
+- Direct API key (prefix `to_`) -> validated via `api_keys` table hash lookup
+- OAuth access token (prefix `to_at_`) -> resolved via `oauth_access_tokens` table -> linked `api_keys` record
 
 To test OAuth token auth, you need a valid `to_at_` token in the `oauth_access_tokens` table. This requires the `033_oauth_authorization_codes.sql` migration to be applied. Without it, `to_at_` tokens will always fail with "Invalid access token".
+
+### OAuth Refresh Token Flow (grant_type=refresh_token)
+The token endpoint supports refresh token rotation. Key behaviors:
+- `authorization_code` grant returns both `access_token` (`to_at_` prefix) and `refresh_token` (`to_rt_` prefix, 30-day TTL)
+- `grant_type=refresh_token` exchanges an old RT for a new token pair (rotation: old RT is revoked)
+- Reusing a revoked RT returns `400 {"error":"invalid_grant","error_description":"Refresh token has been revoked"}`
+- `client_credentials` grant does NOT return a `refresh_token`
+- Revocation endpoint (`POST /api/oauth/revoke`) handles both `to_at_` (delete) and `to_rt_` (mark revoked) tokens
+
+### Testing OAuth Token Endpoint via curl (production)
+Test against `https://threadzy.ai` (production has the latest deployed code; local dev may have stale compiled code after branch switches).
+
+**Creating an auth code for testing:**
+```bash
+source .env.local
+
+# Generate PKCE values
+PKCE=$(node -e "
+const crypto = require('crypto');
+const v = crypto.randomBytes(32).toString('base64url');
+const c = crypto.createHash('sha256').update(v).digest().toString('base64url');
+const code = crypto.randomBytes(32).toString('hex');
+console.log(JSON.stringify({code, code_verifier: v, code_challenge: c}));
+")
+
+CODE=$(echo "$PKCE" | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).code)")
+CHALLENGE=$(echo "$PKCE" | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).code_challenge)")
+VERIFIER=$(echo "$PKCE" | node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).code_verifier)")
+
+# Insert auth code into DB (use a valid api_key_id, company_id, user_id)
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/oauth_authorization_codes" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"code\": \"$CODE\",
+    \"client_id\": \"4abe54b1157a790b789d401527c2d499\",
+    \"redirect_uri\": \"https://tasklet.ai/oauth2callback\",
+    \"code_challenge\": \"$CHALLENGE\",
+    \"code_challenge_method\": \"S256\",
+    \"api_key_id\": \"<YOUR_API_KEY_ID>\",
+    \"scope\": \"threads:read threads:write messages:read messages:write webhooks:read\",
+    \"user_id\": \"<YOUR_USER_ID>\",
+    \"company_id\": \"a0000000-0000-0000-0000-000000000001\",
+    \"expires_at\": \"$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)\"
+  }"
+
+# Exchange code for tokens
+curl -s -X POST https://threadzy.ai/api/oauth/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=authorization_code&code=$CODE&code_verifier=$VERIFIER&redirect_uri=https://tasklet.ai/oauth2callback"
+```
+
+**MCP Accept header requirement:**
+When testing the MCP endpoint via curl, you MUST include `Accept: application/json, text/event-stream` or you'll get a 406 error.
+
+```bash
+curl -s -X POST https://threadzy.ai/mcp \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}'
+```
 
 ### Webhook Auto-Events
 `register_webhook` automatically includes `docs.updated` and `action.requested` events in addition to what was requested.
 
 ### Status Values
 Thread status is `"open"` or `"archived"` (no "closed" status).
+
+## Known OAuth Clients
+- Tasklet: `client_id: 4abe54b1157a790b789d401527c2d499`, redirect_uri: `https://tasklet.ai/oauth2callback`
 
 ## Tool List (as of PR #29+)
 12 tools: list_threads, create_thread, get_messages, post_message, update_thread_status, register_webhook, list_webhooks, search, update_thread_tags, update_thread_metadata, update_thread_summary, list_thread_summaries
