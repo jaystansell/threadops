@@ -20,6 +20,7 @@ export interface Message {
   author_name: string | null;
   body: string;
   metadata: MessageMetadata | null;
+  webhook_delivery_id: string | null;
   created_at: string;
   updated_at: string;
 }

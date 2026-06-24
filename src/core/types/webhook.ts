@@ -16,4 +16,6 @@ export interface WebhookDelivery {
   last_error: string | null;
   created_at: string;
   processed_at: string | null;
+  ack_at: string | null;
+  reply_message_id: string | null;
 }
