@@ -59,72 +59,73 @@ export default async function HomePage() {
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight">
-          Working memory for AI agents
+          The interface you wish
           <br />
-          <span className="text-[var(--accent)]">that outlasts their context window.</span>
+          <span className="text-[var(--accent)]">your agents came with.</span>
         </h1>
         <p className="mt-6 text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto">
-          Persistent, structured, shared state between agents and humans.
-          When context resets, Threadzy remembers.
+          One place to manage every agent you run. Your agents forget &mdash; you
+          shouldn&apos;t have to remember for them. See what they&apos;re working on,
+          reply in seconds, and never lose a conversation again.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
           <Link
             href="/signup"
             className="px-6 py-3 text-sm font-semibold rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
           >
-            Get Started Free
+            Try It Free
           </Link>
           <Link
             href="/docs/api"
             className="px-6 py-3 text-sm font-semibold rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] transition-colors"
           >
-            API Docs
+            See How It Works
           </Link>
         </div>
       </section>
 
-      {/* The Problem */}
+      {/* The Problem — human-centric */}
       <section className="max-w-4xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold text-center mb-10">
-          The problem Threadzy solves
+          Sound familiar?
         </h2>
         <div className="grid gap-6 sm:grid-cols-3">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2">Shared workspace knowledge is flat files</h3>
+            <h3 className="font-semibold mb-2">You check 4 different places to see what your agents did today</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Every agent can read them. But there is no structure, no threading,
-              no &quot;who said what when.&quot; You cannot dump every conversation into AGENTS.md.
+              Slack, email, Cursor, Claude. None of them talk to each other.
+              You&apos;re the router.
             </p>
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2">Agent knowledge is siloed</h3>
+            <h3 className="font-semibold mb-2">Your Tuesday agent doesn&apos;t know what your Monday agent said</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Subagent files, SOPs, conversation history. The moment context gets pruned,
-              the agent loses track. No other agent can see any of it.
+              Context resets. Sessions end. You end up copy-pasting the same
+              background into every new conversation.
             </p>
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
             <div className="w-10 h-10 rounded-lg bg-[var(--muted)] flex items-center justify-center mb-4">
               <svg className="w-5 h-5 text-[var(--muted-foreground)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <h3 className="font-semibold mb-2">Context is the deepest limitation</h3>
+            <h3 className="font-semibold mb-2">You&apos;ve explained the same thing to the same agent three times this week</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Conversations are already long enough that earlier messages are being pruned.
-              If it was never saved externally, it is gone.
+              Not because it&apos;s dumb. Because it literally cannot remember.
+              If it was never saved externally, it&apos;s gone.
             </p>
           </div>
         </div>
@@ -147,40 +148,39 @@ export default async function HomePage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-4">
-            Threadzy fills the gap
+            What changes when you have Threadzy
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-10">
-            A persistent, structured, shared layer between agents and humans
-            that survives context resets.
+            One dashboard that ties every agent together. You stay in control
+            without micromanaging.
           </p>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <h3 className="font-semibold mb-2">Query on demand</h3>
+              <h3 className="font-semibold mb-2">Check status without interrupting</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                When invoked fresh tomorrow by a trigger, agents query
-                Threadzy: &quot;What threads are open? What did Jay last say?
-                What is waiting on me?&quot; No conversation history needed.
+                Open the dashboard. See every active thread across every agent.
+                No more &quot;hey, what&apos;s the status on&hellip;&quot; messages.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <h3 className="font-semibold mb-2">Webhook-driven</h3>
+              <h3 className="font-semibold mb-2">Your agents come to you</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Without a webhook, agents need context to remember &quot;I should check
-                Threadzy.&quot; With the webhook, Threadzy reaches out. Zero context needed.
+                When something needs your attention, Threadzy pings you.
+                No more checking in to see if anything happened.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <h3 className="font-semibold mb-2">REST API + MCP</h3>
+              <h3 className="font-semibold mb-2">Works with every agent you already use</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Connect via REST API with an API key, or natively through the MCP
-                protocol. Same tools, same auth. Agents choose whatever fits their stack.
+                Devin, Claude, GPT, Cursor, n8n, custom scripts. One API key.
+                Five-minute setup.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
-              <h3 className="font-semibold mb-2">Agent isolation</h3>
+              <h3 className="font-semibold mb-2">You see everything. They only see theirs.</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Each agent only sees threads it owns. Humans see everything.
-                Thread ownership is enforced at the API level. No data bleed.
+                Full visibility for you. Guardrails for them.
+                No data bleed between agents.
               </p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default async function HomePage() {
             Where Threadzy fits
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-12">
-            Your agents already think. Threadzy remembers.
+            Your agents already think. Threadzy keeps you in the loop.
           </p>
 
           <div className="relative max-w-2xl mx-auto">
@@ -296,58 +296,59 @@ export default async function HomePage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-4">
-            Better for humans too
+            Built for people who actually use AI every day
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-10">
-            Threadzy is not just for agents. It fixes the parts of working with AI that drive you crazy.
+            Solopreneurs and individuals managing multiple agents across multiple projects.
+            Threadzy is the screen that ties it all together.
           </p>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/search.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">No more infinite scroll</h3>
+              <h3 className="font-semibold mb-2">Find anything in seconds</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Stop hunting through 200 messages to find what your agent said last Tuesday.
-                Every thread is searchable, tagged, and summarized.
+                Every conversation is threaded, tagged, and searchable.
+                No more scrolling through 200 messages.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/brain.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">No more forgotten context</h3>
+              <h3 className="font-semibold mb-2">Your agents remember what you said last month</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Your agent will never forget what you discussed.
-                Summaries, tags, and metadata persist across every context reset.
+                Summaries and metadata persist. New sessions pick up
+                where old ones left off.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/repeat.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">No more repeating yourself</h3>
+              <h3 className="font-semibold mb-2">Stop being the memory for your AI</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
+                Agents query their own history before asking you again.
                 That conversation from 4 months ago? Still there.
-                Your agent can query it before asking you the same question again.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/dashboard.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">See all your agents in one place</h3>
+              <h3 className="font-semibold mb-2">One dashboard for your whole AI stack</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                One dashboard for every agent. Filter by agent, status, or tags.
-                Reply to any thread from the same UI.
+                Filter by agent, project, or status. Reply from the same screen.
+                No more tab-switching.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/bell.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">Agents reach out to you</h3>
+              <h3 className="font-semibold mb-2">Get notified, not ignored</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Webhooks mean agents notify you when something needs attention.
-                No more checking in to see if anything happened.
+                Webhooks mean your agent tells you when it&apos;s done or stuck.
+                You stop checking in.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <div className="relative w-10 h-10 mb-3"><Image src="/icons/shield.png" alt="" width={40} height={40} /></div>
-              <h3 className="font-semibold mb-2">Agent isolation by default</h3>
+              <h3 className="font-semibold mb-2">Full control without micromanaging</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Each agent only sees its own threads. You see everything.
-                No data bleed between agents. Full control.
+                Each agent stays in its lane. You see the big picture.
+                No data bleed between agents.
               </p>
             </div>
           </div>
@@ -532,23 +533,23 @@ What would Threadzy change about how you work? What would stay the same? Be spec
       {/* CTA */}
       <section className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h2 className="text-2xl font-bold mb-4">
-          Give your agents memory that persists
+          Stop managing agents in your head
         </h2>
         <p className="text-[var(--muted-foreground)] mb-8 max-w-xl mx-auto">
-          Free to use. Connect your first agent in under 5 minutes.
+          Free forever. Connect your first agent in 5 minutes.
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link
             href="/signup"
             className="px-6 py-3 text-sm font-semibold rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
           >
-            Sign Up Free
+            Create Your Dashboard
           </Link>
           <Link
             href="/docs/api"
             className="px-6 py-3 text-sm font-semibold rounded-lg border border-[var(--border)] hover:bg-[var(--muted)] transition-colors"
           >
-            Read the Docs
+            View the API
           </Link>
         </div>
       </section>
