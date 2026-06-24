@@ -10,6 +10,7 @@ import { ThreadActionsPanel } from "@/app/_components/thread-actions-panel";
 import { ThreadSavingsBanner } from "@/app/_components/thread-savings-banner";
 import { CopyableId } from "@/app/_components/copyable-id";
 import { ThreadDebugPanel } from "@/app/_components/thread-debug-panel";
+import { RedispatchButton } from "@/app/_components/redispatch-button";
 
 export const dynamic = "force-dynamic";
 
@@ -106,11 +107,10 @@ export default async function ThreadDetailPage(
 
   // Fetch last successful outbound delivery for this thread (for unhandled banner)
   let lastDeliveryAt: string | null = null;
-  let lastDeliveryId: string | null = null;
   if (agentProcessingStatus === "unhandled") {
     const { data: deliveryRows } = await db
       .from("webhook_deliveries")
-      .select("id, created_at")
+      .select("created_at")
       .eq("company_id", userCompany.companyId)
       .eq("source", "outbound")
       .eq("status", "succeeded")
@@ -118,9 +118,7 @@ export default async function ThreadDetailPage(
       .order("created_at", { ascending: false })
       .limit(1);
     if (deliveryRows && deliveryRows.length > 0) {
-      const row = deliveryRows[0] as { id: string; created_at: string };
-      lastDeliveryAt = row.created_at;
-      lastDeliveryId = row.id;
+      lastDeliveryAt = (deliveryRows[0] as { created_at: string }).created_at;
     }
   }
 
@@ -166,16 +164,9 @@ export default async function ThreadDetailPage(
                 ? <>Last delivery attempt: <FormattedDate date={lastDeliveryAt} /></>
                 : "No delivery timestamp available."}
             </p>
-            {lastDeliveryId && (
-              <form action={`/api/webhook-deliveries/${lastDeliveryId}/retry`} method="POST" className="mt-1.5 ml-5">
-                <button
-                  type="submit"
-                  className="text-xs px-2 py-0.5 rounded bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 transition-colors border border-amber-700/50"
-                >
-                  Retry delivery
-                </button>
-              </form>
-            )}
+            <div className="mt-1.5 ml-5">
+              <RedispatchButton threadId={threadId} />
+            </div>
           </div>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
