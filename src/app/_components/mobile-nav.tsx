@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
@@ -8,8 +8,7 @@ import { useMobileMenu } from "./mobile-menu-context";
 
 const ADMIN_EMAIL = "jay+direct@productcoalition.com";
 
-const NAV_LINKS = [
-  { href: "/threads", label: "Threads" },
+const MENU_LINKS = [
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
   { href: "/prompts", label: "Prompts" },
@@ -29,9 +28,12 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
     close();
   }, [pathname, close]);
 
-  const links = userEmail === ADMIN_EMAIL
-    ? [...NAV_LINKS, { href: "/feedback", label: "Feedback" }]
-    : NAV_LINKS;
+  const menuLinks = userEmail === ADMIN_EMAIL
+    ? [...MENU_LINKS, { href: "/feedback", label: "Feedback" }]
+    : MENU_LINKS;
+
+  const isOnMenuPage = menuLinks.some((l) => pathname.startsWith(l.href));
+  const [menuOpen, setMenuOpen] = useState(isOnMenuPage);
 
   async function handleSignOut() {
     const supabase = createAuthBrowserClient();
@@ -119,22 +121,60 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
               </button>
             </div>
 
-            {/* Nav links */}
+            {/* Threads link (always visible) + collapsible Menu */}
             <div className="px-3 py-2 space-y-0.5 shrink-0">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={close}
-                  className={`block px-3 py-2 rounded-md text-sm transition-colors ${
-                    pathname.startsWith(link.href)
-                      ? "bg-[var(--muted)] font-medium"
-                      : "hover:bg-[var(--muted)]"
-                  }`}
+              <Link
+                href="/threads"
+                onClick={close}
+                className={`block px-3 py-2 rounded-md text-sm transition-colors ${
+                  pathname.startsWith("/threads")
+                    ? "bg-[var(--muted)] font-medium"
+                    : "hover:bg-[var(--muted)]"
+                }`}
+              >
+                Threads
+              </Link>
+
+              {/* Menu accordion */}
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center justify-between w-full px-3 py-2 rounded-md text-sm text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+                aria-expanded={menuOpen}
+              >
+                <span>Menu</span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`transition-transform duration-150 ${menuOpen ? "rotate-90" : ""}`}
                 >
-                  {link.label}
-                </Link>
-              ))}
+                  <polyline points="4 2 8 6 4 10" />
+                </svg>
+              </button>
+
+              {menuOpen && (
+                <div className="pl-2 space-y-0.5">
+                  {menuLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={close}
+                      className={`block px-3 py-1.5 rounded-md text-sm transition-colors ${
+                        pathname.startsWith(link.href)
+                          ? "bg-[var(--muted)] font-medium"
+                          : "text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Portal target for thread sidebar content */}
