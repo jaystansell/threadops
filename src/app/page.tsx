@@ -536,7 +536,7 @@ What would Threadzy change about how you work? What would stay the same? Be spec
           Stop managing agents in your head
         </h2>
         <p className="text-[var(--muted-foreground)] mb-8 max-w-xl mx-auto">
-          Free forever. Connect your first agent in 5 minutes.
+          Free to start. Connect your first agent in 5 minutes.
         </p>
         <div className="flex items-center justify-center gap-4">
           <Link
