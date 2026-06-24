@@ -72,6 +72,46 @@ function humanTimeDollars(minutesPerDay: number): {
 
 export default function WhitePaperPage() {
   return (
+    <div className="w-full relative">
+      {/* Marketing Nav — same as homepage */}
+      <nav className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
+        <Link href="/" className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+          threadzy<span className="text-[var(--accent)]">.ai</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/docs/api"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Docs
+          </Link>
+          <Link
+            href="/changelog"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Changelog
+          </Link>
+          <Link
+            href="/white-paper"
+            className="text-sm text-[var(--foreground)] font-medium transition-colors"
+          >
+            ROI
+          </Link>
+          <Link
+            href="/login"
+            className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="px-4 py-2 text-sm font-semibold rounded-lg bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 transition-opacity"
+          >
+            Get Started
+          </Link>
+        </div>
+      </nav>
+
     <div className="max-w-4xl mx-auto px-4 py-12">
       {/* Header */}
       <div className="mb-16 text-center">
@@ -901,6 +941,7 @@ export default function WhitePaperPage() {
           </Link>
         </div>
       </section>
+    </div>
     </div>
   );
 }
