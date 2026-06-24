@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/api-keys", label: "API Keys" },
   { href: "/prompts", label: "Prompts" },
   { href: "/savings", label: "Savings" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/docs/api", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
 ];

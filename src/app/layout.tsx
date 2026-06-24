@@ -9,6 +9,7 @@ import { DesktopNav } from "./_components/desktop-nav";
 import { MobileMenuProvider } from "./_components/mobile-menu-context";
 import { MobileNav } from "./_components/mobile-nav";
 import { SiteFooter } from "./_components/site-footer";
+import { PushNotificationBanner } from "./_components/push-notification-banner";
 import { UpdateToast } from "./_components/update-toast";
 import "./globals.css";
 
@@ -67,6 +68,7 @@ export default async function RootLayout({
           <UpdateToast />
           <div className="flex-1 flex flex-col">{children}</div>
           <SiteFooter />
+          {userEmail && <PushNotificationBanner />}
           <Analytics />
         </MobileMenuProvider>
       </body>

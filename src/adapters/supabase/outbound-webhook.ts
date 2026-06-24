@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { SIGNATURE_HEADER } from "@/core/rules/webhook";
 import type { CompanyId } from "@/core/types";
 import { createServerClient, type SupabaseClient } from "./client";
+import { buildPushPayload, dispatchPushNotifications } from "./push-notify";
 import { createWebhookEndpointRepo } from "./webhook-endpoint-repo";
 import { createWebhookRepo } from "./webhook-repo";
 
@@ -220,4 +221,10 @@ export function dispatchOutboundWebhooks(
 
   // Use Next.js after() to keep the serverless function alive for background work
   after(work);
+
+  // Also send browser push notifications to subscribed users
+  const pushPayload = buildPushPayload(eventType, eventPayload);
+  if (pushPayload) {
+    dispatchPushNotifications(companyId, eventType, pushPayload);
+  }
 }

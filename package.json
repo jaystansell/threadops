@@ -28,7 +28,8 @@
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "unist-util-visit": "^5.1.0",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
@@ -40,6 +41,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
