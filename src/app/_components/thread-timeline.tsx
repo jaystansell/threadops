@@ -40,7 +40,9 @@ function relativeTime(dateStr: string): string {
 }
 
 function deliveryMethod(authorKind: string): string {
-  return authorKind === "agent" ? "API" : "browser";
+  if (authorKind === "agent") return "API";
+  if (authorKind === "action") return "action";
+  return "browser";
 }
 
 export interface ThreadEvent {
@@ -217,7 +219,7 @@ export function ThreadTimeline({
     const lastMsg = msgs.reduce((a, b) =>
       new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b,
     );
-    if (lastMsg.author_kind !== "user") return null;
+    if (lastMsg.author_kind !== "user" && lastMsg.author_kind !== "action") return null;
 
     const lastAgentMsg = msgs
       .filter((m) => m.author_kind === "agent")
@@ -293,6 +295,101 @@ export function ThreadTimeline({
         }
 
         const msg = item.data;
+
+        /* ---------- Action message card ---------- */
+        if (msg.author_kind === "action") {
+          let actionPayload: {
+            action_type?: string;
+            parameters?: Record<string, unknown>;
+            error?: string;
+            requested_by?: string;
+            requested_at?: string;
+          } | null = null;
+          try {
+            actionPayload =
+              typeof msg.body === "string" ? JSON.parse(msg.body) : null;
+          } catch {
+            /* render as plain text below */
+          }
+
+          if (actionPayload) {
+            const hasError = !!actionPayload.error;
+            return (
+              <div
+                key={msg.id}
+                className={`rounded-lg border p-3 ${hasError ? "border-red-400 bg-red-50 dark:bg-red-950/20" : "border-blue-400 bg-blue-50 dark:bg-blue-950/20"}`}
+                data-testid="timeline-action"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded ${hasError ? "bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200" : "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"}`}
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    {hasError ? "Action Error" : "Action Request"}
+                  </span>
+                  <span className="text-xs font-mono text-[var(--muted-foreground)]">
+                    {actionPayload.action_type}
+                  </span>
+                  <span className="text-xs text-[var(--muted-foreground)]">
+                    <FormattedDate date={msg.created_at} includeTime />
+                  </span>
+                </div>
+
+                {hasError && (
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-2">
+                    {actionPayload.error}
+                  </p>
+                )}
+
+                {actionPayload.parameters &&
+                  Object.keys(actionPayload.parameters).length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                        Parameters
+                      </span>
+                      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
+                        {Object.entries(actionPayload.parameters).map(
+                          ([key, val]) => (
+                            <div key={key} className="contents">
+                              <span className="font-mono text-[var(--muted-foreground)]">
+                                {key}
+                              </span>
+                              <span className="truncate">
+                                {typeof val === "object"
+                                  ? JSON.stringify(val)
+                                  : String(val)}
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {actionPayload.requested_by && (
+                  <div className="mt-2 text-[10px] text-[var(--muted-foreground)]">
+                    Requested by {actionPayload.requested_by}
+                    {actionPayload.requested_at &&
+                      ` at ${new Date(actionPayload.requested_at).toLocaleString()}`}
+                  </div>
+                )}
+              </div>
+            );
+          }
+        }
+
         return (
           <div
             key={msg.id}
