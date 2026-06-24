@@ -129,6 +129,7 @@ export async function POST(
     thread.company_id as CompanyId,
     "action.requested",
     {
+      action: action,
       action_type: action,
       parameters,
       thread_id: threadId,

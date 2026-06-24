@@ -45,5 +45,5 @@ export async function registerCapabilities(
     }
   }
 
-  return { registered: results.length, capabilities: results };
+  return { registered: results.filter((r) => !("error" in r)).length, capabilities: results };
 }

@@ -219,7 +219,7 @@ export function ThreadTimeline({
     const lastMsg = msgs.reduce((a, b) =>
       new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? a : b,
     );
-    if (lastMsg.author_kind !== "user") return null;
+    if (lastMsg.author_kind !== "user" && lastMsg.author_kind !== "action") return null;
 
     const lastAgentMsg = msgs
       .filter((m) => m.author_kind === "agent")
