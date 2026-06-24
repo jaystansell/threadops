@@ -46,21 +46,33 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
+export type SubscribeResult =
+  | { ok: true; subscription: PushSubscription }
+  | { ok: false; reason: "unsupported" | "not-configured" | "permission-denied" | "sw-failed" | "subscribe-failed" | "server-failed" };
+
 /** Subscribe to push notifications and save subscription to server */
-export async function subscribeToPush(): Promise<PushSubscription | null> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY) return null;
+export async function subscribeToPush(): Promise<SubscribeResult> {
+  if (!isPushSupported()) return { ok: false, reason: "unsupported" };
+  if (!VAPID_PUBLIC_KEY) return { ok: false, reason: "not-configured" };
 
   try {
     const registration = await registerServiceWorker();
-    if (!registration) return null;
+    if (!registration) return { ok: false, reason: "sw-failed" };
 
     // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-    });
+    let subscription: PushSubscription;
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+      });
+    } catch {
+      const perm = getPermissionState();
+      if (perm === "denied") return { ok: false, reason: "permission-denied" };
+      return { ok: false, reason: "subscribe-failed" };
+    }
 
     // Save subscription to server
     const res = await fetch("/api/push-subscriptions", {
@@ -76,14 +88,13 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     });
 
     if (!res.ok) {
-      // If server save fails, unsubscribe
       await subscription.unsubscribe();
-      return null;
+      return { ok: false, reason: "server-failed" };
     }
 
-    return subscription;
+    return { ok: true, subscription };
   } catch {
-    return null;
+    return { ok: false, reason: "subscribe-failed" };
   }
 }
 
