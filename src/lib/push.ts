@@ -74,25 +74,30 @@ export async function subscribeToPush(): Promise<SubscribeResult> {
       return { ok: false, reason: "subscribe-failed" };
     }
 
-    // Save subscription to server
-    const res = await fetch("/api/push-subscriptions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: arrayBufferToBase64(subscription.getKey("p256dh")),
-          auth: arrayBufferToBase64(subscription.getKey("auth")),
-        },
-      }),
-    });
+    // Save subscription to server — clean up browser subscription on any failure
+    try {
+      const res = await fetch("/api/push-subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: arrayBufferToBase64(subscription.getKey("p256dh")),
+            auth: arrayBufferToBase64(subscription.getKey("auth")),
+          },
+        }),
+      });
 
-    if (!res.ok) {
-      await subscription.unsubscribe();
+      if (!res.ok) {
+        await subscription.unsubscribe();
+        return { ok: false, reason: "server-failed" };
+      }
+
+      return { ok: true, subscription };
+    } catch {
+      await subscription.unsubscribe().catch(() => {});
       return { ok: false, reason: "server-failed" };
     }
-
-    return { ok: true, subscription };
   } catch {
     return { ok: false, reason: "subscribe-failed" };
   }

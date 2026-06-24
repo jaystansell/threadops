@@ -99,7 +99,7 @@ export function PushNotificationBanner() {
               strokeLinecap="round"
             />
           </svg>
-          <p className={`text-sm truncate ${error ? "text-red-400" : "text-[var(--muted-foreground)]"}`}>
+          <p className={`text-sm ${error ? "text-red-400" : "text-[var(--muted-foreground)] truncate"}`}>
             {error || "Get notified when your agents reply or need attention"}
           </p>
         </div>
