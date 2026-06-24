@@ -1074,6 +1074,102 @@ Known localStorage keys:
 - Revoked agents show a red "Disconnected" badge when visible
 - Currently ~15 revoked agents in Demo Company with ~21 open threads
 
+### ActionPalette / Agent-Declared Actions (PR #167, #169)
+
+The ActionPalette is a dropdown in the message composer that shows available actions (builtin + agent-declared) with auto-generated parameter forms.
+
+**Key files:**
+- `src/app/_components/action-palette.tsx` — ActionPalette component (dropdown, param form, submission)
+- `src/app/_components/message-composer.tsx` — Integrates ActionPalette button in toolbar
+- `src/app/api/threads/[threadId]/actions/route.ts` — GET (list actions) and POST (dispatch action)
+- `src/app/api/agents/[apiKeyId]/actions/route.ts` — CRUD for agent-declared actions
+- `src/core/rules/json-schema.ts` — JSON Schema validator (Draft-7 subset)
+- `infra/migrations/035_create_agent_actions.sql` — Creates `agent_actions` table
+
+**Migration dependency:** The `agent_actions` table must exist. Verify via Supabase MCP:
+```sql
+SELECT count(*) FROM agent_actions;
+```
+
+**Seeding a test action:**
+```bash
+source .env.local
+curl -s -X POST "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/agent_actions" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{
+    "api_key_id": "<AGENT_API_KEY_ID>",
+    "company_id": "a0000000-0000-0000-0000-000000000001",
+    "name": "create_newsletter",
+    "description": "Create a newsletter draft with specified topic and settings",
+    "parameter_schema": {
+      "type": "object",
+      "properties": {
+        "topic": {"type": "string", "description": "Newsletter topic"},
+        "word_count": {"type": "integer", "minimum": 100, "maximum": 5000},
+        "style": {"type": "string", "enum": ["formal", "casual", "technical"]},
+        "include_images": {"type": "boolean"}
+      },
+      "required": ["topic", "style"]
+    }
+  }'
+```
+
+**UI test flow:**
+1. Navigate to a thread with an agent that has declared actions
+2. Scroll to composer, click "Actions" button (lightning bolt icon)
+3. Palette opens showing builtin actions (generate_summary, generate_tags with "built-in" badge) + custom actions
+4. Clicking a builtin action dispatches immediately (no param form)
+5. Clicking a custom action shows auto-generated parameter form with correct input types:
+   - `string` → text input
+   - `integer`/`number` → number input (with min/max from schema)
+   - `enum` → select dropdown with options
+   - `boolean` → select with true/false/Select... options
+6. Required fields have `*` marker and HTML `required` attribute
+7. Palette closes on outside click
+
+**API test flow (use Playwright CDP for authenticated requests):**
+```javascript
+const { chromium } = require('playwright');
+const browser = await chromium.connectOverCDP('http://localhost:29229');
+const page = browser.contexts()[0].pages()[0];
+
+// Unsupported action → 422
+const r = await page.evaluate(async () => {
+  const res = await fetch('/api/threads/<THREAD_ID>/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'nonexistent', parameters: {} })
+  });
+  return { status: res.status, body: await res.json() };
+});
+// Expected: { status: 422, body: { error: "This agent does not support..." } }
+
+// Missing required param → 400
+const r2 = await page.evaluate(async () => {
+  const res = await fetch('/api/threads/<THREAD_ID>/actions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'create_newsletter', parameters: { style: 'formal' } })
+  });
+  return { status: res.status, body: await res.json() };
+});
+// Expected: { status: 400, body: { validation_errors: [{ path: "topic", message: "Required" }] } }
+```
+
+**Important: curl won't work for cookie-auth routes.** The middleware redirects unauthenticated requests to `/login` (307). Use Playwright `page.evaluate(fetch(...))` to make requests from the authenticated browser session.
+
+**Boolean parameter fix (PR #169):** Unselected optional boolean params (value = "Select...") should be omitted from the payload entirely, not sent as `false`. The fix is in `action-palette.tsx` lines 136-137:
+```typescript
+} else if (propType === "boolean") {
+  parameters[key] = raw ? raw === "true" : undefined;
+}
+```
+
+**Side effect note:** Dispatching an action fires a webhook to the owning agent. The agent may perform side effects (e.g., archive the thread). This is expected — reopen the thread if needed to continue testing.
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
