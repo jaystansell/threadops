@@ -626,7 +626,7 @@ The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If 
 - Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
 - Use Supabase MCP (`execute_sql`) to inspect data if needed
 
-Migrations are in `infra/migrations/` (000-037). Seed data is in `infra/seed/seed.sql`.
+Migrations are in `infra/migrations/` (000-038). Seed data is in `infra/seed/seed.sql`.
 
 To apply migrations via psql (pooler connection, bypasses IPv6 issue):
 ```bash
@@ -1007,6 +1007,88 @@ curl -s http://localhost:3000/api/threads/$THREAD_ID/status \
 **Status enum:** Only these 4 values are accepted: `acknowledged`, `processing`, `completed`, `escalated`. Any other value returns 400.
 
 **Thread ownership validation:** The thread must belong to the same company as the API key. Cross-company requests return 404 "Thread not found".
+
+### ACK Timeout / Unhandled Thread Detection (PR #166)
+
+The ACK timeout feature adds automatic detection of threads where an agent failed to acknowledge a webhook delivery within the configured timeout window. It extends the `agent_processing_status` system with "unhandled" status and adds visual indicators.
+
+**Key files:**
+- `src/app/api/cron/check-unhandled/route.ts` — Cron endpoint that detects unhandled threads
+- `src/app/_components/thread-sidebar.tsx` — Amber indicator (lines ~1068-1094)
+- `src/app/threads/[threadId]/page.tsx` — Amber banner + "Unhandled" badge
+- `infra/migrations/035_add_ack_timeout_to_companies.sql` — Adds `ack_timeout_seconds` column
+- `vercel.json` — Cron schedule (every minute)
+
+**Migration dependency:** The cron endpoint requires `companies.ack_timeout_seconds` column. Without migration 035 applied, it returns `{"error":"column companies.ack_timeout_seconds does not exist"}`. The UI indicators work independently of this migration (they read from `agent_processing_status` table which exists from migration 032).
+
+**Testing the UI indicators:**
+
+The UI reads `agent_processing_status` per-thread from the threads layout query. To test indicators without running the cron, insert records directly:
+```bash
+source .env.local
+# Insert "unhandled" status for a thread
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/agent_processing_status" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{"thread_id":"<THREAD_ID>","api_key_id":"<API_KEY_ID>","status":"unhandled"}'
+
+# Insert "acknowledged" status for comparison
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/agent_processing_status" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: return=representation" \
+  -d '{"thread_id":"<THREAD_ID>","api_key_id":"<API_KEY_ID>","status":"acknowledged"}'
+```
+
+**Visual indicator differences:**
+- **Unhandled (amber):** `bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.7)]` with title="Unhandled — agent did not acknowledge"
+- **Acknowledged/Processing (blue):** `bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.7)]` with title="Agent processing"
+- Sidebar shows a small pulsing dot next to thread title
+- Thread detail shows amber banner with text: "Agent has not acknowledged this message within the configured timeout window."
+- Thread detail shows amber "Unhandled" badge: `bg-amber-500/15 text-amber-400`
+- Acknowledged threads show blue "Agent acknowledged" badge: `bg-blue-500/15 text-blue-400` and NO amber banner
+
+**Testing the cron endpoint:**
+```bash
+# Set CRON_SECRET before starting dev server
+export CRON_SECRET=test-secret
+npm run dev
+
+# Test auth (should pass with correct bearer token)
+curl -s -X GET "http://localhost:3000/api/cron/check-unhandled" \
+  -H "Authorization: Bearer test-secret"
+
+# Without CRON_SECRET or wrong token: returns 401 "Unauthorized"
+```
+
+**Environment variable gotcha:** Shell-level `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` variables may persist from other repos (e.g., ExecReps) and override `.env.local`. Always `unset` these before starting the dev server:
+```bash
+unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
+export CRON_SECRET=test-secret
+npm run dev
+```
+
+**Test user setup for UI verification:**
+1. Sign up a new user via `/signup` (email + password, min 6 chars)
+2. Complete onboarding via "Join Demo Company" button
+3. If user ends up in wrong company, update via REST API:
+   ```bash
+   curl -s -X PATCH "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/company_members?user_id=eq.<USER_ID>" \
+     -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+     -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"company_id": "a0000000-0000-0000-0000-000000000001"}'
+   ```
+
+**Cleanup:** After testing, delete the test `agent_processing_status` rows:
+```bash
+curl -s -X DELETE "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/agent_processing_status?thread_id=eq.<THREAD_ID>" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+```
 
 ### Delivery Receipts Testing (PR #173)
 
