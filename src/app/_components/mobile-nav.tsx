@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
@@ -28,12 +28,29 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
     close();
   }, [pathname, close]);
 
-  const menuLinks = userEmail === ADMIN_EMAIL
-    ? [...MENU_LINKS, { href: "/feedback", label: "Feedback" }]
-    : MENU_LINKS;
+  const menuLinks = useMemo(
+    () =>
+      userEmail === ADMIN_EMAIL
+        ? [...MENU_LINKS, { href: "/feedback", label: "Feedback" }]
+        : MENU_LINKS,
+    [userEmail],
+  );
 
-  const isOnMenuPage = menuLinks.some((l) => pathname.startsWith(l.href));
-  const [menuOpen, setMenuOpen] = useState(isOnMenuPage);
+  // Re-derive accordion state each time the drawer opens or path changes.
+  // Using a compound key ensures React resets the state on navigation.
+  const menuDefaultOpen = useMemo(
+    () => menuLinks.some((l) => pathname.startsWith(l.href)),
+    [menuLinks, pathname],
+  );
+  const [menuOpen, setMenuOpen] = useState(menuDefaultOpen);
+  const [drawerKey, setDrawerKey] = useState({ isOpen, pathname });
+
+  // Reset accordion when drawer reopens or pathname changes
+  if (drawerKey.isOpen !== isOpen || drawerKey.pathname !== pathname) {
+    setDrawerKey({ isOpen, pathname });
+    const shouldBeOpen = menuLinks.some((l) => pathname.startsWith(l.href));
+    if (shouldBeOpen !== menuOpen) setMenuOpen(shouldBeOpen);
+  }
 
   async function handleSignOut() {
     const supabase = createAuthBrowserClient();
