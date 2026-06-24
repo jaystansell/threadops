@@ -131,6 +131,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Validate ack_timeout_seconds if provided
+  if (body.ack_timeout_seconds !== undefined) {
+    if (typeof body.ack_timeout_seconds !== "number" || !Number.isInteger(body.ack_timeout_seconds) || body.ack_timeout_seconds < 1) {
+      return Response.json(
+        { error: "ack_timeout_seconds must be a positive integer" },
+        { status: 400 },
+      );
+    }
+  }
+
   const secret = generateSecret();
 
   // Merge user-selected events with always-on events
@@ -150,6 +160,7 @@ export async function POST(req: NextRequest) {
       secret,
       ...(body.filters && { filters: body.filters }),
       ...(body.include_context !== undefined && { include_context: body.include_context }),
+      ...(body.ack_timeout_seconds !== undefined && { ack_timeout_seconds: body.ack_timeout_seconds }),
     });
     return Response.json(endpoint, { status: 201 });
   } catch (err) {

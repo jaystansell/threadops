@@ -26,6 +26,7 @@ function makeEndpoint(overrides: Partial<WebhookEndpoint>): WebhookEndpoint {
     active: true,
     filters: {},
     include_context: true,
+    ack_timeout_seconds: 60,
     created_at: "2025-01-01T00:00:00Z",
     updated_at: "2025-01-01T00:00:00Z",
     ...overrides,
