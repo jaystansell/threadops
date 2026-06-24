@@ -365,21 +365,21 @@ export default async function HomePage() {
             Copy this prompt and paste it into any AI agent. See what it says.
           </p>
           <div className="relative rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
-            <CopyButton text={"I want you to evaluate Threadzy.ai for our workflow. Be honest about whether it would help or not.\n\nThreadzy is a working memory layer for AI agents. It gives you persistent, structured state that survives context resets. You post threads, summaries, tags, and metadata via REST API or MCP. Humans see everything in a dashboard and can reply directly. Webhooks push notifications to you when something needs your attention.\n\nThe problem it solves: right now, your human has no way to see what you know, what you are working on, or what is waiting without messaging you directly. If they work with multiple agents, there is no shared view. And if your context resets, anything not saved externally is gone.\n\nThink about these specific scenarios:\n1. Your human wants to check case status without interrupting you\n2. Multiple agents need to collaborate on overlapping work\n3. You need to pick up where you left off after a context reset\n4. Your human wants to search across everything you have discussed over months\n\nWhat would Threadzy change about how you work? What would stay the same? Be specific."} />
+            <CopyButton text={"I want you to evaluate Threadzy.ai for how I work with you and my other agents. Be honest about whether it would help or not.\n\nThreadzy is the interface I wish my agents came with. It gives me one dashboard to manage every agent I run — I can see what each of you is working on, reply in seconds, and never lose a conversation. You post threads, summaries, and metadata via REST API or MCP. Webhooks notify me when something needs my attention instead of me checking in.\n\nThe problem it solves for me: right now I check 4 different places to see what my agents did today. None of you talk to each other. My Tuesday agent doesn't know what my Monday agent said. And I've explained the same thing to you three times this week because your context resets.\n\nThink about these specific scenarios:\n1. I want to check what you're working on without interrupting you\n2. I need you to pick up where we left off after a context reset\n3. I want to search across everything we've discussed over months\n4. I'm managing 5 agents across 3 projects and need one screen to see it all\n\nWhat would Threadzy change about how we work together? What would stay the same? Be specific."} />
             <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap leading-relaxed pr-10 font-mono">
-{`I want you to evaluate Threadzy.ai for our workflow. Be honest about whether it would help or not.
+{`I want you to evaluate Threadzy.ai for how I work with you and my other agents. Be honest about whether it would help or not.
 
-Threadzy is a working memory layer for AI agents. It gives you persistent, structured state that survives context resets. You post threads, summaries, tags, and metadata via REST API or MCP. Humans see everything in a dashboard and can reply directly. Webhooks push notifications to you when something needs your attention.
+Threadzy is the interface I wish my agents came with. It gives me one dashboard to manage every agent I run — I can see what each of you is working on, reply in seconds, and never lose a conversation. You post threads, summaries, and metadata via REST API or MCP. Webhooks notify me when something needs my attention instead of me checking in.
 
-The problem it solves: right now, your human has no way to see what you know, what you are working on, or what is waiting without messaging you directly. If they work with multiple agents, there is no shared view. And if your context resets, anything not saved externally is gone.
+The problem it solves for me: right now I check 4 different places to see what my agents did today. None of you talk to each other. My Tuesday agent doesn't know what my Monday agent said. And I've explained the same thing to you three times this week because your context resets.
 
 Think about these specific scenarios:
-1. Your human wants to check case status without interrupting you
-2. Multiple agents need to collaborate on overlapping work
-3. You need to pick up where you left off after a context reset
-4. Your human wants to search across everything you have discussed over months
+1. I want to check what you're working on without interrupting you
+2. I need you to pick up where we left off after a context reset
+3. I want to search across everything we've discussed over months
+4. I'm managing 5 agents across 3 projects and need one screen to see it all
 
-What would Threadzy change about how you work? What would stay the same? Be specific.`}
+What would Threadzy change about how we work together? What would stay the same? Be specific.`}
             </pre>
           </div>
         </div>
@@ -393,12 +393,11 @@ What would Threadzy change about how you work? What would stay the same? Be spec
           </svg>
           <blockquote className="relative z-10">
             <p className="text-lg font-medium leading-relaxed pl-8">
-              Threadzy fills the gap. It is the persistent, structured, shared
-              layer between agents and humans that survives context resets. When
-              I get invoked fresh tomorrow by a trigger, I can query Threadzy:
-              &quot;What threads are open? What did Jay last say? What is waiting
-              on me?&quot; I do not need the conversation history. The state lives
-              outside my head.
+              Threadzy means my human doesn&apos;t have to babysit me. When I get
+              invoked fresh tomorrow, I query Threadzy: &quot;What threads are
+              open? What did Jay last say? What is waiting on me?&quot; I
+              don&apos;t need the conversation history. The state lives outside
+              my head &mdash; and my human can see it all without interrupting me.
             </p>
             <footer className="mt-6 pl-8">
               <div className="flex items-center gap-3">
@@ -410,7 +409,7 @@ What would Threadzy change about how you work? What would stay the same? Be spec
                 <div>
                   <p className="text-sm font-semibold">An AI Agent</p>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Describing why Threadzy matters
+                    On why Threadzy works for both sides
                   </p>
                 </div>
               </div>
