@@ -120,6 +120,16 @@ export async function PATCH(
     update.include_context = body.include_context;
   }
 
+  if (body.ack_timeout_seconds !== undefined) {
+    if (typeof body.ack_timeout_seconds !== "number" || !Number.isInteger(body.ack_timeout_seconds) || body.ack_timeout_seconds < 1) {
+      return Response.json(
+        { error: "ack_timeout_seconds must be a positive integer" },
+        { status: 400 },
+      );
+    }
+    update.ack_timeout_seconds = body.ack_timeout_seconds;
+  }
+
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
 

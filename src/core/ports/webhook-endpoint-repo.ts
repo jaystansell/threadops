@@ -32,6 +32,7 @@ export interface WebhookEndpointCreateInput {
   secret: string;
   filters?: WebhookEndpointFilters;
   include_context?: boolean;
+  ack_timeout_seconds?: number;
 }
 
 export interface WebhookEndpointUpdateInput {
@@ -40,4 +41,5 @@ export interface WebhookEndpointUpdateInput {
   active?: boolean;
   filters?: WebhookEndpointFilters;
   include_context?: boolean;
+  ack_timeout_seconds?: number;
 }

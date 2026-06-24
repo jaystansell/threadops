@@ -42,6 +42,7 @@ export interface WebhookEndpoint {
   active: boolean;
   filters: WebhookEndpointFilters;
   include_context: boolean;
+  ack_timeout_seconds: number;
   created_at: string;
   updated_at: string;
 }

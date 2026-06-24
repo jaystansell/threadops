@@ -53,6 +53,7 @@ export function createWebhookEndpointRepo(
       if (input.api_key_id) row.api_key_id = input.api_key_id;
       if (input.filters) row.filters = input.filters;
       if (input.include_context !== undefined) row.include_context = input.include_context;
+      if (input.ack_timeout_seconds !== undefined) row.ack_timeout_seconds = input.ack_timeout_seconds;
 
       const { data, error } = await db
         .from("webhook_endpoints")
@@ -76,6 +77,7 @@ export function createWebhookEndpointRepo(
       if (input.active !== undefined) update.active = input.active;
       if (input.filters !== undefined) update.filters = input.filters;
       if (input.include_context !== undefined) update.include_context = input.include_context;
+      if (input.ack_timeout_seconds !== undefined) update.ack_timeout_seconds = input.ack_timeout_seconds;
 
       const { data, error } = await db
         .from("webhook_endpoints")

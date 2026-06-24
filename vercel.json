@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/check-unhandled",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/check-ack-timeouts",
+      "schedule": "* * * * *"
     }
   ]
 }

@@ -104,6 +104,26 @@ export default async function ThreadDetailPage(
     }
   }
 
+  // Fetch last successful outbound delivery for this thread (for unhandled banner)
+  let lastDeliveryAt: string | null = null;
+  let lastDeliveryId: string | null = null;
+  if (agentProcessingStatus === "unhandled") {
+    const { data: deliveryRows } = await db
+      .from("webhook_deliveries")
+      .select("id, created_at")
+      .eq("company_id", userCompany.companyId)
+      .eq("source", "outbound")
+      .eq("status", "succeeded")
+      .filter("payload->>thread_id", "eq", threadId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (deliveryRows && deliveryRows.length > 0) {
+      const row = deliveryRows[0] as { id: string; created_at: string };
+      lastDeliveryAt = row.created_at;
+      lastDeliveryId = row.id;
+    }
+  }
+
   // Fetch agent name and revocation status for this thread
   let agentName: string | null = null;
   let isAgentRevoked = false;
@@ -134,11 +154,28 @@ export default async function ThreadDetailPage(
           </div>
         )}
         {agentProcessingStatus === "unhandled" && (
-          <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2">
-            <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.7)] shrink-0" />
-            <p className="text-xs text-amber-300">
-              Agent has not acknowledged this message within the configured timeout window.
+          <div className="mt-2 rounded-lg border border-amber-800/50 bg-amber-950/30 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.7)] shrink-0" />
+              <p className="text-xs text-amber-300 font-medium">
+                Agent unresponsive
+              </p>
+            </div>
+            <p className="text-xs text-amber-300/70 mt-1 ml-5">
+              {lastDeliveryAt
+                ? <>Last delivery attempt: <FormattedDate date={lastDeliveryAt} /></>
+                : "No delivery timestamp available."}
             </p>
+            {lastDeliveryId && (
+              <form action={`/api/webhook-deliveries/${lastDeliveryId}/retry`} method="POST" className="mt-1.5 ml-5">
+                <button
+                  type="submit"
+                  className="text-xs px-2 py-0.5 rounded bg-amber-600/30 text-amber-300 hover:bg-amber-600/50 transition-colors border border-amber-700/50"
+                >
+                  Retry delivery
+                </button>
+              </form>
+            )}
           </div>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">
