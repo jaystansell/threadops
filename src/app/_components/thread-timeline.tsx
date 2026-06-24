@@ -115,21 +115,49 @@ export function ThreadTimeline({
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [externalLinkHref, setExternalLinkHref] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)));
 
+  // Keep knownIds in sync with initialMessages prop changes (navigation)
+  useEffect(() => {
+    knownIdsRef.current = new Set(initialMessages.map((m) => m.id));
+  }, [initialMessages]);
+
+  const mergeNewMessages = useCallback((incoming: Message[]) => {
+    setRealtimeMessages((prev) => {
+      const known = knownIdsRef.current;
+      const prevIds = new Set(prev.map((m) => m.id));
+      const novel = incoming.filter((m) => !known.has(m.id) && !prevIds.has(m.id));
+      if (novel.length === 0) return prev;
+      for (const m of novel) known.add(m.id);
+      return [...prev, ...novel];
+    });
+  }, []);
+
+  // Supabase Realtime subscription (primary — instant when connected)
   useEffect(() => {
     const db = createAuthBrowserClient();
     const realtime = createRealtimeAdapter(db);
     const sub = realtime.subscribeToThread(
       threadId as ThreadId,
-      (newMessage) => {
-        setRealtimeMessages((prev) => {
-          if (prev.some((m) => m.id === newMessage.id)) return prev;
-          return [...prev, newMessage];
-        });
-      },
+      (newMessage) => mergeNewMessages([newMessage]),
     );
     return () => sub.unsubscribe();
-  }, [threadId]);
+  }, [threadId, mergeNewMessages]);
+
+  // Polling fallback — catches messages when Realtime silently disconnects
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/threads/${threadId}/messages`);
+        if (!res.ok || cancelled) return;
+        const messages: Message[] = await res.json();
+        if (!cancelled) mergeNewMessages(messages);
+      } catch { /* network error — retry next interval */ }
+    };
+    const interval = setInterval(poll, 5_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [threadId, mergeNewMessages]);
 
   // Close mobile menu on outside click
   useEffect(() => {
