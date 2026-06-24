@@ -162,7 +162,18 @@ function DetailRow({
   );
 }
 
-function ExpandedView({ data }: { data: DeliveryReceiptData }) {
+function ExpandedView({
+  data,
+  threadId,
+  messageId,
+  onRefresh,
+}: {
+  data: DeliveryReceiptData;
+  threadId: string;
+  messageId: string;
+  onRefresh: (d: DeliveryReceiptData) => void;
+}) {
+  const [retrying, setRetrying] = useState(false);
   const webhookStage = data.stages[0];
   const httpStage = data.stages[1];
   const ackStage = data.stages[2];
@@ -224,11 +235,39 @@ function ExpandedView({ data }: { data: DeliveryReceiptData }) {
           <DetailRow
             stage={httpStage}
             extraDetail={
-              data.webhook?.last_error && data.webhook.http_status === null ? (
-                <div className="text-[10px] text-red-400/80 truncate">
-                  {data.webhook.last_error}
-                </div>
-              ) : undefined
+              <>
+                {data.webhook?.last_error && data.webhook.http_status === null && (
+                  <div className="text-[10px] text-red-400/80 truncate">
+                    {data.webhook.last_error}
+                  </div>
+                )}
+                {data.overall_status === "failed" && data.webhook && (
+                  <button
+                    type="button"
+                    disabled={retrying}
+                    onClick={async () => {
+                      setRetrying(true);
+                      try {
+                        await fetch(
+                          `/api/webhook-deliveries/${data.webhook!.delivery_id}/retry`,
+                          { method: "POST" },
+                        );
+                        const res = await fetch(
+                          `/api/threads/${threadId}/messages/${messageId}/delivery`,
+                        );
+                        if (res.ok) onRefresh(await res.json());
+                      } catch {
+                        // ignore
+                      } finally {
+                        setRetrying(false);
+                      }
+                    }}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 underline"
+                  >
+                    {retrying ? "Retrying…" : "Retry"}
+                  </button>
+                )}
+              </>
             }
           />
           <DetailRow stage={ackStage} />
@@ -335,7 +374,7 @@ export function MessageDeliveryReceipt({
             Loading…
           </div>
         ) : (
-          <ExpandedView data={data} />
+          <ExpandedView data={data} threadId={threadId} messageId={messageId} onRefresh={setData} />
         )
       )}
     </div>

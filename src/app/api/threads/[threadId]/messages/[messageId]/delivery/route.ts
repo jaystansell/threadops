@@ -179,15 +179,19 @@ export async function GET(
           return query.order("created_at", { ascending: true }).limit(1);
         }),
 
-      // Fallback reply: first agent message after this one
-      db
-        .from("messages")
-        .select("id, author_name, body, created_at")
-        .eq("thread_id", threadId)
-        .eq("author_kind", "agent")
-        .gt("created_at", message.created_at)
-        .order("created_at", { ascending: true })
-        .limit(1),
+      // Fallback reply: first agent message after this one (scoped to next user msg)
+      (() => {
+        let query = db
+          .from("messages")
+          .select("id, author_name, body, created_at")
+          .eq("thread_id", threadId)
+          .eq("author_kind", "agent")
+          .gt("created_at", message.created_at);
+        if (nextUserMsgTime) {
+          query = query.lt("created_at", nextUserMsgTime);
+        }
+        return query.order("created_at", { ascending: true }).limit(1);
+      })(),
 
       // Endpoint URL
       thread.agent_api_key_id
