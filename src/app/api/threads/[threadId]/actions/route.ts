@@ -59,10 +59,31 @@ export async function POST(
       .single();
 
     if (!agentAction) {
+      // Fetch supported actions to include in the error
+      const { data: allActions } = await db
+        .from("agent_actions")
+        .select("name")
+        .eq("api_key_id", thread.agent_api_key_id!);
+      const supported = [
+        ...BUILTIN_ACTIONS,
+        ...(allActions ?? []).map((a: { name: string }) => a.name),
+      ];
+
+      // Post an error message to the thread so the user sees it inline
+      await db.from("messages").insert({
+        thread_id: threadId,
+        author_id: userCompany.userId,
+        author_kind: "action",
+        author_name: null,
+        body: JSON.stringify({
+          action_type: action,
+          error: `Agent does not support action: ${action}. Supported actions: ${supported.join(", ")}`,
+        }),
+      });
+
       return Response.json(
         {
-          error: `This agent does not support the action "${action}"`,
-          hint: "Check the agent's declared actions via GET /api/agents/{apiKeyId}/actions",
+          error: `Agent does not support action: ${action}. Supported actions: ${supported.join(", ")}`,
         },
         { status: 422 },
       );
@@ -88,18 +109,35 @@ export async function POST(
     validatedParameters = params;
   }
 
+  const parameters = validatedParameters ?? (body.parameters || {});
+
+  // Post an action message to the thread
+  await db.from("messages").insert({
+    thread_id: threadId,
+    author_id: userCompany.userId,
+    author_kind: "action",
+    author_name: null,
+    body: JSON.stringify({
+      action_type: action,
+      parameters,
+      requested_by: "user",
+      requested_at: new Date().toISOString(),
+    }),
+  });
+
   dispatchOutboundWebhooks(
     thread.company_id as CompanyId,
     "action.requested",
     {
-      action,
-      parameters: validatedParameters ?? (body.parameters || {}),
+      action_type: action,
+      parameters,
       thread_id: threadId,
       thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai"}/threads/${threadId}`,
       reply_endpoint: `POST /api/threads/${threadId}/messages`,
       thread_title: thread.title,
       current_summary: thread.summary ?? null,
       requested_by: "user",
+      requested_at: new Date().toISOString(),
     },
     thread.agent_api_key_id,
   );

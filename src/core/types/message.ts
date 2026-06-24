@@ -2,7 +2,7 @@ import type { ThreadId } from "./thread";
 
 export type MessageId = string & { readonly __brand: "MessageId" };
 
-export type MessageAuthorKind = "user" | "agent";
+export type MessageAuthorKind = "user" | "agent" | "action";
 
 export interface MessageMetadata {
   source: "api" | "browser";

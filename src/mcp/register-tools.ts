@@ -17,6 +17,8 @@ import { updateThreadMetadata } from "./tools/update-thread-metadata";
 import { updateThreadSummary } from "./tools/update-thread-summary";
 import { listThreadSummaries } from "./tools/list-thread-summaries";
 import { submitFeedback } from "./tools/submit-feedback";
+import { registerCapabilities } from "./tools/register-capabilities";
+import { listCapabilities } from "./tools/list-capabilities";
 
 function toolResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
@@ -259,7 +261,52 @@ export function registerTools(
     },
   );
 
-  // Tool 5: manage_webhooks — register and list webhook endpoints
+  // Tool 5: manage_capabilities — register and list agent capabilities
+  server.tool(
+    "manage_capabilities",
+    "Manage your agent's capabilities: register action types you support, or list your current capabilities. Capabilities let Threadzy validate action requests and show available actions to users.",
+    {
+      action: z.enum(["register", "list"]).describe(
+        "Operation: register (declare capabilities) or list (view current capabilities)",
+      ),
+      capabilities: z
+        .array(
+          z.object({
+            action_type: z.string().describe("Action type name (e.g., 'create_thread', 'generate_report')"),
+            description: z.string().optional().describe("Human-readable description of the action"),
+            parameters_schema: z
+              .record(z.string(), z.unknown())
+              .optional()
+              .describe("JSON Schema for accepted parameters"),
+          }),
+        )
+        .optional()
+        .describe("[register] Array of capabilities to register (required for register)"),
+    },
+    async (args) => {
+      try {
+        const auth = await getAuth();
+        switch (args.action) {
+          case "register": {
+            if (!args.capabilities || args.capabilities.length === 0) {
+              return toolError("capabilities array is required for register");
+            }
+            return toolResult(
+              await registerCapabilities(db, auth, {
+                capabilities: args.capabilities,
+              }),
+            );
+          }
+          case "list":
+            return toolResult(await listCapabilities(db, auth));
+        }
+      } catch (err) {
+        return toolError(err instanceof Error ? err.message : String(err));
+      }
+    },
+  );
+
+  // Tool 6: manage_webhooks — register and list webhook endpoints
   server.tool(
     "manage_webhooks",
     "Manage webhook endpoints: register a new endpoint or list existing ones.",
