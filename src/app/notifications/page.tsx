@@ -8,6 +8,7 @@ import {
   unsubscribeFromPush,
   getExistingSubscription,
   registerServiceWorker,
+  type SubscribeResult,
 } from "@/lib/push";
 
 const DISMISSED_KEY = "threadzy-push-banner-dismissed";
@@ -17,6 +18,7 @@ type NotifState = "loading" | "unsupported" | "denied" | "subscribed" | "unsubsc
 export default function NotificationsPage() {
   const [state, setState] = useState<NotifState>("loading");
   const [toggling, setToggling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -40,20 +42,24 @@ export default function NotificationsPage() {
 
   const handleToggle = useCallback(async () => {
     setToggling(true);
+    setError(null);
     try {
       if (state === "subscribed") {
         const success = await unsubscribeFromPush();
         if (success) setState("unsubscribed");
       } else {
-        const sub = await subscribeToPush();
-        if (sub) {
+        const result: SubscribeResult = await subscribeToPush();
+        if (result.ok) {
           setState("subscribed");
-          // Also clear the banner dismissed state so it doesn't re-show
           localStorage.setItem(DISMISSED_KEY, "true");
+        } else if (result.reason === "permission-denied") {
+          setState("denied");
+        } else if (result.reason === "not-configured") {
+          setError("Push notifications are not configured yet. Contact support.");
+        } else if (result.reason === "server-failed") {
+          setError("Could not save subscription. Please try again.");
         } else {
-          // Check if permission was denied
-          const perm = getPermissionState();
-          if (perm === "denied") setState("denied");
+          setError("Could not enable notifications. Please try again.");
         }
       }
     } finally {
@@ -138,11 +144,12 @@ export default function NotificationsPage() {
               {state === "subscribed" && (
                 <span className="text-[var(--accent)]">Active — you will receive push notifications</span>
               )}
-              {state === "unsubscribed" && (
+              {state === "unsubscribed" && !error && (
                 <span className="text-[var(--muted-foreground)]">
                   Inactive — toggle on to receive notifications
                 </span>
               )}
+              {error && <span className="text-red-400">{error}</span>}
             </div>
           </div>
         </div>

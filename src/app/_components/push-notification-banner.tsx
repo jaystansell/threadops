@@ -7,6 +7,7 @@ import {
   subscribeToPush,
   registerServiceWorker,
   getExistingSubscription,
+  type SubscribeResult,
 } from "@/lib/push";
 
 const DISMISSED_KEY = "threadzy-push-banner-dismissed";
@@ -19,6 +20,7 @@ const DISMISSED_KEY = "threadzy-push-banner-dismissed";
 export function PushNotificationBanner() {
   const [visible, setVisible] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function checkState() {
@@ -46,15 +48,20 @@ export function PushNotificationBanner() {
 
   const handleEnable = useCallback(async () => {
     setSubscribing(true);
+    setError(null);
     try {
-      const sub = await subscribeToPush();
-      if (sub) {
+      const result: SubscribeResult = await subscribeToPush();
+      if (result.ok) {
         setVisible(false);
         localStorage.setItem(DISMISSED_KEY, "true");
+      } else if (result.reason === "permission-denied") {
+        setError("Notifications blocked by your browser. Check site permissions.");
+      } else if (result.reason === "not-configured") {
+        setError("Push notifications are not configured yet. Try again later.");
+      } else if (result.reason === "server-failed") {
+        setError("Could not save subscription. Please try again.");
       } else {
-        // Permission denied or error — hide banner
-        setVisible(false);
-        localStorage.setItem(DISMISSED_KEY, "true");
+        setError("Could not enable notifications. Please try again.");
       }
     } finally {
       setSubscribing(false);
@@ -92,8 +99,8 @@ export function PushNotificationBanner() {
               strokeLinecap="round"
             />
           </svg>
-          <p className="text-sm text-[var(--muted-foreground)] truncate">
-            Get notified when your agents reply or need attention
+          <p className={`text-sm ${error ? "text-red-400" : "text-[var(--muted-foreground)] truncate"}`}>
+            {error || "Get notified when your agents reply or need attention"}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

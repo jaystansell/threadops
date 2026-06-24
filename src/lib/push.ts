@@ -46,44 +46,60 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
+export type SubscribeResult =
+  | { ok: true; subscription: PushSubscription }
+  | { ok: false; reason: "unsupported" | "not-configured" | "permission-denied" | "sw-failed" | "subscribe-failed" | "server-failed" };
+
 /** Subscribe to push notifications and save subscription to server */
-export async function subscribeToPush(): Promise<PushSubscription | null> {
-  if (!isPushSupported() || !VAPID_PUBLIC_KEY) return null;
+export async function subscribeToPush(): Promise<SubscribeResult> {
+  if (!isPushSupported()) return { ok: false, reason: "unsupported" };
+  if (!VAPID_PUBLIC_KEY) return { ok: false, reason: "not-configured" };
 
   try {
     const registration = await registerServiceWorker();
-    if (!registration) return null;
+    if (!registration) return { ok: false, reason: "sw-failed" };
 
     // Wait for the service worker to be ready
     await navigator.serviceWorker.ready;
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-    });
-
-    // Save subscription to server
-    const res = await fetch("/api/push-subscriptions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        endpoint: subscription.endpoint,
-        keys: {
-          p256dh: arrayBufferToBase64(subscription.getKey("p256dh")),
-          auth: arrayBufferToBase64(subscription.getKey("auth")),
-        },
-      }),
-    });
-
-    if (!res.ok) {
-      // If server save fails, unsubscribe
-      await subscription.unsubscribe();
-      return null;
+    let subscription: PushSubscription;
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+      });
+    } catch {
+      const perm = getPermissionState();
+      if (perm === "denied") return { ok: false, reason: "permission-denied" };
+      return { ok: false, reason: "subscribe-failed" };
     }
 
-    return subscription;
+    // Save subscription to server — clean up browser subscription on any failure
+    try {
+      const res = await fetch("/api/push-subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: arrayBufferToBase64(subscription.getKey("p256dh")),
+            auth: arrayBufferToBase64(subscription.getKey("auth")),
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        await subscription.unsubscribe();
+        return { ok: false, reason: "server-failed" };
+      }
+
+      return { ok: true, subscription };
+    } catch {
+      await subscription.unsubscribe().catch(() => {});
+      return { ok: false, reason: "server-failed" };
+    }
   } catch {
-    return null;
+    return { ok: false, reason: "subscribe-failed" };
   }
 }
 
