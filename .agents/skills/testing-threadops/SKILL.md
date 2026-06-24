@@ -626,7 +626,7 @@ The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If 
 - Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
 - Use Supabase MCP (`execute_sql`) to inspect data if needed
 
-Migrations are in `infra/migrations/` (000-0357). Seed data is in `infra/seed/seed.sql`.
+Migrations are in `infra/migrations/` (000-038). Seed data is in `infra/seed/seed.sql`.
 
 To apply migrations via psql (pooler connection, bypasses IPv6 issue):
 ```bash
