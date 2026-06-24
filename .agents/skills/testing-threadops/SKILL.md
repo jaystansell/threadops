@@ -58,6 +58,25 @@ printf "NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_ANON_KEY=%s\nSUPABASE_
   ```
 - New users need to go through onboarding (creates a company + membership). After login they'll be redirected to complete onboarding automatically.
 
+### Login Input Validation Workaround
+
+**IMPORTANT:** The `/login` form may have HTML5 browser validation on the email field that interferes with automated typing. If the email field shows a validation error or refuses input, use the browser console to set the value programmatically:
+
+```javascript
+// Set email field value via native input setter (bypasses React controlled component)
+const emailInput = document.querySelector('input[type="email"]');
+const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+nativeInputValueSetter.call(emailInput, 'your-email@example.com');
+emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+// Do the same for password
+const pwInput = document.querySelector('input[type="password"]');
+nativeInputValueSetter.call(pwInput, 'YourPassword123!');
+pwInput.dispatchEvent(new Event('input', { bubbles: true }));
+```
+
+Then click the submit button normally. This workaround is needed when Chrome's autofill or HTML5 validation blocks programmatic typing.
+
 ### Signup Auto-Provisioning Gotcha
 
 **IMPORTANT:** When signing up a new user, the system may auto-provision them into one or more companies (via triggers or onboarding logic). The `getUserCompany()` function uses `.limit(1).maybeSingle()` WITHOUT ordering, so it returns whichever company membership appears first in the database — which may NOT be the demo company.
@@ -170,6 +189,69 @@ The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistent
 **Note on .env.local:** The repo's `.env.local` may point to a different Supabase project (e.g. `sdqnfhdorrlbjyssokqs`) that has **no tables**. This is not useful for local testing unless you apply all migrations first. The production Vercel deployment uses the correct project (`gymsbxkuiknbdtulmopv`).
 
 ## Key Test Flows
+
+### ACK Timeout & Auto-Escalation (PR #175)
+
+The ACK timeout feature marks threads as "unhandled" if agents don't acknowledge within a configurable timeout. Key components:
+
+**Files:**
+- `src/app/api/cron/check-ack-timeouts/route.ts` — Cron endpoint (runs every minute)
+- `src/app/_components/redispatch-button.tsx` — Client component for retry button
+- `src/app/api/threads/[threadId]/redispatch/route.ts` — Redispatch API endpoint
+- `src/app/threads/[threadId]/page.tsx` — Thread detail with unhandled banner
+- `src/app/_components/thread-sidebar.tsx` — Sidebar with amber/blue dot indicators
+
+**Migration dependency:** `infra/migrations/037_add_ack_timeout_to_webhook_endpoints.sql` adds `ack_timeout_seconds` column to `webhook_endpoints`. The cron endpoint will return 500 if this migration hasn't been applied.
+
+**UI indicators:**
+- **Amber pulsing dot** (`bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.7)]`) = unhandled thread
+- **Blue pulsing dot** (`bg-blue-500 animate-pulse`) = agent processing/acknowledged thread
+- Both dots appear in the sidebar next to thread names
+
+**Thread detail banner:** When `agent_processing_status = 'unhandled'`, shows:
+- Amber-bordered banner with "Agent unresponsive" text
+- "Last delivery attempt: <formatted date>" from most recent webhook delivery
+- "Retry delivery" button (RedispatchButton client component)
+
+**Testing the cron endpoint (shell):**
+```bash
+# Without auth — expect 401
+curl -s -w "\n%{http_code}" -X POST http://localhost:3000/api/cron/check-ack-timeouts
+
+# With auth — expect 200 (or 500 if migration not applied)
+curl -s -w "\n%{http_code}" -X POST http://localhost:3000/api/cron/check-ack-timeouts \
+  -H "Authorization: Bearer ${CRON_SECRET}"
+
+# GET also supported (Vercel cron compatibility)
+curl -s -w "\n%{http_code}" http://localhost:3000/api/cron/check-ack-timeouts \
+  -H "Authorization: Bearer ${CRON_SECRET}"
+```
+
+**Testing the redispatch button (browser):**
+1. Navigate to a thread with `agent_processing_status = 'unhandled'`
+2. Verify the amber banner appears below the thread title
+3. Click "Retry delivery" → observe "Retrying…" loading state
+4. On success: button shows "Dispatched!", page auto-refreshes, banner disappears
+5. On error: button shows "Failed — retry?" (clickable again)
+
+**Setting up test data for unhandled threads:**
+```sql
+-- Insert an unhandled status record for testing
+INSERT INTO agent_processing_status (thread_id, company_id, status, updated_at)
+VALUES ('<thread_id>', 'a0000000-0000-0000-0000-000000000001', 'unhandled', NOW())
+ON CONFLICT (thread_id) DO UPDATE SET status = 'unhandled', updated_at = NOW();
+```
+
+**Verifying redispatch cleared status (shell via Supabase MCP):**
+```sql
+SELECT * FROM agent_processing_status WHERE thread_id = '<thread_id>';
+-- Should return empty after successful redispatch
+```
+
+**Known issues:**
+- The cron endpoint queries `webhook_endpoints.ack_timeout_seconds` which requires migration 037 to be applied. Without it, the endpoint returns 500 even with valid auth.
+- The redispatch endpoint requires cookie auth (user must be logged in via browser). It verifies thread ownership via `getUserCompany()`.
+- RedispatchButton uses `fetch()` + `router.refresh()` pattern — no full page reload, just React Server Component re-render.
 
 ### Thread Creation
 1. Navigate to `/threads`, click "New Thread"
@@ -544,7 +626,7 @@ The fix uses `max-h-[calc(100dvh-3.25rem)]` on the threads layout container. If 
 - Seed data: 1 company (Acme Corp), 3 themes (General, Engineering, Product), seed threads and messages
 - Use Supabase MCP (`execute_sql`) to inspect data if needed
 
-Migrations are in `infra/migrations/` (000-032). Seed data is in `infra/seed/seed.sql`.
+Migrations are in `infra/migrations/` (000-037). Seed data is in `infra/seed/seed.sql`.
 
 To apply migrations via psql (pooler connection, bypasses IPv6 issue):
 ```bash
