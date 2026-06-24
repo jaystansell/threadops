@@ -99,12 +99,29 @@ export async function GET(
   }
 
   // Verify message belongs to this thread and is a user message
-  const { data: message } = await db
+  // Try with new FK column first; fall back if migration 037 not yet applied
+  let message: { id: string; author_kind: string; created_at: string; webhook_delivery_id: string | null } | null = null;
+  const { data: msgData, error: msgError } = await db
     .from("messages")
     .select("id, author_kind, created_at, webhook_delivery_id")
     .eq("id", messageId)
     .eq("thread_id", threadId)
     .single();
+
+  if (msgError && msgError.message?.includes("webhook_delivery_id")) {
+    // Column doesn't exist yet — retry without it
+    const { data: fallbackMsg } = await db
+      .from("messages")
+      .select("id, author_kind, created_at")
+      .eq("id", messageId)
+      .eq("thread_id", threadId)
+      .single();
+    if (fallbackMsg) {
+      message = { ...fallbackMsg, webhook_delivery_id: null };
+    }
+  } else {
+    message = msgData;
+  }
 
   if (!message) {
     return Response.json({ error: "Message not found" }, { status: 404 });
@@ -133,24 +150,28 @@ export async function GET(
   const nextUserMsgTime = nextUserMsg?.[0]?.created_at ?? null;
 
   // Build delivery query — prefer direct FK, fall back to payload lookup
-  const deliveryQuery = message.webhook_delivery_id
-    ? db
-        .from("webhook_deliveries")
-        .select(
-          "id, status, event_type, last_error, created_at, processed_at, ack_at, reply_message_id",
-        )
-        .eq("id", message.webhook_delivery_id)
-        .limit(1)
-    : db
-        .from("webhook_deliveries")
-        .select(
-          "id, status, event_type, last_error, created_at, processed_at, ack_at, reply_message_id",
-        )
-        .eq("company_id", userCompany.companyId)
-        .eq("source", "outbound")
-        .filter("payload->>message_id", "eq", messageId)
-        .order("created_at", { ascending: false })
-        .limit(1);
+  // Use base columns that always exist; new columns (ack_at, reply_message_id) may not exist yet
+  const deliverySelectBase = "id, status, event_type, last_error, created_at, processed_at";
+  const deliverySelectFull = `${deliverySelectBase}, ack_at, reply_message_id`;
+
+  const buildDeliveryQuery = (selectCols: string) => {
+    return message.webhook_delivery_id
+      ? db
+          .from("webhook_deliveries")
+          .select(selectCols)
+          .eq("id", message.webhook_delivery_id)
+          .limit(1)
+      : db
+          .from("webhook_deliveries")
+          .select(selectCols)
+          .eq("company_id", userCompany.companyId)
+          .eq("source", "outbound")
+          .filter("payload->>message_id", "eq", messageId)
+          .order("created_at", { ascending: false })
+          .limit(1);
+  };
+
+  const deliveryQuery = buildDeliveryQuery(deliverySelectFull);
 
   // Fetch delivery, fallback ACK, fallback reply, and endpoint in parallel
   const [deliveryResult, fallbackAckResult, fallbackReplyResult, endpointResult] =
@@ -204,7 +225,49 @@ export async function GET(
         : Promise.resolve({ data: null }),
     ]);
 
-  const delivery = deliveryResult.data?.[0] ?? null;
+  // Normalized delivery record with guaranteed shape
+  interface DeliveryRecord {
+    id: string;
+    status: string;
+    event_type: string;
+    last_error: string | null;
+    created_at: string;
+    processed_at: string | null;
+    ack_at: string | null;
+    reply_message_id: string | null;
+  }
+
+  // If delivery query failed (new columns don't exist), retry with base columns only
+  let delivery: DeliveryRecord | null = null;
+  const rawDelivery = deliveryResult.data?.[0];
+  if (!rawDelivery && deliveryResult.error) {
+    const retryResult = await buildDeliveryQuery(deliverySelectBase);
+    const retryRow = retryResult.data?.[0] as Record<string, unknown> | undefined;
+    if (retryRow) {
+      delivery = {
+        id: retryRow.id as string,
+        status: retryRow.status as string,
+        event_type: retryRow.event_type as string,
+        last_error: (retryRow.last_error as string) ?? null,
+        created_at: retryRow.created_at as string,
+        processed_at: (retryRow.processed_at as string) ?? null,
+        ack_at: null,
+        reply_message_id: null,
+      };
+    }
+  } else if (rawDelivery) {
+    const row = rawDelivery as unknown as Record<string, unknown>;
+    delivery = {
+      id: row.id as string,
+      status: row.status as string,
+      event_type: row.event_type as string,
+      last_error: (row.last_error as string) ?? null,
+      created_at: row.created_at as string,
+      processed_at: (row.processed_at as string) ?? null,
+      ack_at: (row.ack_at as string) ?? null,
+      reply_message_id: (row.reply_message_id as string) ?? null,
+    };
+  }
   const fallbackAck = fallbackAckResult.data?.[0] ?? null;
   const fallbackReply = fallbackReplyResult.data?.[0] ?? null;
   const endpoint = endpointResult.data?.[0] ?? null;
@@ -241,7 +304,7 @@ export async function GET(
   // Build stages
   const hasDelivery = delivery !== null;
   const deliveryStatus: "complete" | "pending" | "failed" | "inactive" =
-    !hasDelivery
+    !hasDelivery || !delivery
       ? "inactive"
       : delivery.status === "succeeded"
         ? "complete"
