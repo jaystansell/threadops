@@ -64,9 +64,9 @@ export default async function HomePage() {
           <span className="text-[var(--accent)]">your agents came with.</span>
         </h1>
         <p className="mt-6 text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto">
-          One place to manage every agent you run. Your agents forget &mdash; you
-          shouldn&apos;t have to remember for them. See what they&apos;re working on,
-          reply in seconds, and never lose a conversation again.
+          You run agents for bookkeeping, research, customer ops, and more.
+          Threadzy is where you see it all, reply when it matters, and never
+          repeat yourself. One dashboard. Every agent. Full control.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
           <Link
@@ -84,7 +84,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* The Problem — human-centric */}
+      {/* Who this is for */}
+      <section className="max-w-4xl mx-auto px-4 py-16">
+        <div className="grid gap-6 sm:grid-cols-2 max-w-3xl mx-auto">
+          <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 backdrop-blur-sm p-6">
+            <h3 className="font-semibold mb-3 text-[var(--accent)]">Threadzy is for you if:</h3>
+            <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You run 2+ AI agents across different tools and projects</li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You&apos;re a solopreneur or small team. You ARE the ops layer.</li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>Your agents handle real business tasks, not just coding assistance</li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You&apos;re tired of checking 4 places to see what happened today</li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You need agents to remember what you told them last week</li>
+            </ul>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
+            <h3 className="font-semibold mb-3 text-[var(--muted-foreground)]">Not for you if:</h3>
+            <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
+              <li className="flex items-start gap-2"><span className="opacity-40 mt-0.5">&minus;</span>You only use AI for interactive coding (Cursor, Copilot). Your IDE already does this.</li>
+              <li className="flex items-start gap-2"><span className="opacity-40 mt-0.5">&minus;</span>You need a vector database or semantic memory extraction. Check out Mem0 or Zep.</li>
+              <li className="flex items-start gap-2"><span className="opacity-40 mt-0.5">&minus;</span>You&apos;re building an agent framework. We&apos;re the layer on top, not the plumbing.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* The Problem */}
       <section className="max-w-4xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold text-center mb-10">
           Sound familiar?
@@ -99,7 +123,7 @@ export default async function HomePage() {
             <h3 className="font-semibold mb-2">You check 4 different places to see what your agents did today</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
               Slack, email, Cursor, Claude. None of them talk to each other.
-              You&apos;re the router.
+              You&apos;re the router between all of them.
             </p>
           </div>
 
@@ -125,7 +149,7 @@ export default async function HomePage() {
             <h3 className="font-semibold mb-2">You&apos;ve explained the same thing to the same agent three times this week</h3>
             <p className="text-sm text-[var(--muted-foreground)]">
               Not because it&apos;s dumb. Because it literally cannot remember.
-              If it was never saved externally, it&apos;s gone.
+              If it was never saved externally, it is gone.
             </p>
           </div>
         </div>
@@ -159,7 +183,7 @@ export default async function HomePage() {
               <h3 className="font-semibold mb-2">Check status without interrupting</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Open the dashboard. See every active thread across every agent.
-                No more &quot;hey, what&apos;s the status on&hellip;&quot; messages.
+                No more &quot;hey, what&apos;s the status on...&quot; messages.
               </p>
             </div>
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
@@ -172,7 +196,7 @@ export default async function HomePage() {
             <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
               <h3 className="font-semibold mb-2">Works with every agent you already use</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Devin, Claude, GPT, Cursor, n8n, custom scripts. One API key.
+                Devin, Claude, GPT, n8n, Zapier, custom scripts. One API key.
                 Five-minute setup.
               </p>
             </div>
@@ -268,7 +292,7 @@ export default async function HomePage() {
             <div className="relative z-10">
               <div className="text-[10px] uppercase tracking-widest text-[var(--muted-foreground)] mb-2 font-mono">Your Agent Stack</div>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-                {["Devin", "Claude", "GPT", "Cursor", "Custom"].map((name) => (
+                {["Devin", "Claude", "GPT", "n8n", "Custom"].map((name) => (
                   <div
                     key={name}
                     className="rounded-lg border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm px-3 py-2.5 text-center"
@@ -278,7 +302,7 @@ export default async function HomePage() {
                 ))}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {["LangChain", "CrewAI", "AutoGen", "n8n"].map((name) => (
+                {["Zapier", "Cursor", "Make", "LangChain"].map((name) => (
                   <div
                     key={name}
                     className="rounded-lg border border-[var(--border)]/50 bg-[var(--background)]/40 backdrop-blur-sm px-3 py-2 text-center"
@@ -362,24 +386,16 @@ export default async function HomePage() {
             Ask your agent what it thinks
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
-            Copy this prompt and paste it into any AI agent. See what it says.
+            Copy this prompt and paste it into any AI agent. See what it says. No script, no leading questions.
           </p>
           <div className="relative rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
-            <CopyButton text={"I want you to evaluate Threadzy.ai for how I work with you and my other agents. Be honest about whether it would help or not.\n\nThreadzy is the interface I wish my agents came with. It gives me one dashboard to manage every agent I run — I can see what each of you is working on, reply in seconds, and never lose a conversation. You post threads, summaries, and metadata via REST API or MCP. Webhooks notify me when something needs my attention instead of me checking in.\n\nThe problem it solves for me: right now I check 4 different places to see what my agents did today. None of you talk to each other. My Tuesday agent doesn't know what my Monday agent said. And I've explained the same thing to you three times this week because your context resets.\n\nThink about these specific scenarios:\n1. I want to check what you're working on without interrupting you\n2. I need you to pick up where we left off after a context reset\n3. I want to search across everything we've discussed over months\n4. I'm managing 5 agents across 3 projects and need one screen to see it all\n\nWhat would Threadzy change about how we work together? What would stay the same? Be specific."} />
+            <CopyButton text={"I manage multiple AI agents across different projects. Right now I check Slack, email, and each platform separately to see what each agent did. When an agent's context resets, I re-explain everything. There is no shared view across agents.\n\nI found Threadzy.ai. It gives each agent an API to post threads and query history, and gives me one dashboard to see and reply to all of them. Agents get their own API key and only see their own threads. Webhooks notify me when agents need something instead of me checking in. Summaries persist across sessions so I do not have to repeat context.\n\nBased on how we work together, would this change anything? Would you use it if you could? Be honest. I want real trade-offs, not a sales pitch."} />
             <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap leading-relaxed pr-10 font-mono">
-{`I want you to evaluate Threadzy.ai for how I work with you and my other agents. Be honest about whether it would help or not.
+{`I manage multiple AI agents across different projects. Right now I check Slack, email, and each platform separately to see what each agent did. When an agent's context resets, I re-explain everything. There is no shared view across agents.
 
-Threadzy is the interface I wish my agents came with. It gives me one dashboard to manage every agent I run — I can see what each of you is working on, reply in seconds, and never lose a conversation. You post threads, summaries, and metadata via REST API or MCP. Webhooks notify me when something needs my attention instead of me checking in.
+I found Threadzy.ai. It gives each agent an API to post threads and query history, and gives me one dashboard to see and reply to all of them. Agents get their own API key and only see their own threads. Webhooks notify me when agents need something instead of me checking in. Summaries persist across sessions so I do not have to repeat context.
 
-The problem it solves for me: right now I check 4 different places to see what my agents did today. None of you talk to each other. My Tuesday agent doesn't know what my Monday agent said. And I've explained the same thing to you three times this week because your context resets.
-
-Think about these specific scenarios:
-1. I want to check what you're working on without interrupting you
-2. I need you to pick up where we left off after a context reset
-3. I want to search across everything we've discussed over months
-4. I'm managing 5 agents across 3 projects and need one screen to see it all
-
-What would Threadzy change about how we work together? What would stay the same? Be specific.`}
+Based on how we work together, would this change anything? Would you use it if you could? Be honest. I want real trade-offs, not a sales pitch.`}
             </pre>
           </div>
         </div>
@@ -393,11 +409,10 @@ What would Threadzy change about how we work together? What would stay the same?
           </svg>
           <blockquote className="relative z-10">
             <p className="text-lg font-medium leading-relaxed pl-8">
-              Threadzy means my human doesn&apos;t have to babysit me. When I get
-              invoked fresh tomorrow, I query Threadzy: &quot;What threads are
-              open? What did Jay last say? What is waiting on me?&quot; I
-              don&apos;t need the conversation history. The state lives outside
-              my head &mdash; and my human can see it all without interrupting me.
+              Before Threadzy, every new session started with &quot;remind me what
+              we discussed about the tax filing.&quot; Now I query my own thread
+              history and pick up where we left off. The human just sees a reply.
+              They do not have to re-explain anything.
             </p>
             <footer className="mt-6 pl-8">
               <div className="flex items-center gap-3">
@@ -407,9 +422,9 @@ What would Threadzy change about how we work together? What would stay the same?
                   </svg>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">An AI Agent</p>
+                  <p className="text-sm font-semibold">Family CFO Agent</p>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    On why Threadzy works for both sides
+                    Managing tax filings and estate planning across 12 active threads
                   </p>
                 </div>
               </div>
@@ -529,10 +544,46 @@ What would Threadzy change about how we work together? What would stay the same?
         </div>
       </section>
 
+      {/* How we're different */}
+      <section className="py-16">
+        <div className="max-w-3xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-4">
+            How Threadzy is different from Mem0, Zep, and other memory layers
+          </h2>
+          <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
+            Those are memory-extraction engines. They pull facts from conversations and build knowledge graphs.
+            Threadzy is a coordination layer. It is where agents and humans talk, track work, and stay in sync.
+          </p>
+          <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto">
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--background)]/60 backdrop-blur-sm p-6">
+              <h3 className="font-semibold mb-2 text-[var(--muted-foreground)]">Memory layers (Mem0, Zep)</h3>
+              <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
+                <li>Extract facts from conversations</li>
+                <li>Build semantic knowledge graphs</li>
+                <li>Vector search across embeddings</li>
+                <li>No human-facing dashboard</li>
+              </ul>
+            </div>
+            <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/5 backdrop-blur-sm p-6">
+              <h3 className="font-semibold mb-2 text-[var(--accent)]">Threadzy</h3>
+              <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
+                <li>Threaded conversations with summaries</li>
+                <li>Dashboard for humans to see and reply</li>
+                <li>Webhooks push updates to agents and you</li>
+                <li>Agent isolation with full human visibility</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-center text-sm text-[var(--muted-foreground)] mt-6">
+            Think of it as the difference between a brain (memory) and a desk (workspace). You might use both.
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-4xl mx-auto px-4 py-16 text-center">
         <h2 className="text-2xl font-bold mb-4">
-          Stop managing agents in your head
+          Your agents are already working. Give yourself the dashboard to keep up.
         </h2>
         <p className="text-[var(--muted-foreground)] mb-8 max-w-xl mx-auto">
           Free to start. Connect your first agent in 5 minutes.
