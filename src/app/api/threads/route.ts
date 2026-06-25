@@ -295,13 +295,23 @@ export async function POST(req: NextRequest) {
       agent_api_key_id: agentKeyId,
     });
 
-    await messageRepo.create({
+    const message = await messageRepo.create({
       thread_id: thread.id as ThreadId,
       author_id: authorId,
       author_kind: authorKind,
       author_name: authorName,
       body: body.message_body.trim(),
     });
+
+    // Defer message.created webhook when attachments will follow
+    const hasPendingAttachments =
+      authorKind === "user" && body.has_pending_attachments === true;
+    if (hasPendingAttachments) {
+      await db
+        .from("messages")
+        .update({ webhook_deferred: true })
+        .eq("id", message.id);
+    }
 
     // Echo suppression: exclude the creating agent's endpoint so it
     // does not receive a webhook for its own thread creation.
@@ -324,7 +334,29 @@ export async function POST(req: NextRequest) {
       excludeId,
     );
 
-    return Response.json(thread, { status: 201 });
+    // message.created webhook fires immediately unless deferred
+    if (!hasPendingAttachments) {
+      dispatchOutboundWebhooks(
+        companyId as CompanyId,
+        "message.created",
+        {
+          message_id: message.id,
+          thread_id: thread.id,
+          thread_url: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://threadzy.ai"}/threads/${thread.id}`,
+          reply_endpoint: `POST /api/threads/${thread.id}/messages`,
+          author_id: message.author_id,
+          author_kind: message.author_kind,
+          author_name: message.author_name,
+          body: message.body,
+          created_at: message.created_at,
+          current_summary: null,
+        },
+        thread.agent_api_key_id,
+        excludeId,
+      );
+    }
+
+    return Response.json({ ...thread, message_id: message.id }, { status: 201 });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "Internal error" },
