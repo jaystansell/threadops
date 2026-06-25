@@ -192,16 +192,23 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
     return res.json();
   }
 
-  async function markMessageReady(messageId: string) {
-    const res = await fetch(
-      `/api/threads/${threadId}/messages/${messageId}/ready`,
-      { method: "POST" },
-    );
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.error || "Failed to finalize message delivery");
+  async function markMessageReady(messageId: string, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(
+          `/api/threads/${threadId}/messages/${messageId}/ready`,
+          { method: "POST" },
+        );
+        if (res.ok) return res.json();
+        if (attempt === retries) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to finalize message delivery");
+        }
+      } catch (err) {
+        if (attempt === retries) throw err;
+      }
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
     }
-    return res.json();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -238,7 +245,13 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
 
         // Phase 3: Signal that the message is ready for webhook dispatch
         // so the agent receives attachment info in the message.created event.
-        await markMessageReady(message.id);
+        try {
+          await markMessageReady(message.id);
+        } catch {
+          setError(
+            "Message saved but agent notification failed. The agent may not see attached files.",
+          );
+        }
       }
 
       setBody("");

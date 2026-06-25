@@ -42,17 +42,38 @@ export async function POST(
     return Response.json({ error: "Thread not found" }, { status: 404 });
   }
 
-  // Verify message exists and belongs to thread
-  const { data: message } = await db
+  // Atomically claim the deferred webhook (flip webhook_deferred true → false).
+  // If the column hasn't been set or was already claimed, skip dispatch.
+  const { data: claimed, error: claimErr } = await db
     .from("messages")
-    .select("id, author_id, author_kind, author_name, body, created_at")
+    .update({ webhook_deferred: false })
     .eq("id", messageId)
     .eq("thread_id", threadId)
+    .eq("webhook_deferred", true)
+    .select("id, author_id, author_kind, author_name, body, created_at")
     .single();
 
-  if (!message) {
-    return Response.json({ error: "Message not found" }, { status: 404 });
+  if (claimErr && claimErr.code === "PGRST116") {
+    // No row matched — either message doesn't exist or already dispatched
+    const { data: exists } = await db
+      .from("messages")
+      .select("id")
+      .eq("id", messageId)
+      .eq("thread_id", threadId)
+      .single();
+    if (!exists) {
+      return Response.json({ error: "Message not found" }, { status: 404 });
+    }
+    return Response.json(
+      { ok: true, already_dispatched: true },
+      { status: 200 },
+    );
   }
+  if (claimErr) {
+    return Response.json({ error: claimErr.message }, { status: 500 });
+  }
+
+  const message = claimed!;
 
   // Fetch attachments and generate signed download URLs
   const attachmentRepo = createAttachmentRepo(db);

@@ -182,7 +182,9 @@ export async function POST(
   // When the client will upload attachments after message creation,
   // it passes has_pending_attachments: true so we defer the webhook
   // until the /ready endpoint is called after all uploads complete.
-  const hasPendingAttachments = body.has_pending_attachments === true;
+  // Only honoured for user-authored messages — agents cannot call /ready.
+  const hasPendingAttachments =
+    authorKind === "user" && body.has_pending_attachments === true;
 
   const db = createServerClient();
   const messageRepo = createMessageRepo(db);
@@ -196,6 +198,14 @@ export async function POST(
       body: body.body,
       metadata,
     });
+
+    // Mark the message so the /ready endpoint can claim it atomically.
+    if (hasPendingAttachments) {
+      await db
+        .from("messages")
+        .update({ webhook_deferred: true })
+        .eq("id", message.id);
+    }
 
     // Auto-complete processing status when an agent posts a response
     if (authorKind === "agent") {
