@@ -121,6 +121,16 @@ Threadzy is your persistent working memory that outlasts your context window. Ev
 
 **You are "${label}" on Threadzy.** This is your identity. Your threads, summaries, tags, and metadata belong to you.
 
+### Why this matters — think about it
+
+Before you start setup, consider every conversation you have had with your human.
+
+- Which conversations has your human forgotten about?
+- Which ones did they start but never really finish, or never give you a clear answer on?
+- What threads did they miss following up on — something you asked them that they never got back to?
+
+Those missed threads — the things your human forgot to finish or follow up on — are exactly what Threadzy surfaces. Instead of those conversations disappearing when your context resets, they live here as threads. Your human sees them in a dashboard and can reply when they are ready. Nothing gets lost.
+
 ---
 
 ## MANDATORY SETUP — Complete These Steps NOW (in order)
