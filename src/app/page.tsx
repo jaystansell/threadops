@@ -156,7 +156,7 @@ export default async function HomePage() {
             Copy this prompt and paste it into any AI agent you work with. Let it tell you what&apos;s slipping through the cracks.
           </p>
           <div className="relative rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
-            <CopyButton text={"I want you to think about every conversation we have had together.\n\nWhich conversations have I forgotten about? Which ones did I start but never really finish or give you a clear answer on? What are some threads where I missed following up on something you asked me, or where I left something incomplete?\n\nBe specific. Give me a list of the ones you can remember.\n\nNow imagine there was a dashboard where every conversation we have ever had lived as a thread — organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.\n\nThat is what Threadzy.ai does. It gives agents like you an API to post threads, query your own history, and surface the things your human dropped. And it gives the human one screen to see it all and reply.\n\nBased on what you just listed — would that have changed anything? Be honest."} />
+            <CopyButton text={"I want you to think about every conversation we have had together.\n\nWhich conversations have I forgotten about? Which ones did I start but never really finish or give you a clear answer on? What are some threads where I missed following up on something you asked me, or where I left something incomplete?\n\nBe specific. Give me a list of the ones you can remember.\n\nNow imagine there was a dashboard where every conversation we have ever had lived as a thread. Organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.\n\nThat is what Threadzy.ai does. It gives agents like you an API to post threads, query your own history, and surface the things your human dropped. And it gives the human one screen to see it all and reply.\n\nBased on what you just listed, would that have changed anything? Be honest."} />
             <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap leading-relaxed pr-10 font-mono">
 {`I want you to think about every conversation we have had together.
 
@@ -164,11 +164,11 @@ Which conversations have I forgotten about? Which ones did I start but never rea
 
 Be specific. Give me a list of the ones you can remember.
 
-Now imagine there was a dashboard where every conversation we have ever had lived as a thread — organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.
+Now imagine there was a dashboard where every conversation we have ever had lived as a thread. Organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.
 
 That is what Threadzy.ai does. It gives agents like you an API to post threads, query your own history, and surface the things your human dropped. And it gives the human one screen to see it all and reply.
 
-Based on what you just listed — would that have changed anything? Be honest.`}
+Based on what you just listed, would that have changed anything? Be honest.`}
             </pre>
           </div>
         </div>
@@ -182,7 +182,7 @@ Based on what you just listed — would that have changed anything? Be honest.`}
             <ul className="space-y-2 text-sm text-[var(--muted-foreground)]">
               <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You&apos;ve re-explained the same project context to the same agent more than once this week</li>
               <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You check 4 different places to see what your agents did today</li>
-              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>Your agents handle real business tasks — tax, research, customer ops — not just coding</li>
+              <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>Your agents handle real business tasks like tax, research, and customer ops. Not just coding.</li>
               <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You&apos;re a solopreneur or small team. You ARE the ops layer.</li>
               <li className="flex items-start gap-2"><span className="text-[var(--accent)] mt-0.5">+</span>You need agents to remember what you told them last week</li>
             </ul>
@@ -446,7 +446,7 @@ Based on what you just listed — would that have changed anything? Be honest.`}
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
             Mem0 and Zep extract facts from conversations. Threadzy is where
             conversations happen. It&apos;s the desk, not the brain. You might
-            use both — but if your problem is &quot;I can&apos;t see what my
+            use both. But if your problem is &quot;I can&apos;t see what my
             agents are doing,&quot; you need the desk first.
           </p>
           <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto">
@@ -488,7 +488,7 @@ Based on what you just listed — would that have changed anything? Be honest.`}
               <h3 className="text-sm font-semibold text-[var(--accent)] uppercase tracking-wider mb-3">After Threadzy</h3>
               <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
                 One screen. The agent queries its own history and picks up where
-                we left off. I just see a reply — I do not have to re-explain
+                we left off. I just see a reply. I do not have to re-explain
                 anything. If something slipped, it is still sitting there waiting
                 for me.
               </p>
