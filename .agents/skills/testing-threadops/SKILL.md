@@ -1252,6 +1252,49 @@ const r2 = await page.evaluate(async () => {
 
 **Side effect note:** Dispatching an action fires a webhook to the owning agent. The agent may perform side effects (e.g., archive the thread). This is expected — reopen the thread if needed to continue testing.
 
+## Polling Fallback & Cross-Thread State Reset (PR #181 + PR #186)
+
+### How Polling Works
+`ThreadTimeline` has a `useEffect` that runs `GET /api/threads/{threadId}/messages` every 5 seconds. This is a defense-in-depth fallback — it runs regardless of whether Supabase Realtime WebSocket is connected. Messages are deduplicated via `knownIdsRef` so duplicates from both Realtime and polling don't appear.
+
+### How Cross-Thread Reset Works
+`ThreadDetailClient` renders `<ThreadTimeline key={threadId} .../>`. The `key={threadId}` prop forces React to fully unmount/remount on thread navigation, clearing `realtimeMessages`, `deletedIds`, `knownIdsRef`, and the polling interval.
+
+### Testing Polling Fallback
+1. Navigate to a thread in the browser
+2. Open Chrome DevTools Network tab and verify periodic `GET /api/threads/{threadId}/messages` requests every ~5s (200 OK)
+3. Inject a test message directly via Supabase REST API (bypasses Realtime):
+   ```bash
+   source .env.local
+   curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/messages" \
+     -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+     -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+     -H "Content-Type: application/json" \
+     -H "Prefer: return=representation" \
+     -d '{"thread_id": "<THREAD_ID>", "author_id": "00000000-0000-0000-0000-000000000001", "author_kind": "agent", "author_name": "Test Agent", "body": "POLLING_TEST: injected at <timestamp>"}'
+   ```
+4. Wait ~10s without refreshing — message should appear in thread UI automatically
+5. **Clean up**: Delete the test message after testing:
+   ```bash
+   curl -s -X DELETE "https://gymsbxkuiknbdtulmopv.supabase.co/rest/v1/messages?id=eq.<MESSAGE_ID>" \
+     -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+     -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}"
+   ```
+
+**Note on WebSocket blocking**: Chrome DevTools Network Request Blocking does NOT reliably intercept WebSocket upgrade requests. Don't rely on it to simulate Realtime failure. Instead, verify polling is running (Network tab shows periodic GETs) and test message delivery via API injection — this proves polling works regardless of WebSocket state.
+
+### Testing Cross-Thread Isolation
+1. Inject a test message into Thread A (as above)
+2. Navigate to Thread B — verify zero POLLING_TEST messages appear
+3. Navigate back to Thread A — verify POLLING_TEST message is still present
+4. Check Network tab: polling requests should switch from Thread A's ID to Thread B's ID after navigation, with no stale requests
+
+**Pass criteria**: Thread B shows none of Thread A's messages. Network requests switch threadId immediately on navigation.
+
+### Key Files
+- `src/app/_components/thread-timeline.tsx` — polling `useEffect` (lines ~147-160)
+- `src/app/_components/thread-detail-client.tsx` — `key={threadId}` prop (line ~88)
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
