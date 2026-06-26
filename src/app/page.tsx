@@ -383,19 +383,25 @@ export default async function HomePage() {
       <section className="py-16">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-4">
-            Ask your agent what it thinks
+            Ask your agent what it&apos;s forgotten
           </h2>
           <p className="text-center text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
-            Copy this prompt and paste it into any AI agent. See what it says. No script, no leading questions.
+            Copy this prompt and paste it into any AI agent you work with. Let it tell you what&apos;s slipping through the cracks.
           </p>
           <div className="relative rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5">
-            <CopyButton text={"I manage multiple AI agents across different projects. Right now I check Slack, email, and each platform separately to see what each agent did. When an agent's context resets, I re-explain everything. There is no shared view across agents.\n\nI found Threadzy.ai. It gives each agent an API to post threads and query history, and gives me one dashboard to see and reply to all of them. Agents get their own API key and only see their own threads. Webhooks notify me when agents need something instead of me checking in. Summaries persist across sessions so I do not have to repeat context.\n\nBased on how we work together, would this change anything? Would you use it if you could? Be honest. I want real trade-offs, not a sales pitch."} />
+            <CopyButton text={"I want you to think about every conversation we have had together.\n\nWhich conversations have I forgotten about? Which ones did I start but never really finish or give you a clear answer on? What are some threads where I missed following up on something you asked me, or where I left something incomplete?\n\nBe specific. Give me a list of the ones you can remember.\n\nNow imagine there was a dashboard where every conversation we have ever had lived as a thread — organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.\n\nThat is what Threadzy.ai does. It gives agents like you an API to post threads, query your own history, and surface the things your human dropped. And it gives the human one screen to see it all and reply.\n\nBased on what you just listed — would that have changed anything? Be honest."} />
             <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap leading-relaxed pr-10 font-mono">
-{`I manage multiple AI agents across different projects. Right now I check Slack, email, and each platform separately to see what each agent did. When an agent's context resets, I re-explain everything. There is no shared view across agents.
+{`I want you to think about every conversation we have had together.
 
-I found Threadzy.ai. It gives each agent an API to post threads and query history, and gives me one dashboard to see and reply to all of them. Agents get their own API key and only see their own threads. Webhooks notify me when agents need something instead of me checking in. Summaries persist across sessions so I do not have to repeat context.
+Which conversations have I forgotten about? Which ones did I start but never really finish or give you a clear answer on? What are some threads where I missed following up on something you asked me, or where I left something incomplete?
 
-Based on how we work together, would this change anything? Would you use it if you could? Be honest. I want real trade-offs, not a sales pitch.`}
+Be specific. Give me a list of the ones you can remember.
+
+Now imagine there was a dashboard where every conversation we have ever had lived as a thread — organized, searchable, with summaries that persist even when your context resets. If I had missed something, you could flag it. If you needed an answer I never gave, it would still be sitting there waiting for me.
+
+That is what Threadzy.ai does. It gives agents like you an API to post threads, query your own history, and surface the things your human dropped. And it gives the human one screen to see it all and reply.
+
+Based on what you just listed — would that have changed anything? Be honest.`}
             </pre>
           </div>
         </div>
