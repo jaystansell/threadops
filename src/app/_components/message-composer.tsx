@@ -173,11 +173,15 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
     }
   }
 
-  async function sendMessage(messageBody: string) {
+  async function sendMessage(messageBody: string, hasPendingAttachments = false) {
     const res = await fetch(`/api/threads/${threadId}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: messageBody, author_id: userId }),
+      body: JSON.stringify({
+        body: messageBody,
+        author_id: userId,
+        has_pending_attachments: hasPendingAttachments,
+      }),
     });
 
     if (!res.ok) {
@@ -188,6 +192,25 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
     return res.json();
   }
 
+  async function markMessageReady(messageId: string, retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(
+          `/api/threads/${threadId}/messages/${messageId}/ready`,
+          { method: "POST" },
+        );
+        if (res.ok) return res.json();
+        if (attempt === retries) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to finalize message delivery");
+        }
+      } catch (err) {
+        if (attempt === retries) throw err;
+      }
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!body.trim() && pendingFiles.length === 0) return;
@@ -196,12 +219,18 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
     setError(null);
 
     try {
-      const message = await sendMessage(body.trim() || "(attachment)");
-
-      // Upload any pending files
-      let uploadFailed = false;
       const validFiles = pendingFiles.filter((f) => !f.error);
-      if (validFiles.length > 0) {
+      const hasAttachments = validFiles.length > 0;
+
+      // Phase 1: Create message. If attachments pending, defer webhook.
+      const message = await sendMessage(
+        body.trim() || "(attachment)",
+        hasAttachments,
+      );
+
+      // Phase 2: Upload all pending files
+      let uploadFailed = false;
+      if (hasAttachments) {
         const results = await Promise.all(
           pendingFiles.map((f, i) => {
             if (f.error) return Promise.resolve(false);
@@ -212,6 +241,16 @@ export function MessageComposer({ threadId, userId, agentApiKeyId = null }: Mess
         if (failedCount > 0) {
           uploadFailed = true;
           setError(`${failedCount} file(s) failed to upload`);
+        }
+
+        // Phase 3: Signal that the message is ready for webhook dispatch
+        // so the agent receives attachment info in the message.created event.
+        try {
+          await markMessageReady(message.id);
+        } catch {
+          setError(
+            "Message saved but agent notification failed. The agent may not see attached files.",
+          );
         }
       }
 
