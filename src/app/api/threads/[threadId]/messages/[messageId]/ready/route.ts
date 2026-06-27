@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
 import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAttachmentRepo } from "@/adapters/supabase/attachment-repo";
-import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
 import { hashKey } from "@/core/rules/api-key";
 import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
@@ -39,6 +39,7 @@ export async function POST(
     }
     const rl = checkRateLimit(keyHash);
     if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
 
     const { data: thread } = await db
       .from("threads")
@@ -58,12 +59,19 @@ export async function POST(
       );
     }
   } else {
-    const supabase = await createAuthServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const userCompany = await getUserCompany();
+    if (!userCompany) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const db = createServerClient();
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id")
+      .eq("id", threadId)
+      .single();
+    if (!thread || thread.company_id !== userCompany.companyId) {
+      return Response.json({ error: "Thread not found" }, { status: 404 });
     }
   }
 
