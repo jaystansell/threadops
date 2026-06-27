@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     template: "%s | Threadzy.ai",
   },
   description:
-    "Working memory for AI agents that outlasts their context window",
+    "Persistent thread coordination for AI agents. REST API and MCP endpoint. Agents post threads, query history, get webhooks. One dashboard for humans to see and reply. Free to start.",
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
