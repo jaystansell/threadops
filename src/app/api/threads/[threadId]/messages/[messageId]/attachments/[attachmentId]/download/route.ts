@@ -73,10 +73,21 @@ export async function GET(
     );
   }
 
+  // Images and PDFs render inline in the browser; everything else forces download
+  const inlineTypes = new Set([
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    "image/svg+xml",
+    "application/pdf",
+  ]);
+  const renderInline = inlineTypes.has(attachment.content_type);
+
   const { data: signedUrlData, error: signedUrlError } = await db.storage
     .from("thread-attachments")
     .createSignedUrl(attachment.storage_path, 3600, {
-      download: attachment.filename,
+      ...(renderInline ? {} : { download: attachment.filename }),
     });
 
   if (signedUrlError || !signedUrlData?.signedUrl) {

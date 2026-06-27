@@ -1,7 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Attachment } from "@/core/types";
+
+const INLINE_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "application/pdf",
+]);
+
+function isImage(contentType: string): boolean {
+  return contentType.startsWith("image/");
+}
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -40,6 +53,192 @@ interface MessageAttachmentsProps {
   threadId: string;
   messageId: string;
   attachmentCount?: number;
+}
+
+function ImagePreview({
+  threadId,
+  messageId,
+  attachment,
+}: {
+  threadId: string;
+  messageId: string;
+  attachment: Attachment;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (attachment.purged_at) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/threads/${threadId}/messages/${messageId}/attachments/${attachment.id}/download`,
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled && data.url) {
+          setUrl(data.url);
+        }
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [threadId, messageId, attachment.id, attachment.purged_at]);
+
+  if (attachment.purged_at) {
+    return (
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4 text-center">
+        <span className="text-xs text-red-500">Image expired</span>
+        <div className="text-[10px] text-[var(--muted-foreground)] mt-1">{attachment.filename}</div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] animate-pulse w-full max-w-xs h-40 flex items-center justify-center">
+        <span className="text-[10px] text-[var(--muted-foreground)]">Loading preview...</span>
+      </div>
+    );
+  }
+
+  if (error || !url) {
+    return (
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--muted)] p-4 text-center">
+        <span className="text-xs text-[var(--muted-foreground)]">Preview unavailable</span>
+        <div className="text-[10px] text-[var(--muted-foreground)] mt-1">{attachment.filename}</div>
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block rounded-lg border border-[var(--border)] overflow-hidden hover:border-[var(--primary)] transition-colors group"
+      title={`Open ${attachment.filename} (${formatFileSize(attachment.file_size)})`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt={attachment.filename}
+        className="max-w-xs max-h-60 object-contain bg-black/20"
+        loading="lazy"
+      />
+      <div className="px-2 py-1 flex items-center gap-2 bg-[var(--background)] text-[10px] text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] transition-colors">
+        <span className="truncate">{attachment.filename}</span>
+        <span className="flex-shrink-0">{formatFileSize(attachment.file_size)}</span>
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="flex-shrink-0 ml-auto"
+        >
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+      </div>
+    </a>
+  );
+}
+
+function FileChip({
+  threadId,
+  messageId,
+  attachment,
+}: {
+  threadId: string;
+  messageId: string;
+  attachment: Attachment;
+}) {
+  const handleClick = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/threads/${threadId}/messages/${messageId}/attachments/${attachment.id}/download`,
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // Silently handle errors
+    }
+  }, [threadId, messageId, attachment.id]);
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={!!attachment.purged_at}
+      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs transition-colors ${
+        attachment.purged_at
+          ? "border-[var(--border)] bg-[var(--muted)] opacity-50 cursor-not-allowed"
+          : "border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--primary)] cursor-pointer"
+      }`}
+      title={attachment.purged_at ? "File purged" : `Open ${attachment.filename}`}
+    >
+      <span className="text-[var(--muted-foreground)]">
+        {fileIcon(attachment.content_type)}
+      </span>
+      <span className="truncate max-w-[140px]">{attachment.filename}</span>
+      <span className="text-[10px] text-[var(--muted-foreground)]">
+        {formatFileSize(attachment.file_size)}
+      </span>
+      {attachment.purged_at ? (
+        <span className="text-[10px] text-red-500">expired</span>
+      ) : INLINE_TYPES.has(attachment.content_type) ? (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-[var(--muted-foreground)]"
+        >
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+          <polyline points="15 3 21 3 21 9" />
+          <line x1="10" y1="14" x2="21" y2="3" />
+        </svg>
+      ) : (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-[var(--muted-foreground)]"
+        >
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      )}
+    </button>
+  );
 }
 
 export function MessageAttachments({
@@ -89,64 +288,35 @@ export function MessageAttachments({
     );
   }
 
-  async function handleDownload(attachment: Attachment) {
-    try {
-      const res = await fetch(
-        `/api/threads/${threadId}/messages/${messageId}/attachments/${attachment.id}/download`,
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      }
-    } catch {
-      // Silently handle download errors
-    }
-  }
+  const imageAttachments = attachments.filter((a) => isImage(a.content_type));
+  const fileAttachments = attachments.filter((a) => !isImage(a.content_type));
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2" data-testid="message-attachments">
-      {attachments.map((att) => (
-        <button
-          key={att.id}
-          type="button"
-          onClick={() => handleDownload(att)}
-          disabled={!!att.purged_at}
-          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-xs transition-colors ${
-            att.purged_at
-              ? "border-[var(--border)] bg-[var(--muted)] opacity-50 cursor-not-allowed"
-              : "border-[var(--border)] bg-[var(--background)] hover:bg-[var(--muted)] hover:border-[var(--primary)] cursor-pointer"
-          }`}
-          title={att.purged_at ? "File purged" : `Download ${att.filename}`}
-        >
-          <span className="text-[var(--muted-foreground)]">
-            {fileIcon(att.content_type)}
-          </span>
-          <span className="truncate max-w-[140px]">{att.filename}</span>
-          <span className="text-[10px] text-[var(--muted-foreground)]">
-            {formatFileSize(att.file_size)}
-          </span>
-          {att.purged_at ? (
-            <span className="text-[10px] text-red-500">expired</span>
-          ) : (
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-[var(--muted-foreground)]"
-            >
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-          )}
-        </button>
-      ))}
+    <div className="mt-2 space-y-2" data-testid="message-attachments">
+      {imageAttachments.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {imageAttachments.map((att) => (
+            <ImagePreview
+              key={att.id}
+              threadId={threadId}
+              messageId={messageId}
+              attachment={att}
+            />
+          ))}
+        </div>
+      )}
+      {fileAttachments.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {fileAttachments.map((att) => (
+            <FileChip
+              key={att.id}
+              threadId={threadId}
+              messageId={messageId}
+              attachment={att}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
