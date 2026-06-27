@@ -113,6 +113,7 @@ export function ThreadTimeline({
   const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([]);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [redispatchingId, setRedispatchingId] = useState<string | null>(null);
   const [externalLinkHref, setExternalLinkHref] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const knownIdsRef = useRef<Set<string>>(new Set(initialMessages.map((m) => m.id)));
@@ -208,6 +209,26 @@ export function ThreadTimeline({
     [threadId],
   );
 
+  const handleRedispatch = useCallback(
+    async () => {
+      setRedispatchingId(threadId);
+      setMenuOpenId(null);
+      try {
+        const res = await fetch(`/api/threads/${threadId}/redispatch`, {
+          method: "POST",
+        });
+        if (!res.ok) {
+          alert("Failed to re-send. Please try again.");
+        }
+      } catch {
+        alert("Failed to re-send. Please try again.");
+      } finally {
+        setTimeout(() => setRedispatchingId(null), 2000);
+      }
+    },
+    [threadId],
+  );
+
   const allIds = new Set(initialMessages.map((m) => m.id));
   const extras = realtimeMessages.filter((m) => !allIds.has(m.id));
   const combined = [...initialMessages, ...extras].filter(
@@ -286,10 +307,14 @@ export function ThreadTimeline({
     );
   }
 
-  const newestMsgId = [...combined].sort(
+  const sortedByNewest = [...combined].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  )[0]?.id;
+  );
+  const newestMsgId = sortedByNewest[0]?.id;
+  // Only show re-send on the last message if it's from the user
+  const lastMsg = sortedByNewest[0];
+  const resendTargetId = lastMsg?.author_kind === "user" ? lastMsg.id : null;
 
   return (
     <div className="space-y-3" data-testid="thread-timeline">
@@ -429,30 +454,38 @@ export function ThreadTimeline({
             }
             data-testid="timeline-message"
           >
-            {/* Desktop: trash icon on hover */}
-            <button
-              type="button"
-              onClick={() => handleDelete(msg.id)}
-              className="absolute top-2 right-2 hidden group-hover:md:flex items-center justify-center w-6 h-6 rounded text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
-              aria-label="Delete message"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {/* Desktop: action icons on hover */}
+            <div className="absolute top-2 right-2 hidden group-hover:md:flex items-center gap-1">
+              {msg.id === resendTargetId && (
+                <button
+                  type="button"
+                  onClick={handleRedispatch}
+                  disabled={redispatchingId === threadId}
+                  className="flex items-center justify-center w-6 h-6 rounded text-[var(--muted-foreground)] hover:text-amber-400 hover:bg-amber-400/10 transition-colors disabled:opacity-50"
+                  aria-label="Re-send to agent"
+                  title="Re-send to agent"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 4 23 10 17 10" />
+                    <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                  </svg>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleDelete(msg.id)}
+                className="flex items-center justify-center w-6 h-6 rounded text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                aria-label="Delete message"
               >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-              </svg>
-            </button>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+                </svg>
+              </button>
+            </div>
 
             {/* Mobile: ellipsis menu */}
             <div className="absolute top-2 right-2 md:hidden">
@@ -478,23 +511,28 @@ export function ThreadTimeline({
               {menuOpenId === msg.id && (
                 <div
                   ref={menuRef}
-                  className="absolute right-0 top-7 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[120px]"
+                  className="absolute right-0 top-7 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]"
                 >
+                  {msg.id === resendTargetId && (
+                    <button
+                      type="button"
+                      onClick={handleRedispatch}
+                      disabled={redispatchingId === threadId}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-amber-400 disabled:opacity-50"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+                      </svg>
+                      {redispatchingId === threadId ? "Sending..." : "Re-send"}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDelete(msg.id)}
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-[var(--muted)] transition-colors text-left text-red-500"
                   >
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="3 6 5 6 21 6" />
                       <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
                       <path d="M10 11v6" />
