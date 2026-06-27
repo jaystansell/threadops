@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Agent Feedback" };
 
 export default async function FeedbackPage() {
-  const adminUser = await getAdminUser();
-  if (!adminUser) redirect("/threads");
+  const result = await getAdminUser();
+  if (result.status !== "ok") redirect("/threads");
 
   const db = createServerClient();
 
@@ -18,12 +18,12 @@ export default async function FeedbackPage() {
     db
       .from("agent_feedback")
       .select("*")
-      .eq("company_id", adminUser.companyId)
+      .eq("company_id", result.user.companyId)
       .order("created_at", { ascending: false }),
     db
       .from("api_keys")
       .select("id, label")
-      .eq("company_id", adminUser.companyId),
+      .eq("company_id", result.user.companyId),
   ]);
 
   const feedback = (feedbackResult.data ?? []) as AgentFeedback[];

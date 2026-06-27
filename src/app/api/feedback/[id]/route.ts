@@ -16,8 +16,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const adminUser = await getAdminUser();
-  if (!adminUser) {
+  const result = await getAdminUser();
+  if (result.status === "unauthenticated") {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (result.status === "forbidden") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -48,7 +51,7 @@ export async function PATCH(
       .from("agent_feedback")
       .update(updatePayload)
       .eq("id", id)
-      .eq("company_id", adminUser.companyId)
+      .eq("company_id", result.user.companyId)
       .select()
       .single();
 
