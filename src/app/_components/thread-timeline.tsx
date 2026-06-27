@@ -307,10 +307,14 @@ export function ThreadTimeline({
     );
   }
 
-  const newestMsgId = [...combined].sort(
+  const sortedByNewest = [...combined].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-  )[0]?.id;
+  );
+  const newestMsgId = sortedByNewest[0]?.id;
+  // Only show re-send on the last message if it's from the user
+  const lastMsg = sortedByNewest[0];
+  const resendTargetId = lastMsg?.author_kind === "user" ? lastMsg.id : null;
 
   return (
     <div className="space-y-3" data-testid="thread-timeline">
@@ -452,7 +456,7 @@ export function ThreadTimeline({
           >
             {/* Desktop: action icons on hover */}
             <div className="absolute top-2 right-2 hidden group-hover:md:flex items-center gap-1">
-              {msg.author_kind === "user" && (
+              {msg.id === resendTargetId && (
                 <button
                   type="button"
                   onClick={handleRedispatch}
@@ -509,7 +513,7 @@ export function ThreadTimeline({
                   ref={menuRef}
                   className="absolute right-0 top-7 z-20 bg-[var(--background)] border border-[var(--border)] rounded-lg shadow-lg py-1 min-w-[140px]"
                 >
-                  {msg.author_kind === "user" && (
+                  {msg.id === resendTargetId && (
                     <button
                       type="button"
                       onClick={handleRedispatch}
