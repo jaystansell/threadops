@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/adapters/supabase/client";
-import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
-import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { getAdminUser } from "@/adapters/supabase/auth/require-admin";
 import type { AgentFeedback, ApiKey } from "@/core/types";
 import { FeedbackDashboardClient } from "../_components/feedback-dashboard-client";
 
@@ -9,15 +8,9 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Agent Feedback" };
 
-const ADMIN_EMAIL = "jay+direct@productcoalition.com";
-
 export default async function FeedbackPage() {
-  const supabase = await createAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) redirect("/threads");
-
-  const userCompany = await getUserCompany();
-  if (!userCompany) redirect("/onboarding");
+  const adminUser = await getAdminUser();
+  if (!adminUser) redirect("/threads");
 
   const db = createServerClient();
 
@@ -25,12 +18,12 @@ export default async function FeedbackPage() {
     db
       .from("agent_feedback")
       .select("*")
-      .eq("company_id", userCompany.companyId)
+      .eq("company_id", adminUser.companyId)
       .order("created_at", { ascending: false }),
     db
       .from("api_keys")
       .select("id, label")
-      .eq("company_id", userCompany.companyId),
+      .eq("company_id", adminUser.companyId),
   ]);
 
   const feedback = (feedbackResult.data ?? []) as AgentFeedback[];

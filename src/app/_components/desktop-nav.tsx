@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-const ADMIN_EMAIL = "jay+direct@productcoalition.com";
-
 const NAV_LINKS = [
   { href: "/threads", label: "Threads" },
   { href: "/webhooks", label: "Webhooks" },
@@ -13,8 +11,8 @@ const NAV_LINKS = [
   { href: "/changelog", label: "Changelog" },
 ];
 
-export function DesktopNav({ userEmail }: { userEmail?: string | null }) {
-  const links = userEmail === ADMIN_EMAIL
+export function DesktopNav({ isAdmin }: { isAdmin?: boolean }) {
+  const links = isAdmin
     ? [...NAV_LINKS, { href: "/feedback", label: "Feedback" }]
     : NAV_LINKS;
 
