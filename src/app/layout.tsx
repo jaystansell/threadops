@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { isUserAdmin } from "@/adapters/supabase/auth/require-admin";
 import { AppHeader } from "./_components/app-header";
 import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
@@ -43,6 +44,7 @@ export default async function RootLayout({
   const supabase = await createAuthServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userEmail = user?.email ?? null;
+  const isAdmin = user ? await isUserAdmin(user.id) : false;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -53,12 +55,12 @@ export default async function RootLayout({
             <header className="sticky top-0 z-40 bg-[var(--background)] border-b border-[var(--border)] px-4 md:px-6 py-3 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <MobileNav userEmail={userEmail} />
+                  <MobileNav userEmail={userEmail} isAdmin={isAdmin} />
                   <Link href="/" className="text-lg font-bold tracking-tight hover:opacity-90 transition-opacity" style={{ fontFamily: "var(--font-heading)" }}>
                     threadzy<span className="text-[var(--accent)]">.ai</span>
                   </Link>
                 </div>
-                <DesktopNav userEmail={userEmail} />
+                <DesktopNav isAdmin={isAdmin} />
                 <div className="hidden md:flex">
                   <AuthHeader />
                 </div>

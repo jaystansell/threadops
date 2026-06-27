@@ -1,12 +1,9 @@
 import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
-import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
-import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { getAdminUser } from "@/adapters/supabase/auth/require-admin";
 import type { AgentFeedbackStatus } from "@/core/types";
 
 export const dynamic = "force-dynamic";
-
-const ADMIN_EMAIL = "jay+direct@productcoalition.com";
 
 const VALID_STATUSES: AgentFeedbackStatus[] = [
   "pending",
@@ -19,14 +16,11 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const userCompany = await getUserCompany();
-  if (!userCompany) {
+  const result = await getAdminUser();
+  if (result.status === "unauthenticated") {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const supabase = await createAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (result.status === "forbidden") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -57,7 +51,7 @@ export async function PATCH(
       .from("agent_feedback")
       .update(updatePayload)
       .eq("id", id)
-      .eq("company_id", userCompany.companyId)
+      .eq("company_id", result.user.companyId)
       .select()
       .single();
 

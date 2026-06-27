@@ -6,8 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { createAuthBrowserClient } from "@/adapters/supabase/auth/browser";
 import { useMobileMenu } from "./mobile-menu-context";
 
-const ADMIN_EMAIL = "jay+direct@productcoalition.com";
-
 const MENU_LINKS = [
   { href: "/webhooks", label: "Webhooks" },
   { href: "/api-keys", label: "API Keys" },
@@ -18,7 +16,7 @@ const MENU_LINKS = [
   { href: "/changelog", label: "Changelog" },
 ];
 
-export function MobileNav({ userEmail }: { userEmail?: string | null }) {
+export function MobileNav({ userEmail, isAdmin }: { userEmail?: string | null; isAdmin?: boolean }) {
   const { isOpen, toggle, close, setPortalTarget } = useMobileMenu();
   const pathname = usePathname();
   const router = useRouter();
@@ -31,10 +29,10 @@ export function MobileNav({ userEmail }: { userEmail?: string | null }) {
 
   const menuLinks = useMemo(
     () =>
-      userEmail === ADMIN_EMAIL
+      isAdmin
         ? [...MENU_LINKS, { href: "/feedback", label: "Feedback" }]
         : MENU_LINKS,
-    [userEmail],
+    [isAdmin],
   );
 
   // Re-derive accordion state each time the drawer opens or path changes.
