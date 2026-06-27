@@ -178,10 +178,17 @@ export async function POST(
     storage_path: storagePath,
   });
 
-  // Generate a signed download URL for the agent (valid 1 hour)
+  // Generate a signed URL for the agent (valid 1 hour).
+  // Images and PDFs get inline URLs; other types force download.
+  const inlineTypes = new Set([
+    "image/png", "image/jpeg", "image/gif", "image/webp",
+    "image/svg+xml", "application/pdf",
+  ]);
   const { data: signedUrlData } = await db.storage
     .from("thread-attachments")
-    .createSignedUrl(storagePath, 3600, { download: filename });
+    .createSignedUrl(storagePath, 3600, {
+      ...(inlineTypes.has(contentType) ? {} : { download: filename }),
+    });
 
   // Look up thread to get company + owning agent for webhook routing
   const { data: thread } = await db

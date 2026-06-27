@@ -301,20 +301,51 @@ export function MessageDeliveryReceipt({
   const [loading, setLoading] = useState(false);
 
   const isUserMessage = authorKind === "user";
+  const isTerminal =
+    data?.overall_status === "replied" || data?.overall_status === "failed";
 
-  // Auto-fetch on mount for user messages
+  // Auto-fetch on mount for user messages, then poll every 10s until terminal
   useEffect(() => {
     if (!isUserMessage) return;
-    const timer = setTimeout(() => {
+
+    let cancelled = false;
+
+    function doFetch() {
       fetch(`/api/threads/${threadId}/messages/${messageId}/delivery`)
         .then((res) => (res.ok ? res.json() : null))
         .then((d) => {
-          if (d && d.webhook) setData(d);
+          if (!cancelled && d && d.webhook) setData(d);
         })
         .catch(() => {});
-    }, 600);
-    return () => clearTimeout(timer);
+    }
+
+    const initialTimer = setTimeout(doFetch, 600);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(initialTimer);
+    };
   }, [threadId, messageId, isUserMessage]);
+
+  // Poll every 10s while status is non-terminal
+  useEffect(() => {
+    if (!isUserMessage || !data || isTerminal) return;
+
+    let cancelled = false;
+    const interval = setInterval(() => {
+      fetch(`/api/threads/${threadId}/messages/${messageId}/delivery`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((d) => {
+          if (!cancelled && d) setData(d);
+        })
+        .catch(() => {});
+    }, 10_000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [threadId, messageId, isUserMessage, data, isTerminal]);
 
   if (!isUserMessage) return null;
   if (!data) return null;

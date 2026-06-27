@@ -85,19 +85,39 @@ export function MessageLifecycle({
 
   const isUserMessage = authorKind === "user";
 
+  const deliveryDone =
+    data?.delivery?.status === "succeeded" || data?.delivery?.status === "failed";
+  const isTerminal = deliveryDone && (!!data?.reply || data?.delivery?.status === "failed");
+
   // Auto-fetch on mount for user messages
   useEffect(() => {
     if (!isUserMessage) return;
+    let cancelled = false;
     const timer = setTimeout(() => {
       fetch(`/api/threads/${threadId}/messages/${messageId}/lifecycle`)
         .then((res) => (res.ok ? res.json() : null))
         .then((d) => {
-          if (d) setData(d);
+          if (!cancelled && d) setData(d);
         })
         .catch(() => {});
     }, 600);
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [threadId, messageId, isUserMessage]);
+
+  // Poll every 10s while status is non-terminal
+  useEffect(() => {
+    if (!isUserMessage || !data || isTerminal) return;
+    let cancelled = false;
+    const interval = setInterval(() => {
+      fetch(`/api/threads/${threadId}/messages/${messageId}/lifecycle`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((d) => {
+          if (!cancelled && d) setData(d);
+        })
+        .catch(() => {});
+    }, 10_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [threadId, messageId, isUserMessage, data, isTerminal]);
 
   if (!isUserMessage) return null;
   if (!data || !data.delivery) return null;
