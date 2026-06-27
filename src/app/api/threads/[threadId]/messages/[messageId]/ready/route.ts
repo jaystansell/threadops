@@ -1,7 +1,11 @@
+import { NextRequest } from "next/server";
 import { createServerClient } from "@/adapters/supabase/client";
+import { createApiKeyRepo } from "@/adapters/supabase/api-key-repo";
 import { createAttachmentRepo } from "@/adapters/supabase/attachment-repo";
-import { createAuthServerClient } from "@/adapters/supabase/auth/server";
+import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import { dispatchOutboundWebhooks } from "@/adapters/supabase/outbound-webhook";
+import { hashKey } from "@/core/rules/api-key";
+import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import type { CompanyId } from "@/core/types";
 
 export const dynamic = "force-dynamic";
@@ -11,22 +15,64 @@ export const dynamic = "force-dynamic";
  *
  * Called after all attachments have been uploaded for a message that was
  * created with has_pending_attachments: true. Dispatches the message.created
- * webhook with attachment metadata so agents receive file info in a single
- * event instead of racing against attachment uploads.
+ * webhook with attachment metadata so agents/humans receive file info in a
+ * single event instead of racing against attachment uploads.
+ *
+ * Supports both browser cookie auth and API key auth.
  */
 export async function POST(
-  _req: Request,
+  req: NextRequest,
   props: { params: Promise<{ threadId: string; messageId: string }> },
 ) {
   const { threadId, messageId } = await props.params;
 
-  // Auth: only browser-authenticated users can call this (it's a UI flow)
-  const supabase = await createAuthServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  // Auth: browser cookie or API key
+  const apiKey = req.headers.get("x-api-key");
+
+  if (apiKey) {
+    const db = createServerClient();
+    const apiKeyRepo = createApiKeyRepo(db);
+    const keyHash = await hashKey(apiKey);
+    const keyRecord = await apiKeyRepo.lookupByHash(keyHash);
+    if (!keyRecord) {
+      return Response.json({ error: "Invalid API key" }, { status: 401 });
+    }
+    const rl = checkRateLimit(keyHash);
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs!);
+    await apiKeyRepo.touchLastUsed(keyRecord.id);
+
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id, agent_api_key_id")
+      .eq("id", threadId)
+      .single();
+    if (!thread) {
+      return Response.json({ error: "Thread not found" }, { status: 404 });
+    }
+    if (thread.company_id !== keyRecord.company_id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (thread.agent_api_key_id && thread.agent_api_key_id !== keyRecord.id) {
+      return Response.json(
+        { error: "This thread belongs to another agent" },
+        { status: 403 },
+      );
+    }
+  } else {
+    const userCompany = await getUserCompany();
+    if (!userCompany) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const db = createServerClient();
+    const { data: thread } = await db
+      .from("threads")
+      .select("company_id")
+      .eq("id", threadId)
+      .single();
+    if (!thread || thread.company_id !== userCompany.companyId) {
+      return Response.json({ error: "Thread not found" }, { status: 404 });
+    }
   }
 
   const db = createServerClient();
