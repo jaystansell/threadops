@@ -23,6 +23,9 @@ export function SiteFooter() {
           <Link href="/security" className="hover:text-[var(--foreground)] transition-colors">
             Security
           </Link>
+          <Link href="/support" className="hover:text-[var(--foreground)] transition-colors">
+            Support
+          </Link>
         </div>
       </div>
     </footer>
