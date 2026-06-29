@@ -1295,6 +1295,118 @@ const r2 = await page.evaluate(async () => {
 - `src/app/_components/thread-timeline.tsx` — polling `useEffect` (lines ~147-160)
 - `src/app/_components/thread-detail-client.tsx` — `key={threadId}` prop (line ~88)
 
+### Role-Based Admin Access (PR #197)
+
+The admin check uses `company_members.role` column instead of hardcoded email. Roles: `"owner" | "admin" | "member"`.
+
+**Test users for admin testing:**
+- Admin: `devin-admin-test@threadzy.ai` / `TestAdmin123!` (role: owner in Acme Corp)
+- Member: `devin-member-test@threadzy.ai` / `TestMember123!` (role: member in Acme Corp)
+
+**Key file:** `src/adapters/supabase/auth/require-admin.ts` — `getAdminUser()` returns discriminated union:
+- `{status: "ok", user}` — user has owner or admin role
+- `{status: "unauthenticated"}` — no session
+- `{status: "forbidden"}` — user exists but has member role
+
+**Testing admin access:**
+1. Log in as owner/admin user, verify "Feedback" link in nav (desktop-nav.tsx, mobile-nav.tsx)
+2. Access `/feedback` — should load "Agent Feedback" heading
+3. Log in as member user, verify NO "Feedback" link in nav
+4. Navigate directly to `/feedback` — should redirect to `/threads`
+
+**Setting up test users:**
+```bash
+# Create user via Supabase Admin API
+source .env.local
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/auth/v1/admin/users" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test-admin@example.com", "password": "TestPass123!", "email_confirm": true}'
+
+# Set role to owner (after signup/onboarding)
+# Must be run via Supabase SQL Editor (MCP is read-only for DDL):
+UPDATE company_members SET role = 'owner'
+WHERE user_id = (SELECT id FROM auth.users WHERE email = 'test-admin@example.com');
+```
+
+### Re-Send Button (PR #195)
+
+The re-send button appears ONLY on the chronologically newest user message (`author_kind === "user"`).
+
+**Key file:** `src/app/_components/thread-timeline.tsx`
+- Lines ~315-317: `resendTargetId` logic — only set when `lastMsg.author_kind === "user"`
+- Lines ~459-472: Desktop hover icon (top-right, alongside delete)
+- Lines ~516-528: Mobile ellipsis menu item
+
+**Testing re-send:**
+1. Navigate to a thread where the last message is from a user
+2. If an agent auto-replied, send another user message to make it the last
+3. Desktop: hover over last user message — re-send icon (circular arrow) appears alongside delete
+4. Mobile: tap ellipsis on last user message — "Re-send to agent" menu item
+5. Click re-send: fires `POST /api/threads/:id/redispatch`, button disables during request
+6. Verify re-send does NOT appear on older user messages or agent messages
+
+**CSS hover limitation:** The `group-hover:md:flex` class may not trigger via CDP mouse_move. Use Playwright to query DOM:
+```javascript
+const resendBtns = await page.locator('button[aria-label="Re-send to agent"]');
+const count = await resendBtns.count(); // Should be 1 (only last user msg)
+await resendBtns.first().click(); // Click programmatically
+```
+
+### Agent Attachment Upload via API (PR #196)
+
+Agents can upload file attachments via the REST API using a two-phase flow:
+
+**Migration dependency:** `infra/migrations/039_add_webhook_deferred_to_messages.sql` adds `webhook_deferred` column. The `/ready` endpoint will fail without this.
+
+**Full flow (curl):**
+```bash
+# 1. Create message with deferred webhook
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"body":"Here is the file", "has_pending_attachments": true}' \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages
+
+# 2. Upload file (multipart)
+curl -X POST -H "X-API-Key: $KEY" \
+  -F "file=@/path/to/file.txt" \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages/$MSG_ID/attachments
+
+# 3. Signal ready (triggers webhook dispatch)
+curl -X POST -H "X-API-Key: $KEY" \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages/$MSG_ID/ready
+```
+
+**Key files:**
+- `src/app/api/threads/[threadId]/messages/route.ts` — `has_pending_attachments` handling
+- `src/app/api/threads/[threadId]/messages/[messageId]/attachments/route.ts` — file upload
+- `src/app/api/threads/[threadId]/messages/[messageId]/ready/route.ts` — webhook dispatch
+
+### Creating API Keys via Playwright (for E2E testing)
+
+Since API keys are only shown once at creation, use Playwright to create and capture them:
+
+```javascript
+const { chromium } = require('playwright');
+const browser = await chromium.connectOverCDP('http://localhost:29229');
+const page = browser.contexts()[0].pages().find(p => p.url().includes('threadzy.ai'));
+
+await page.goto('https://threadzy.ai/api-keys');
+await page.locator('button:has-text("Create API Key")').click();
+await page.locator('input[type="text"]').first().fill('My Test Agent');
+await page.locator('text=Select all').click(); // Check all scopes
+await page.locator('button:has-text("Create Key")').click();
+await page.waitForTimeout(3000);
+
+// Capture the full key (shown only once)
+const fullKey = await page.evaluate(() => {
+  const text = document.body.innerText;
+  const match = text.match(/to_[a-f0-9]{30,}/);
+  return match ? match[0] : null;
+});
+console.log('API Key:', fullKey);
+```
+
 ## Seed Data for Testing
 
 When creating test data via the service role key, note these schema requirements:
