@@ -299,7 +299,7 @@ export default async function WebhooksPage(props: {
                   <span className="w-[150px] shrink-0 text-blue-400">
                     {d.event_type}
                   </span>
-                  <span className="flex-1 text-[var(--muted-foreground)] truncate group-hover:text-[var(--foreground)] transition-colors">
+                  <span className="flex-1 min-w-0 text-[var(--muted-foreground)] truncate group-hover:text-[var(--foreground)] transition-colors">
                     {compactPayload(d.payload)}
                   </span>
                 </Link>
