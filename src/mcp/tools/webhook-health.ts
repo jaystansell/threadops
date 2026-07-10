@@ -68,7 +68,7 @@ export function calculateWebhookHealth(
       recent_delivery_failures: failures.length,
       last_delivery_at: lastDelivery,
       duplicate_url: duplicateUrls.has(endpoint.url),
-      catch_all_filter: endpoint.events.includes("message.created") && !endpoint.filters?.author_kind,
+      catch_all_filter: endpoint.events.includes("message.created") && (!endpoint.filters?.author_kind || endpoint.filters.author_kind === "all"),
       stale_no_recent_delivery: !lastSuccess || new Date(lastSuccess).getTime() < recentCutoff,
       repeated_failures: failures.length >= 3 && failures.length > successes.length,
     };
