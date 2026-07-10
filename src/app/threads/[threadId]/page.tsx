@@ -137,7 +137,7 @@ export default async function ThreadDetailPage(
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="min-w-0 space-y-6 max-w-3xl">
       <div>
         <CopyableId label="Thread ID" value={threadId} />
         <h2 className="text-xl font-bold">{thread.title}</h2>
