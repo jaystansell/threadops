@@ -26,6 +26,17 @@ export function createWebhookEndpointRepo(
       return data as WebhookEndpoint[];
     },
 
+    async listByAgent(companyId: CompanyId, apiKeyId: string): Promise<WebhookEndpoint[]> {
+      const { data, error } = await db
+        .from("webhook_endpoints")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("api_key_id", apiKeyId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as WebhookEndpoint[];
+    },
+
     async getById(
       companyId: CompanyId,
       id: WebhookEndpointId,
@@ -39,6 +50,22 @@ export function createWebhookEndpointRepo(
       if (error && error.code === "PGRST116") return null;
       if (error) throw error;
       return data as WebhookEndpoint;
+    },
+
+    async getByAgent(
+      companyId: CompanyId,
+      apiKeyId: string,
+      id: WebhookEndpointId,
+    ): Promise<WebhookEndpoint | null> {
+      const { data, error } = await db
+        .from("webhook_endpoints")
+        .select("*")
+        .eq("company_id", companyId)
+        .eq("api_key_id", apiKeyId)
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as WebhookEndpoint | null;
     },
 
     async create(
@@ -100,6 +127,23 @@ export function createWebhookEndpointRepo(
         .eq("company_id", companyId)
         .eq("id", id);
       if (error) throw error;
+    },
+
+    async deactivate(
+      companyId: CompanyId,
+      apiKeyId: string,
+      id: WebhookEndpointId,
+    ): Promise<WebhookEndpoint> {
+      const { data, error } = await db
+        .from("webhook_endpoints")
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .eq("company_id", companyId)
+        .eq("api_key_id", apiKeyId)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as WebhookEndpoint;
     },
 
     async listActiveForEvent(

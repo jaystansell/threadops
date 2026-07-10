@@ -16,10 +16,16 @@ export interface WebhookRepo {
     companyId: CompanyId,
     limit?: number,
   ): Promise<WebhookDelivery[]>;
+  listByEndpointIds(
+    companyId: CompanyId,
+    endpointIds: string[],
+    limit?: number,
+  ): Promise<WebhookDelivery[]>;
 }
 
 export interface WebhookDeliveryCreateInput {
   company_id: CompanyId;
+  endpoint_id?: string;
   idempotency_key: string;
   source: string;
   event_type: string;

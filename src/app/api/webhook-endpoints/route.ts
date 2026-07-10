@@ -7,6 +7,8 @@ import { hashKey } from "@/core/rules/api-key";
 import { checkRateLimit, rateLimitResponse } from "@/core/rules/rate-limit";
 import { WEBHOOK_EVENT_TYPES, ALWAYS_ON_EVENTS } from "@/core/types";
 import type { CompanyId, WebhookEventType } from "@/core/types";
+import { calculateWebhookHealth, addWebhookWarnings } from "@/mcp/tools/webhook-health";
+import type { WebhookDelivery } from "@/core/types";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +60,18 @@ export async function GET(req: NextRequest) {
 
   try {
     const endpoints = await repo.listByCompany(companyId as CompanyId);
-    return Response.json(endpoints);
+    const { data: deliveryRows, error: deliveryError } = await db
+      .from("webhook_deliveries")
+      .select("*")
+      .eq("company_id", companyId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (deliveryError) throw deliveryError;
+    const health = calculateWebhookHealth(
+      endpoints,
+      (deliveryRows ?? []) as WebhookDelivery[],
+    );
+    return Response.json(addWebhookWarnings(endpoints, health));
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : "Internal error" },
@@ -112,9 +125,9 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "filters must be an object" }, { status: 400 });
     }
     if (body.filters.author_kind !== undefined) {
-      if (!["user", "agent"].includes(body.filters.author_kind)) {
+      if (!["user", "agent", "all"].includes(body.filters.author_kind)) {
         return Response.json(
-          { error: "filters.author_kind must be 'user' or 'agent'" },
+          { error: "filters.author_kind must be 'user', 'agent', or 'all'" },
           { status: 400 },
         );
       }
@@ -147,6 +160,8 @@ export async function POST(req: NextRequest) {
   const mergedEvents = Array.from(
     new Set([...body.events, ...ALWAYS_ON_EVENTS]),
   );
+  const filters = body.filters
+    ?? (mergedEvents.includes("message.created") ? { author_kind: "user" } : undefined);
 
   const db = createServerClient();
   const repo = createWebhookEndpointRepo(db);
@@ -158,7 +173,7 @@ export async function POST(req: NextRequest) {
       url: body.url.trim(),
       events: mergedEvents,
       secret,
-      ...(body.filters && { filters: body.filters }),
+      ...(filters && { filters }),
       ...(body.include_context !== undefined && { include_context: body.include_context }),
       ...(body.ack_timeout_seconds !== undefined && { ack_timeout_seconds: body.ack_timeout_seconds }),
     });

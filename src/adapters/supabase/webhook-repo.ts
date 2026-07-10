@@ -31,6 +31,7 @@ export function createWebhookRepo(db: SupabaseClient): WebhookRepo {
         .from("webhook_deliveries")
         .insert({
           company_id: input.company_id,
+          ...(input.endpoint_id ? { endpoint_id: input.endpoint_id } : {}),
           idempotency_key: input.idempotency_key,
           source: input.source,
           event_type: input.event_type,
@@ -85,6 +86,23 @@ export function createWebhookRepo(db: SupabaseClient): WebhookRepo {
         .from("webhook_deliveries")
         .select("*")
         .eq("company_id", companyId)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data as WebhookDelivery[];
+    },
+
+    async listByEndpointIds(
+      companyId: CompanyId,
+      endpointIds: string[],
+      limit = 500,
+    ): Promise<WebhookDelivery[]> {
+      if (endpointIds.length === 0) return [];
+      const { data, error } = await db
+        .from("webhook_deliveries")
+        .select("*")
+        .eq("company_id", companyId)
+        .in("endpoint_id", endpointIds)
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
