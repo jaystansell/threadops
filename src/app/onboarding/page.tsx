@@ -75,5 +75,5 @@ export default async function OnboardingPage() {
     redirect("/api-keys");
   }
 
-  redirect("/api-keys");
+  redirect("/api-keys?welcome=1");
 }

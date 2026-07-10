@@ -7,6 +7,7 @@ import type { PromptBuilderConfig } from "./prompt-builder";
 
 interface Props {
   companyId: string;
+  initialOpen?: boolean;
 }
 
 interface CreateResult {
@@ -18,8 +19,8 @@ interface CreateResult {
 
 type SetupPhase = "created" | "shared" | "monitoring" | "success" | "needs-manual-webhook";
 
-export function CreateApiKeyForm({ companyId }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
+export function CreateApiKeyForm({ companyId, initialOpen = false }: Props) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [label, setLabel] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<string[]>([...VALID_SCOPES]);
   const [loading, setLoading] = useState(false);
@@ -96,14 +97,19 @@ export function CreateApiKeyForm({ companyId }: Props) {
   if (result) {
     return (
       <div className="rounded-lg border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-4 space-y-4" data-testid="api-key-created">
-        <p className="font-semibold text-yellow-800 dark:text-yellow-200">
-          API Key Created. Copy it now!
-        </p>
-        <p className="text-xs text-yellow-700 dark:text-yellow-300">
-          This key will not be shown again. Store it securely.
-        </p>
+        <PromptBuilder
+          apiKey={result.plaintext_key}
+          agentLabel={createdLabel}
+          onConfigChange={setPromptConfig}
+        />
 
-        <div className="space-y-1">
+        <div className="space-y-1 border-t border-[var(--border)] pt-4">
+          <p className="font-semibold text-yellow-800 dark:text-yellow-200">
+            API Key Created. Copy it now!
+          </p>
+          <p className="text-xs text-yellow-700 dark:text-yellow-300">
+            This key will not be shown again. Store it securely.
+          </p>
           <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200">
             API Key
           </p>
@@ -120,12 +126,6 @@ export function CreateApiKeyForm({ companyId }: Props) {
             </button>
           </div>
         </div>
-
-        <PromptBuilder
-          apiKey={result.plaintext_key}
-          agentLabel={createdLabel}
-          onConfigChange={setPromptConfig}
-        />
 
         {setupPhase === "created" && (
           <div className="space-y-3 border-t border-[var(--border)] pt-4">
