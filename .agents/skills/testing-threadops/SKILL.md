@@ -1570,7 +1570,7 @@ console.log('API Key:', fullKey);
 
 Admin access is now role-based via `company_members.role` column instead of hardcoded email:
 - Only users with `role = 'owner'` or `role = 'admin'` can access `/feedback`
-- The `requireAdmin()` utility in `src/app/_lib/require-admin.ts` checks the role
+- The `requireAdmin()` utility in `src/adapters/supabase/auth/require-admin.ts` checks the role
 - Non-admin users get redirected to `/threads` when trying to access admin pages
 - Test by logging in as a non-admin user and verifying `/feedback` is inaccessible
 
