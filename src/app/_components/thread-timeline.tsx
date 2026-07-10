@@ -370,10 +370,10 @@ export function ThreadTimeline({
             return (
               <div
                 key={msg.id}
-                className={`rounded-lg border p-3 ${hasError ? "border-red-400 bg-red-50 dark:bg-red-950/20" : "border-blue-400 bg-blue-50 dark:bg-blue-950/20"}`}
+                className={`min-w-0 rounded-lg border p-3 ${hasError ? "border-red-400 bg-red-50 dark:bg-red-950/20" : "border-blue-400 bg-blue-50 dark:bg-blue-950/20"}`}
                 data-testid="timeline-action"
               >
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   <span
                     className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded ${hasError ? "bg-red-200 text-red-800 dark:bg-red-800 dark:text-red-200" : "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"}`}
                   >
@@ -419,7 +419,7 @@ export function ThreadTimeline({
                               <span className="font-mono text-[var(--muted-foreground)]">
                                 {key}
                               </span>
-                              <span className="truncate">
+                              <span className="min-w-0 break-words">
                                 {typeof val === "object"
                                   ? JSON.stringify(val)
                                   : String(val)}
@@ -446,7 +446,7 @@ export function ThreadTimeline({
         return (
           <div
             key={msg.id}
-            className="group relative rounded-lg border border-[var(--border)] p-3"
+            className="group relative min-w-0 rounded-lg border border-[var(--border)] p-3"
             style={
               msg.id === newestMsgId
                 ? { animation: "border-shimmer 3s ease-in-out infinite" }
@@ -575,13 +575,26 @@ export function ThreadTimeline({
               </span>
               <AttachmentBadge count={attachmentCounts[msg.id] ?? 0} />
             </div>
-            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+            <div className="text-sm prose prose-sm dark:prose-invert max-w-none break-words">
               <Markdown
                 remarkPlugins={[remarkGfm, remarkBreaks, remarkSlackChannels]}
                 urlTransform={(url) =>
                   url.startsWith("slack-channel:") ? url : defaultUrlTransform(url)
                 }
                 components={{
+                  pre: ({ children, ...props }) => (
+                    <pre
+                      className="max-w-full overflow-x-auto"
+                      {...props}
+                    >
+                      {children}
+                    </pre>
+                  ),
+                  table: ({ children, ...props }) => (
+                    <div className="max-w-full overflow-x-auto">
+                      <table {...props}>{children}</table>
+                    </div>
+                  ),
                   a: ({ children, href, ...props }) => {
                     if (href?.startsWith("slack-channel:")) {
                       const channel = href.replace("slack-channel:", "");

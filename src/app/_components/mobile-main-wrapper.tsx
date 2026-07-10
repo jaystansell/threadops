@@ -39,7 +39,7 @@ export function MobileMainWrapper({ children }: { children: React.ReactNode }) {
           </button>
         </div>
       )}
-      <div className={isThreadRoot ? "hidden md:block flex-1 overflow-y-auto p-4 md:p-6" : "flex-1 overflow-y-auto p-4 md:p-6"}>
+      <div className={isThreadRoot ? "hidden md:block min-w-0 flex-1 overflow-y-auto p-4 md:p-6" : "min-w-0 flex-1 overflow-y-auto p-4 md:p-6"}>
         {children}
       </div>
     </>
