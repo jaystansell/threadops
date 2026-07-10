@@ -4,6 +4,8 @@ import { createServerClient } from "@/adapters/supabase/client";
 import { getUserCompany } from "@/adapters/supabase/auth/get-user-company";
 import type { WebhookDelivery, WebhookEndpoint, ApiKey } from "@/core/types";
 import { FormattedDate } from "@/app/_components/formatted-date";
+import { ConnectionTest } from "./connection-test";
+import { buildAgentReadiness, type AgentReadiness } from "./agent-readiness";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ interface AgentOverview {
   apiKey: ApiKey;
   endpoints: WebhookEndpoint[];
   activeEndpoints: number;
+  readiness: AgentReadiness;
 }
 
 export default async function WebhooksPage(props: {
@@ -45,6 +48,33 @@ export default async function WebhooksPage(props: {
 
   const apiKeys = (keysResult.data ?? []) as ApiKey[];
   const allEndpoints = (endpointsResult.data ?? []) as WebhookEndpoint[];
+  const { data: readinessDeliveries } = await db
+    .from("webhook_deliveries")
+    .select("*")
+    .eq("company_id", userCompany.companyId)
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  const deliveryRows = (readinessDeliveries ?? []) as WebhookDelivery[];
+  const deliveryThreadIds = Array.from(new Set(
+    deliveryRows
+      .map((delivery) => delivery.payload.thread_id)
+      .filter((threadId): threadId is string => typeof threadId === "string"),
+  ));
+  const [statusResult, messageResult] = deliveryThreadIds.length > 0
+    ? await Promise.all([
+        db
+          .from("agent_processing_status")
+          .select("thread_id, api_key_id, created_at")
+          .in("thread_id", deliveryThreadIds),
+        db
+          .from("messages")
+          .select("thread_id, author_id, created_at")
+          .in("thread_id", deliveryThreadIds)
+          .eq("author_kind", "agent"),
+      ])
+    : [{ data: [] }, { data: [] }];
+  const processingStatuses = (statusResult.data ?? []) as Array<{ thread_id: string; api_key_id: string; created_at: string }>;
+  const agentMessages = (messageResult.data ?? []) as Array<{ thread_id: string; author_id: string; created_at: string }>;
 
   // Build agent overview map
   const agentMap = new Map<string, AgentOverview>();
@@ -54,6 +84,13 @@ export default async function WebhooksPage(props: {
       apiKey: key,
       endpoints: eps,
       activeEndpoints: eps.filter((ep) => ep.active).length,
+      readiness: buildAgentReadiness(
+        key,
+        eps,
+        deliveryRows.filter((delivery) => eps.some((endpoint) => endpoint.id === delivery.endpoint_id)),
+        processingStatuses,
+        agentMessages,
+      ),
     });
   }
 
@@ -145,15 +182,18 @@ export default async function WebhooksPage(props: {
               const isActive = !ag.apiKey.revoked_at;
               const isFiltered = agentFilter === ag.apiKey.id;
               return (
-                <Link
+                <div
                   key={ag.apiKey.id}
-                  href={isFiltered ? "/webhooks" : `/webhooks?agent=${ag.apiKey.id}`}
                   className={`rounded-lg border p-3 space-y-1.5 transition-colors hover:border-[var(--primary)] ${
                     isFiltered
                       ? "border-[var(--primary)] bg-[var(--primary)]/5"
                       : "border-[var(--border)]"
                   }`}
                 >
+                  <Link
+                    href={isFiltered ? "/webhooks" : `/webhooks?agent=${ag.apiKey.id}`}
+                    className="block"
+                  >
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold truncate">
                       {ag.apiKey.label}
@@ -180,7 +220,9 @@ export default async function WebhooksPage(props: {
                       <span className="text-yellow-500">No endpoints</span>
                     )}
                   </div>
-                </Link>
+                  </Link>
+                  <ConnectionTest apiKeyId={ag.apiKey.id} initialReadiness={ag.readiness} />
+                </div>
               );
             })}
             {legacyEndpoints.length > 0 && (
@@ -257,7 +299,7 @@ export default async function WebhooksPage(props: {
                   <span className="w-[150px] shrink-0 text-blue-400">
                     {d.event_type}
                   </span>
-                  <span className="flex-1 text-[var(--muted-foreground)] truncate group-hover:text-[var(--foreground)] transition-colors">
+                  <span className="flex-1 min-w-0 text-[var(--muted-foreground)] truncate group-hover:text-[var(--foreground)] transition-colors">
                     {compactPayload(d.payload)}
                   </span>
                 </Link>
