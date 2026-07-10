@@ -188,6 +188,26 @@ The CDP `mouse_move` action may NOT trigger CSS `:hover` pseudo-class consistent
 
 **Note on .env.local:** The repo's `.env.local` may point to a different Supabase project (e.g. `sdqnfhdorrlbjyssokqs`) that has **no tables**. This is not useful for local testing unless you apply all migrations first. The production Vercel deployment uses the correct project (`gymsbxkuiknbdtulmopv`).
 
+### Testing Unmerged PR Previews (Vercel SSO wall)
+
+Vercel **preview** deployments for this repo are behind Vercel SSO — the browser redirects to `vercel.com/login`, which you cannot pass. To test an unmerged PR's UI, run the PR branch/worktree locally against production Supabase instead:
+1. `cp` a working `.env.local` into the worktree (needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`), `npm install`.
+2. `unset NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY && NODE_OPTIONS='--dns-result-order=ipv4first' npx next dev --port 3000`
+3. Log in at `http://localhost:3000/login`. The browser session may already be authenticated as a prior test user in the same company as the real agents.
+
+### Marketing homepage `/` redirect gotcha
+
+The root `/` redirects logged-in users to `/threads`. When logged out, a **stale service worker** (from the web-push feature) may still redirect the browser to `/login`, so you can't always see the marketing homepage in-browser. Verify homepage copy at runtime with `curl -s http://localhost:3000/ | grep -i "phrase"` — this bypasses the service worker and returns the real server-rendered HTML.
+
+### Connection Readiness Panel + One-Click Round-Trip (PR #204)
+
+On `/webhooks`, each agent card embeds a readiness panel with three independent indicators (API/MCP access, Webhook delivery, Autonomous handler) plus an "Endpoint hygiene warnings" line and a "Run connection test" button.
+- **Depends on migration 041** (`webhook_deliveries.endpoint_id`). Verify it exists first: `select exists(select 1 from information_schema.columns where table_name='webhook_deliveries' and column_name='endpoint_id')`. Without it, the round-trip GET poll and outbound dispatch INSERT both error.
+- Clicking "Run connection test" creates a real `[Connection test] <ISO timestamp>` thread + message and fires a real webhook, then polls stages: `pending` → `delivered`/`acknowledged`/`replied`, or `failed`.
+- A Tasklet-backed agent (active `webhooks.tasklet.ai` endpoint) that actually responds reaches **replied**; one with no endpoint reaches **failed** with "We have nowhere to deliver events."
+- Smoke-test the DB after: confirm the `[Connection test]` thread exists and its `webhook_deliveries` row has `endpoint_id` populated.
+- Note: running tests creates throwaway `[Connection test]` threads in the account — harmless but they accumulate.
+
 ## Key Test Flows
 
 ### ACK Timeout & Auto-Escalation (PR #175)
@@ -1406,6 +1426,153 @@ const fullKey = await page.evaluate(() => {
 });
 console.log('API Key:', fullKey);
 ```
+
+### Role-Based Admin Access (PR #197)
+
+The admin check uses `company_members.role` column instead of hardcoded email. Roles: `"owner" | "admin" | "member"`.
+
+**Test users for admin testing:**
+- Admin: `devin-admin-test@threadzy.ai` / `TestAdmin123!` (role: owner in Acme Corp)
+- Member: `devin-member-test@threadzy.ai` / `TestMember123!` (role: member in Acme Corp)
+
+**Key file:** `src/adapters/supabase/auth/require-admin.ts` — `getAdminUser()` returns discriminated union:
+- `{status: "ok", user}` — user has owner or admin role
+- `{status: "unauthenticated"}` — no session
+- `{status: "forbidden"}` — user exists but has member role
+
+**Testing admin access:**
+1. Log in as owner/admin user, verify "Feedback" link in nav (desktop-nav.tsx, mobile-nav.tsx)
+2. Access `/feedback` — should load "Agent Feedback" heading
+3. Log in as member user, verify NO "Feedback" link in nav
+4. Navigate directly to `/feedback` — should redirect to `/threads`
+
+**Setting up test users:**
+```bash
+# Create user via Supabase Admin API
+source .env.local
+curl -s -X POST "https://gymsbxkuiknbdtulmopv.supabase.co/auth/v1/admin/users" \
+  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test-admin@example.com", "password": "TestPass123!", "email_confirm": true}'
+
+# Set role to owner (after signup/onboarding)
+# Must be run via Supabase SQL Editor (MCP is read-only for DDL):
+UPDATE company_members SET role = 'owner'
+WHERE user_id = (SELECT id FROM auth.users WHERE email = 'test-admin@example.com');
+```
+
+### Re-Send Button (PR #195)
+
+The re-send button appears ONLY on the chronologically newest user message (`author_kind === "user"`).
+
+**Key file:** `src/app/_components/thread-timeline.tsx`
+- Lines ~315-317: `resendTargetId` logic — only set when `lastMsg.author_kind === "user"`
+- Lines ~459-472: Desktop hover icon (top-right, alongside delete)
+- Lines ~516-528: Mobile ellipsis menu item
+
+**Testing re-send:**
+1. Navigate to a thread where the last message is from a user
+2. If an agent auto-replied, send another user message to make it the last
+3. Desktop: hover over last user message — re-send icon (circular arrow) appears alongside delete
+4. Mobile: tap ellipsis on last user message — "Re-send to agent" menu item
+5. Click re-send: fires `POST /api/threads/:id/redispatch`, button disables during request
+6. Verify re-send does NOT appear on older user messages or agent messages
+
+**CSS hover limitation:** The `group-hover:md:flex` class may not trigger via CDP mouse_move. Use Playwright to query DOM:
+```javascript
+const resendBtns = await page.locator('button[aria-label="Re-send to agent"]');
+const count = await resendBtns.count(); // Should be 1 (only last user msg)
+await resendBtns.first().click(); // Click programmatically
+```
+
+### Agent Attachment Upload via API (PR #196)
+
+Agents can upload file attachments via the REST API using a two-phase flow:
+
+**Migration dependency:** `infra/migrations/039_add_webhook_deferred_to_messages.sql` adds `webhook_deferred` column. The `/ready` endpoint will fail without this.
+
+**Full flow (curl):**
+```bash
+# 1. Create message with deferred webhook
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"body":"Here is the file", "has_pending_attachments": true}' \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages
+
+# 2. Upload file (multipart)
+curl -X POST -H "X-API-Key: $KEY" \
+  -F "file=@/path/to/file.txt" \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages/$MSG_ID/attachments
+
+# 3. Signal ready (triggers webhook dispatch)
+curl -X POST -H "X-API-Key: $KEY" \
+  https://threadzy.ai/api/threads/$THREAD_ID/messages/$MSG_ID/ready
+```
+
+**Key files:**
+- `src/app/api/threads/[threadId]/messages/route.ts` — `has_pending_attachments` handling
+- `src/app/api/threads/[threadId]/messages/[messageId]/attachments/route.ts` — file upload
+- `src/app/api/threads/[threadId]/messages/[messageId]/ready/route.ts` — webhook dispatch
+
+### Creating API Keys via Playwright (for E2E testing)
+
+Since API keys are only shown once at creation, use Playwright to create and capture them:
+
+```javascript
+const { chromium } = require('playwright');
+const browser = await chromium.connectOverCDP('http://localhost:29229');
+const page = browser.contexts()[0].pages().find(p => p.url().includes('threadzy.ai'));
+
+await page.goto('https://threadzy.ai/api-keys');
+await page.locator('button:has-text("Create API Key")').click();
+await page.locator('input[type="text"]').first().fill('My Test Agent');
+await page.locator('text=Select all').click(); // Check all scopes
+await page.locator('button:has-text("Create Key")').click();
+await page.waitForTimeout(3000);
+
+// Capture the full key (shown only once)
+const fullKey = await page.evaluate(() => {
+  const text = document.body.innerText;
+  const match = text.match(/to_[a-f0-9]{30,}/);
+  return match ? match[0] : null;
+});
+console.log('API Key:', fullKey);
+```
+
+### Inline Image Previews & Delivery Status Polling (PR #199)
+
+**Image attachment rendering:**
+- Image attachments (PNG, JPEG, GIF, WebP, SVG) render as clickable `<img>` thumbnails directly in message cards (max 320px wide, 240px tall)
+- Non-image files (TXT, CSV, JSON, etc.) render as file chips with download icon
+- Clicking an image thumbnail opens the full-size image inline in a new browser tab (not download, not blank page)
+- Each `ImagePreview` component fetches its own signed URL on mount — look for "Loading preview..." state before images load
+
+**Testing image previews:**
+1. Navigate to a thread where an agent has uploaded image attachments
+2. Verify thumbnails are visible `<img>` elements (not file chip buttons)
+3. Verify filename + file size footer below each thumbnail
+4. Click a thumbnail — verify it opens a Supabase signed URL in a new tab showing the image inline
+5. For non-image attachments in the same thread, verify they show as file chips with download arrows
+
+**Delivery status polling:**
+- `MessageDeliveryReceipt` and `MessageLifecycle` components now poll every 10s while status is non-terminal
+- Terminal states: `replied` or `failed` — polling stops once reached
+- To test: send a user message on a thread with an active webhook agent, then watch the delivery status indicator auto-update from `Pending`/`Delivered` to `Replied` within 10-20 seconds without manual refresh
+- The status pipeline shows: `📤 → ✓200 → 🤖 → 💬` when fully resolved
+
+**Key files:**
+- `src/app/_components/message-attachments.tsx` — ImagePreview and FileChip subcomponents
+- `src/app/_components/message-delivery-receipt.tsx` — polling logic (lines 303-340)
+- `src/app/_components/message-lifecycle.tsx` — same polling pattern (lines 86-120)
+- `src/app/api/threads/[threadId]/messages/[messageId]/attachments/[attachmentId]/download/route.ts` — inline vs download logic
+
+### Role-Based Admin Access (PR #197)
+
+Admin access is now role-based via `company_members.role` column instead of hardcoded email:
+- Only users with `role = 'owner'` or `role = 'admin'` can access `/feedback`
+- The `requireAdmin()` utility in `src/adapters/supabase/auth/require-admin.ts` checks the role
+- Non-admin users get redirected to `/threads` when trying to access admin pages
+- Test by logging in as a non-admin user and verifying `/feedback` is inaccessible
 
 ## Seed Data for Testing
 
