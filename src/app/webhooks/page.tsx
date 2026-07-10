@@ -68,13 +68,13 @@ export default async function WebhooksPage(props: {
           .in("thread_id", deliveryThreadIds),
         db
           .from("messages")
-          .select("thread_id, created_at")
+          .select("thread_id, author_id, created_at")
           .in("thread_id", deliveryThreadIds)
           .eq("author_kind", "agent"),
       ])
     : [{ data: [] }, { data: [] }];
   const processingStatuses = (statusResult.data ?? []) as Array<{ thread_id: string; api_key_id: string; created_at: string }>;
-  const agentMessages = (messageResult.data ?? []) as Array<{ thread_id: string; created_at: string }>;
+  const agentMessages = (messageResult.data ?? []) as Array<{ thread_id: string; author_id: string; created_at: string }>;
 
   // Build agent overview map
   const agentMap = new Map<string, AgentOverview>();

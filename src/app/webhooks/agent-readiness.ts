@@ -23,7 +23,7 @@ export function buildAgentReadiness(
   endpoints: WebhookEndpoint[],
   deliveries: WebhookDelivery[],
   processingStatuses: Array<{ thread_id: string; api_key_id: string; created_at: string }>,
-  agentMessages: Array<{ thread_id: string; created_at: string }>,
+  agentMessages: Array<{ thread_id: string; author_id: string; created_at: string }>,
 ): AgentReadiness {
   const recentCutoff = Date.now() - RECENT_WINDOW_MS;
   const endpointHealth = calculateWebhookHealth(endpoints, deliveries);
@@ -91,7 +91,8 @@ export function buildAgentReadiness(
         && new Date(status.created_at).getTime() >= new Date(delivery.created_at).getTime(),
     ) || agentMessages.some(
       (message) =>
-        message.thread_id === threadId
+        message.author_id === apiKey.id
+        && message.thread_id === threadId
         && new Date(message.created_at).getTime() >= new Date(delivery.created_at).getTime(),
     );
   });
