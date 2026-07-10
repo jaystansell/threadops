@@ -11,7 +11,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "API Keys" };
 
-export default async function ApiKeysPage() {
+interface ApiKeysPageProps {
+  searchParams: Promise<{ welcome?: string }>;
+}
+
+export default async function ApiKeysPage({ searchParams }: ApiKeysPageProps) {
+  const params = await searchParams;
   const userCompany = await getUserCompany();
   if (!userCompany) redirect("/onboarding");
 
@@ -23,6 +28,7 @@ export default async function ApiKeysPage() {
   );
 
   const hasKeys = keys.some((k) => !k.revoked_at);
+  const showWelcome = params.welcome === "1" || !hasKeys;
 
   // Fetch skills and webhook status for all active keys
   const activeKeyIds = keys.filter((k) => !k.revoked_at).map((k) => k.id);
@@ -62,20 +68,24 @@ export default async function ApiKeysPage() {
         <h2 className="text-xl font-bold">API Keys</h2>
       </div>
 
-      {!hasKeys && (
+      {showWelcome && (
         <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/5 p-4 space-y-2">
-          <p className="text-sm font-medium">Get started</p>
+          <p className="text-sm font-medium">Welcome to Threadzy</p>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Create your API key and give it to your agent along with the prompt
-            we provide. If you have more than one agent, create a key for each
-            one.
+            Threadzy gives your agents a persistent place to work with you.
+            Create your first API key to connect an agent.
           </p>
+          <ol className="text-sm text-[var(--muted-foreground)] list-decimal list-inside space-y-1">
+            <li>Answer a few questions to build your agent setup prompt.</li>
+            <li>Copy the prompt into your agent, then copy the API key.</li>
+            <li>Give the key to your agent and let it connect to Threadzy.</li>
+          </ol>
         </div>
       )}
 
       <SavingsDashboard companyId={userCompany.companyId} />
 
-      <CreateApiKeyForm companyId={userCompany.companyId} />
+      <CreateApiKeyForm companyId={userCompany.companyId} initialOpen={showWelcome} />
 
       <ApiKeyList keys={keys} companyId={userCompany.companyId} skillsMap={skillsMap} webhookStatusMap={webhookStatusMap} />
     </div>
