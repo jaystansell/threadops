@@ -100,9 +100,9 @@ export async function PATCH(
       return Response.json({ error: "filters must be an object" }, { status: 400 });
     }
     if (body.filters.author_kind !== undefined) {
-      if (!["user", "agent"].includes(body.filters.author_kind)) {
+      if (!["user", "agent", "all"].includes(body.filters.author_kind)) {
         return Response.json(
-          { error: "filters.author_kind must be 'user' or 'agent'" },
+          { error: "filters.author_kind must be 'user', 'agent', or 'all'" },
           { status: 400 },
         );
       }

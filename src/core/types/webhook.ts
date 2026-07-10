@@ -7,6 +7,7 @@ export type DeliveryStatus = "pending" | "processing" | "succeeded" | "failed";
 export interface WebhookDelivery {
   id: WebhookDeliveryId;
   company_id: CompanyId;
+  endpoint_id: string | null;
   idempotency_key: string;
   source: string;
   event_type: string;

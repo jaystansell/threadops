@@ -19,6 +19,8 @@ import { listThreadSummaries } from "./tools/list-thread-summaries";
 import { submitFeedback } from "./tools/submit-feedback";
 import { registerCapabilities } from "./tools/register-capabilities";
 import { listCapabilities } from "./tools/list-capabilities";
+import { ackMessage } from "./tools/ack-message";
+import { updateWebhook, deactivateWebhook, deleteWebhook, testWebhook, diagnoseWebhooks } from "./tools/manage-webhooks";
 
 function toolResult(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data) }] };
@@ -121,14 +123,16 @@ export function registerTools(
     },
   );
 
-  // Tool 2: manage_messages — read and post messages on a thread
+  // Tool 2: manage_messages — read, post, and acknowledge messages on a thread
   server.tool(
     "manage_messages",
-    "Read or post messages on a thread. Set action to list (get all messages) or post (send a new message). IMPORTANT: Always use the thread_id from a webhook payload or from manage_threads(action='list'). Do not construct or guess thread IDs.",
+    "Read, post, or ACK messages on a thread. ACK records that the agent acknowledged, is processing, completed, or escalated a user message. Always use a thread_id from a webhook payload or manage_threads(action='list').",
     {
-      action: z.enum(["list", "post"]).describe("Operation: list (read messages) or post (send message)"),
+      action: z.enum(["list", "post", "ack"]).describe("Operation: list (read), post (send), or ack (record processing status)"),
       thread_id: z.string().describe("Thread ID (UUID). Must come from a webhook payload or from manage_threads list. Do not guess."),
       body: z.string().optional().describe("[post] Message body (required for post)"),
+      status: z.enum(["acknowledged", "processing", "completed", "escalated"]).optional().describe("[ack] Processing status (required for ack)"),
+      message_id: z.string().optional().describe("[ack] Optional message UUID being acknowledged"),
     },
     async (args) => {
       try {
@@ -159,6 +163,14 @@ export function registerTools(
                 body: args.body,
               }),
             );
+          }
+          case "ack": {
+            if (!args.status) return toolError("status is required for ack");
+            return toolResult(await ackMessage(db, auth, {
+              thread_id: args.thread_id,
+              status: args.status,
+              message_id: args.message_id,
+            }));
           }
         }
       } catch (err) {
@@ -306,12 +318,13 @@ export function registerTools(
     },
   );
 
-  // Tool 6: manage_webhooks — register and list webhook endpoints
+  // Tool 6: manage_webhooks — register, inspect, and manage webhook endpoints
   server.tool(
     "manage_webhooks",
-    "Manage webhook endpoints: register a new endpoint or list existing ones.",
+    "Manage your webhook endpoints. Actions: register, list, update, deactivate, delete, test, or diagnose. New message.created registrations default to author_kind=user. Pass filters.author_kind explicitly to override.",
     {
-      action: z.enum(["register", "list"]).describe("Operation: register (create endpoint) or list (view all)"),
+      action: z.enum(["register", "list", "update", "deactivate", "delete", "test", "diagnose"]).describe("Operation to perform"),
+      endpoint_id: z.string().optional().describe("[update/deactivate/delete/test] Existing endpoint UUID"),
       url: z.string().url().optional().describe("[register] Webhook endpoint URL (required for register)"),
       events: z
         .array(z.enum(["message.created", "thread.created", "thread.status_changed", "action.requested", "docs.updated"]))
@@ -319,10 +332,11 @@ export function registerTools(
         .describe("[register] Events to subscribe to (required for register). docs.updated is always included automatically."),
       filters: z
         .object({
-          author_kind: z.enum(["user", "agent"]).optional().describe("Only deliver events matching this author type. Omit for all."),
+          author_kind: z.enum(["user", "agent", "all"]).optional().describe("Only deliver events matching this author type. Omit to default message.created to user. Use all for an explicit catch-all."),
         })
         .optional()
-        .describe("[register] Optional filters to restrict which events are delivered (e.g., only human or agent messages)."),
+        .describe("[register/update] Optional filters. Omit filters on registration to default message.created to author_kind=user."),
+      active: z.boolean().optional().describe("[update] Whether endpoint is active"),
     },
     async (args) => {
       try {
@@ -342,6 +356,27 @@ export function registerTools(
           }
           case "list":
             return toolResult(await listWebhooks(db, auth));
+          case "update":
+            if (!args.endpoint_id) return toolError("endpoint_id is required for update");
+            if (!args.url && !args.events && !args.filters && args.active === undefined) {
+              return toolError("at least one field is required for update");
+            }
+            return toolResult(await updateWebhook(db, auth, {
+              endpoint_id: args.endpoint_id,
+              url: args.url,
+              events: args.events,
+              filters: args.filters,
+              active: args.active,
+            }));
+          case "deactivate":
+          case "delete":
+          case "test":
+            if (!args.endpoint_id) return toolError(`endpoint_id is required for ${args.action}`);
+            if (args.action === "deactivate") return toolResult(await deactivateWebhook(db, auth, args.endpoint_id));
+            if (args.action === "delete") return toolResult(await deleteWebhook(db, auth, args.endpoint_id));
+            return toolResult(await testWebhook(db, auth, args.endpoint_id));
+          case "diagnose":
+            return toolResult(await diagnoseWebhooks(db, auth));
         }
       } catch (err) {
         return toolError(err instanceof Error ? err.message : String(err));

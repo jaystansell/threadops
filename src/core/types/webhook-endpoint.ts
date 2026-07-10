@@ -29,7 +29,7 @@ export const WEBHOOK_EVENT_TYPES: WebhookEventType[] = [
 export const ALWAYS_ON_EVENTS: WebhookEventType[] = ["docs.updated", "action.requested", "attachment.created", "thread.archived"];
 
 export interface WebhookEndpointFilters {
-  author_kind?: "user" | "agent";
+  author_kind?: "user" | "agent" | "all";
 }
 
 export interface WebhookEndpoint {

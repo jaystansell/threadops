@@ -152,7 +152,7 @@ export function dispatchOutboundWebhooks(
       // that doesn't match the event payload's author_kind.
       const filtered = endpoints.filter((ep) => {
         const authorKindFilter = ep.filters?.author_kind;
-        if (!authorKindFilter) return true;
+        if (!authorKindFilter || authorKindFilter === "all") return true;
         return eventPayload.author_kind === authorKindFilter;
       });
 
@@ -178,6 +178,7 @@ export function dispatchOutboundWebhooks(
 
         const delivery = await webhookRepo.create({
           company_id: companyId,
+          endpoint_id: endpoint.id,
           idempotency_key: idempotencyKey,
           source: "outbound",
           event_type: eventType,

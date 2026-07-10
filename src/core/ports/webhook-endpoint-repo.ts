@@ -7,8 +7,14 @@ import type { CompanyId } from "../types";
 
 export interface WebhookEndpointRepo {
   listByCompany(companyId: CompanyId): Promise<WebhookEndpoint[]>;
+  listByAgent(companyId: CompanyId, apiKeyId: string): Promise<WebhookEndpoint[]>;
   getById(
     companyId: CompanyId,
+    id: WebhookEndpointId,
+  ): Promise<WebhookEndpoint | null>;
+  getByAgent(
+    companyId: CompanyId,
+    apiKeyId: string,
     id: WebhookEndpointId,
   ): Promise<WebhookEndpoint | null>;
   create(input: WebhookEndpointCreateInput): Promise<WebhookEndpoint>;
@@ -18,6 +24,7 @@ export interface WebhookEndpointRepo {
     input: WebhookEndpointUpdateInput,
   ): Promise<WebhookEndpoint>;
   remove(companyId: CompanyId, id: WebhookEndpointId): Promise<void>;
+  deactivate(companyId: CompanyId, apiKeyId: string, id: WebhookEndpointId): Promise<WebhookEndpoint>;
   listActiveForEvent(
     companyId: CompanyId,
     eventType: string,

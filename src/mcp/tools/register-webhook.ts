@@ -20,12 +20,14 @@ export async function registerWebhook(
   const mergedEvents = Array.from(
     new Set([...input.events, ...ALWAYS_ON_EVENTS]),
   );
+  const filters = input.filters
+    ?? (mergedEvents.includes("message.created") ? { author_kind: "user" as const } : undefined);
   return repo.create({
     company_id: auth.companyId as CompanyId,
     api_key_id: auth.keyId,
     url: input.url,
     events: mergedEvents,
     secret: uuidv4(),
-    ...(input.filters && { filters: input.filters }),
+    ...(filters && { filters }),
   });
 }
