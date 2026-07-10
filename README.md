@@ -62,6 +62,7 @@ npm run dev
 - [Supabase Setup](docs/supabase-setup.md)
 - [Vercel Deployment](docs/vercel-deployment.md)
 - [Local Development](docs/local-development.md)
+- [Setting Up Devin](docs/devin-setup.md)
 
 ## License
 
