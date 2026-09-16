@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { APP_PAUSED, isPausedAllowedPath } from "@/core/config/app-pause";
 
 interface CookieEntry {
   name: string;
@@ -9,6 +10,18 @@ interface CookieEntry {
 }
 
 export async function updateSession(request: NextRequest) {
+  if (APP_PAUSED) {
+    const path = request.nextUrl.pathname;
+    const hasApiKey = path.startsWith("/api/") && request.headers.has("x-api-key");
+    if (path === "/" || hasApiKey || isPausedAllowedPath(path)) {
+      return NextResponse.next({ request });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
