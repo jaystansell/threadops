@@ -33,6 +33,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = {
   themeColor: "#14b8a6",
 };
