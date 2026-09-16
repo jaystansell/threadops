@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Analytics } from "@vercel/analytics/next";
 import { createAuthServerClient } from "@/adapters/supabase/auth/server";
 import { isUserAdmin } from "@/adapters/supabase/auth/require-admin";
+import { APP_PAUSED } from "@/core/config/app-pause";
 import { AppHeader } from "./_components/app-header";
 import AnimatedThreadsBg from "./_components/animated-threads-bg";
 import { AuthHeader } from "./_components/auth-header";
@@ -32,6 +33,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = {
   themeColor: "#14b8a6",
 };
@@ -41,8 +44,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createAuthServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = APP_PAUSED
+    ? null
+    : (await (await createAuthServerClient()).auth.getUser()).data.user;
   const userEmail = user?.email ?? null;
   const isAdmin = user ? await isUserAdmin(user.id) : false;
 
@@ -69,7 +73,7 @@ export default async function RootLayout({
           </AppHeader>
           <UpdateToast />
           <div className="flex-1 flex flex-col">{children}</div>
-          <SiteFooter />
+          {!APP_PAUSED && <SiteFooter />}
           {userEmail && <PushNotificationBanner />}
           <Analytics />
         </MobileMenuProvider>

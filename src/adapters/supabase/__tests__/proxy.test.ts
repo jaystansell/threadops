@@ -9,13 +9,75 @@ vi.mock("@supabase/ssr", () => ({
   })),
 }));
 
-function createMockRequest(path: string): NextRequest {
-  return new NextRequest(new URL(path, "http://localhost:3000"));
+function createMockRequest(path: string, headers?: HeadersInit): NextRequest {
+  return new NextRequest(new URL(path, "http://localhost:3000"), { headers });
 }
+
+describe("updateSession (auth proxy, paused)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
+  });
+
+  async function run(path: string, headers?: HeadersInit) {
+    const { updateSession } = await import("../auth/proxy");
+    return updateSession(createMockRequest(path, headers));
+  }
+
+  it("serves the maintenance homepage", async () => {
+    expect((await run("/")).status).toBe(200);
+  });
+
+  it.each(["/login", "/signup", "/forgot-password", "/auth/callback", "/oauth/authorize"])(
+    "redirects auth route %s to /",
+    async (path) => {
+      const res = await run(path);
+      expect(res.status).toBe(307);
+      expect(new URL(res.headers.get("location")!).pathname).toBe("/");
+    },
+  );
+
+  it.each(["/threads", "/threads/abc", "/onboarding", "/api-keys", "/docs/api", "/changelog"])(
+    "redirects page %s to / even without checking session",
+    async (path) => {
+      const { createServerClient } = await import("@supabase/ssr");
+      const res = await run(path);
+      expect(res.status).toBe(307);
+      expect(new URL(res.headers.get("location")!).pathname).toBe("/");
+      expect(createServerClient).not.toHaveBeenCalled();
+    },
+  );
+
+  it("redirects session-based API calls without an API key to /", async () => {
+    const res = await run("/api/threads");
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/");
+  });
+
+  it("passes through API-key requests", async () => {
+    expect((await run("/api/threads", { "x-api-key": "k" })).status).toBe(200);
+  });
+
+  it.each([
+    "/api/mcp",
+    "/mcp",
+    "/.well-known/mcp.json",
+    "/api/oauth/token",
+    "/api/cron/check-unhandled",
+    "/api/webhooks/inbound",
+  ])("passes through non-interactive route %s", async (path) => {
+    expect((await run(path)).status).toBe(200);
+  });
+});
 
 describe("updateSession (auth proxy)", () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.doMock("@/core/config/app-pause", () => ({
+      APP_PAUSED: false,
+      isPausedAllowedPath: () => false,
+    }));
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "test-anon-key";
   });
